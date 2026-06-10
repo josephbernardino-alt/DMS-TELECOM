@@ -5,6 +5,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>BEST Dispatch Monitoring System</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <style>
   * { margin: 0; padding: 0; box-sizing: border-box; }
   html, body { height: 100%; overflow: hidden; }
@@ -435,6 +437,53 @@
   .notif-footer a { color: #1d4ed8; font-size: 12px; font-weight: 600; text-decoration: none; cursor: pointer; }
   .notif-footer a:hover { text-decoration: underline; }
 
+
+  /* NAV DROPDOWN */
+  .nav-dropdown { position: relative; }
+  .nav-menu { display: none; position: absolute; top: 40px; left: 0; background: white; border: 1px solid #e2e8f0; border-radius: 10px; box-shadow: 0 8px 24px rgba(0,0,0,0.15); z-index: 400; min-width: 180px; overflow: hidden; padding: 6px 0; }
+  .nav-menu.open { display: block; }
+  .nav-menu-item { padding: 10px 18px; font-size: 13px; color: #1e293b; cursor: pointer; transition: background 0.15s; white-space: nowrap; }
+  .nav-menu-item:hover { background: #eff6ff; color: #1d4ed8; }
+  .nav-menu-item.active { background: #eff6ff; color: #1d4ed8; font-weight: 600; }
+
+  /* PAGE VIEWS */
+  .page-view { display: none; }
+  .page-view.active { display: block; }
+
+  /* BO IMPORTS PAGE */
+  .bo-tabs { display: flex; gap: 0; border-bottom: 2px solid #e5eaf2; padding: 0 20px; background: white; }
+  .bo-tab { padding: 12px 18px; border: none; background: none; color: #64748b; font-size: 13px; font-weight: 600; cursor: pointer; border-bottom: 3px solid transparent; margin-bottom: -2px; }
+  .bo-tab.active { color: #1d4ed8; border-bottom-color: #1d4ed8; }
+  .bo-page-title { font-size: 18px; font-weight: 700; color: #1e293b; padding: 16px 20px 8px; }
+  .bo-status { border-radius: 6px; padding: 3px 10px; font-size: 11px; font-weight: 700; display: inline-block; white-space: nowrap; }
+  .bo-pending { background: #fef9c3; color: #854d0e; }
+  .bo-activated { background: #dcfce7; color: #15803d; }
+  .bo-tl-badge { background: #ede9fe; color: #6d28d9; border-radius: 6px; padding: 3px 9px; font-size: 11px; font-weight: 600; display: inline-block; }
+  .bo-checkbox { width: 15px; height: 15px; accent-color: #1d4ed8; cursor: pointer; }
+
+  /* MAP PAGE */
+  #mapContainer { display: flex; height: calc(100vh - 165px); }
+  .map-sidebar-left { width: 260px; background: white; border-right: 1px solid #e5eaf2; overflow-y: auto; flex-shrink: 0; }
+  .map-sidebar-right { width: 240px; background: white; border-left: 1px solid #e5eaf2; overflow-y: auto; flex-shrink: 0; padding: 14px; }
+  #leafletMap { flex: 1; }
+  .map-panel { border-bottom: 1px solid #f1f5f9; }
+  .map-panel-head { padding: 12px 14px; font-size: 11px; font-weight: 700; color: #475569; text-transform: uppercase; letter-spacing: 0.4px; display: flex; justify-content: space-between; align-items: center; cursor: pointer; background: #f8fafc; }
+  .map-panel-head .badge-num { background: #1d4ed8; color: white; border-radius: 10px; padding: 1px 8px; font-size: 11px; }
+  .map-brgy-item { padding: 8px 14px; font-size: 12px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #f8fafc; }
+  .map-brgy-rank { color: #94a3b8; font-weight: 700; margin-right: 8px; }
+  .map-brgy-name { flex: 1; color: #1e293b; }
+  .map-brgy-loc { color: #94a3b8; font-size: 10px; margin-right: 8px; }
+  .map-brgy-count { background: #f1f5f9; border-radius: 5px; padding: 1px 8px; font-weight: 700; color: #475569; font-size: 11px; }
+  .layer-section-title { font-size: 11px; font-weight: 700; color: #94a3b8; text-transform: uppercase; margin: 14px 0 8px; }
+  .layer-item { display: flex; align-items: center; gap: 8px; padding: 5px 0; font-size: 12px; color: #1e293b; cursor: pointer; }
+  .layer-item input { accent-color: #1d4ed8; }
+  .map-tabs { display: flex; border-bottom: 1px solid #e2e8f0; margin-bottom: 12px; }
+  .map-tab { flex: 1; padding: 8px; border: none; background: none; font-size: 11px; font-weight: 600; color: #64748b; cursor: pointer; border-bottom: 2px solid transparent; }
+  .map-tab.active { color: #1d4ed8; border-bottom-color: #1d4ed8; }
+  .team-legend-item { display: flex; align-items: center; gap: 6px; padding: 5px 0; font-size: 11px; border-bottom: 1px solid #f8fafc; }
+  .team-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+  .team-stats { margin-left: auto; color: #64748b; font-size: 10px; }
+
 </style>
 </head>
 <body class="density-normal">
@@ -514,7 +563,14 @@
   <span class="nav-sep">|</span>
   <span id="navDate" style="color:rgba(255,255,255,0.8);font-size:12px;white-space:nowrap;"></span>
   <div class="nav-spacer"></div>
-  <button class="nav-btn">New Installation ▾</button>
+  <div class="nav-dropdown">
+    <button class="nav-btn" id="niBtn">New Installation ▾</button>
+    <div class="nav-menu" id="niMenu">
+      <div class="nav-menu-item active" data-page="dashboard" data-view="map">NI Dashboard</div>
+      <div class="nav-menu-item" data-page="bo">BO Imports</div>
+      <div class="nav-menu-item" data-page="dashboard" data-view="table">For Dispatch</div>
+    </div>
+  </div>
   <button class="nav-btn">Migration ▾</button>
   <button class="nav-btn">Reports</button>
   <button class="nav-btn">NAP Locator</button>
@@ -551,6 +607,9 @@
   </div>
   <div class="nav-avatar">FB</div>
 </div>
+
+<!-- ============ DASHBOARD PAGE ============ -->
+<div class="page-view active" id="page-dashboard">
 
 <!-- FILTER BAR -->
 <div class="filterbar sticky-top">
@@ -650,6 +709,93 @@
 </div><div class="footer-bar sticky-top" style="flex-shrink:0;">
   <span><span id="rowCount">0</span> Job Orders</span>
   <span id="dateLabel" style="color:#94a3b8;font-size:11px;"></span>
+</div>
+
+</div><!-- ============ END DASHBOARD PAGE ============ -->
+
+<!-- ============ BO IMPORTS PAGE ============ -->
+<div class="page-view" id="page-bo">
+  <div class="filterbar sticky-top">
+    <input class="search-input" id="boSearch" type="text" placeholder="Search JO#, name, account...">
+    <button class="date-nav" id="boPrev">‹</button>
+    <button class="date-nav" id="boNext">›</button>
+    <span class="date-label">Date from:</span>
+    <input class="date-input" type="date" id="boDateFrom">
+    <span class="date-label">to:</span>
+    <input class="date-input" type="date" id="boDateTo">
+    <button class="today-btn" id="boToday">Today</button>
+    <button class="view-btn" id="boViewAll" style="margin-left:8px;">View All</button>
+    <div class="filter-spacer"></div>
+  </div>
+  <div class="bo-tabs">
+    <button class="bo-tab active" id="boTabImports" onclick="switchBoTab('imports')">Back Office Imports</button>
+    <button class="bo-tab" id="boTabTurnins" onclick="switchBoTab('turnins')">Turn-ins: <span id="turninCount">0</span></button>
+  </div>
+  <div class="bo-page-title" id="boPageTitle">Back Office Imports</div>
+  <div class="table-section">
+    <div class="table-wrap">
+      <table id="boTable">
+        <thead id="boThead"></thead>
+        <tbody id="boTableBody">
+          <tr class="loading-row"><td colspan="12"><span class="spinner"></span>Loading imports...</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+  <div class="footer-bar"><span id="boRowCount">0</span> records</div>
+</div>
+
+<!-- ============ MAP PAGE (NI DASHBOARD) ============ -->
+<div class="page-view" id="page-map">
+  <div class="summary-row sticky-top" id="mapSummaryRow">
+    <button class="new-install-btn">⊕ NEW INSTALLATION</button>
+    <div class="sum-card pending"><span class="sum-label">Pending</span><span class="sum-count" id="mapCntPending">0</span></div>
+    <div class="sum-card active"><span class="sum-label">Active / Complete</span><span class="sum-count" id="mapCntActive">0</span></div>
+    <div class="sum-card rescheduled"><span class="sum-label">Rescheduled</span><span class="sum-count" id="mapCntResched">0</span></div>
+    <div class="sum-card cancelled"><span class="sum-label">Cancelled</span><span class="sum-count" id="mapCntCancel">0</span></div>
+  </div>
+  <div id="mapContainer">
+    <!-- LEFT SIDEBAR -->
+    <div class="map-sidebar-left">
+      <div class="map-panel">
+        <div class="map-panel-head">Top Barangays (Pending) <span class="badge-num" id="brgyPendingTotal">0</span></div>
+        <div id="brgyPendingList"></div>
+      </div>
+      <div class="map-panel">
+        <div class="map-panel-head">Barangay with High Completion</div>
+        <div id="brgyCompletionList"></div>
+      </div>
+      <div class="map-panel">
+        <div class="map-panel-head">Barangay with High Rescheduled <span class="badge-num" id="brgyReschedTotal">0</span></div>
+        <div id="brgyReschedList"></div>
+      </div>
+      <div class="map-panel">
+        <div class="map-panel-head">Barangay with High Cancelled <span class="badge-num" id="brgyCancelTotal">0</span></div>
+        <div id="brgyCancelList"></div>
+      </div>
+    </div>
+    <!-- MAP -->
+    <div id="leafletMap"></div>
+    <!-- RIGHT SIDEBAR -->
+    <div class="map-sidebar-right">
+      <div class="map-tabs">
+        <button class="map-tab active">Layers</button>
+        <button class="map-tab">Subscriber</button>
+        <button class="map-tab">Municipality</button>
+      </div>
+      <div class="layer-section-title">Layers</div>
+      <label class="layer-item"><input type="checkbox" id="layerStreet"> Street Map</label>
+      <label class="layer-item"><input type="checkbox" id="layerSatellite" checked> Satellite</label>
+      <label class="layer-item"><input type="checkbox" id="layerStreetNames" checked> Street/Road Names</label>
+      <label class="layer-item"><input type="checkbox" id="layerLandmarks"> Landmarks</label>
+      <label class="layer-item"><input type="checkbox" id="layerCityBound" checked> City Boundaries</label>
+      <label class="layer-item"><input type="checkbox" id="layerBrgyBound"> Barangay Boundaries</label>
+      <label class="layer-item"><input type="checkbox" id="layerBrgyNames"> Barangay Names</label>
+      <label class="layer-item"><input type="checkbox" id="layerMobileUsers"> Mobile Users</label>
+      <div class="layer-section-title">Teams Today</div>
+      <div id="teamsLegend"></div>
+    </div>
+  </div>
 </div>
 
 <!-- MODAL -->
@@ -915,6 +1061,7 @@
       allOrders = r1.data||[];
       shown = allOrders;
       render(shown); summary(shown); updateDateLabel();
+      if (mapInitialized && document.getElementById('page-map').classList.contains('active')) updateMapData();
       document.getElementById('notifBadge').textContent = allOrders.filter(function(o){return o.status==='Pending';}).length;
     } catch(err) {
       document.getElementById('tableBody').innerHTML =
@@ -1421,6 +1568,270 @@
       load();
     } catch(err) { showToast('Error: ' + err.message, 'error'); }
   };
+
+  /* ════════════ PAGE NAVIGATION ════════════ */
+  var leafletMap = null;
+  var mapInitialized = false;
+  var mapMarkers = [];
+
+  // Barangay approximate coordinates (Metro Manila east)
+  var BRGY_COORDS = {
+    'PINAGBUHATAN': [14.5547, 121.0962], 'TUMANA': [14.6504, 121.0993],
+    'PLAINVIEW': [14.5765, 121.0345], 'ROSARIO': [14.5890, 121.0890],
+    'MALANDAY': [14.6680, 121.1010], 'BAMBANG': [14.5780, 121.0510],
+    'CONCEPCION UNO': [14.6520, 121.1080], 'NANGKA': [14.6750, 121.1180],
+    'CANIOGAN': [14.5640, 121.0790], 'MAYBUNGA': [14.5680, 121.0890],
+    'SANTOLAN': [14.6200, 121.0850], 'SANTO NIÑO': [14.6450, 121.1000],
+    'WACK-WACK GREENHILLS': [14.5950, 121.0450], 'HAGDANG BATO LIBIS': [14.5850, 121.0380],
+    'HULO': [14.5800, 121.0340], 'BARANGKA IBABA': [14.5950, 121.0320],
+    'HIGHWAY HILLS': [14.5810, 121.0420], 'ADDITION HILLS': [14.6000, 121.0380],
+    'SAN JOSE': [14.5700, 121.0500], 'SANTA LUCIA': [14.5750, 121.0950],
+    'KALAWAAN': [14.5500, 121.0850], 'SAN MIGUEL': [14.5650, 121.0780],
+    'NEW ZAÑIGA': [14.5900, 121.0400], 'PAG-ASA': [14.5680, 121.0820],
+    'DELA PAZ': [14.5750, 121.0900], 'BARANGKA ILAYA': [14.5980, 121.0310],
+    'SAGAD': [14.5820, 121.0870], 'MANGGAHAN': [14.5900, 121.0980],
+    'SAN ANTONIO': [14.5720, 121.0620], 'KALUMPANG': [14.6300, 121.0950],
+    'CONCEPCION DOS': [14.6600, 121.1150], 'MABINI-J. RIZAL': [14.5950, 121.0350],
+    'HAGDANG BATO ITAAS': [14.5870, 121.0390], 'MALANDAY MARIKINA': [14.6680, 121.1010]
+  };
+  var MAP_CENTER = [14.5950, 121.0750];
+
+  function switchPage(page, view) {
+    document.querySelectorAll('.page-view').forEach(function(p){ p.classList.remove('active'); });
+
+    if (page === 'bo') {
+      document.getElementById('page-bo').classList.add('active');
+      loadBoImports();
+    } else if (page === 'dashboard' && view === 'map') {
+      document.getElementById('page-map').classList.add('active');
+      setTimeout(initMap, 100);
+    } else {
+      document.getElementById('page-dashboard').classList.add('active');
+    }
+
+    // Update menu active states
+    document.querySelectorAll('.nav-menu-item').forEach(function(mi){ mi.classList.remove('active'); });
+  }
+
+  // NI dropdown toggle
+  document.getElementById('niBtn').addEventListener('click', function(e){
+    e.stopPropagation();
+    document.getElementById('niMenu').classList.toggle('open');
+  });
+  document.querySelectorAll('#niMenu .nav-menu-item').forEach(function(item){
+    item.addEventListener('click', function(e){
+      e.stopPropagation();
+      document.querySelectorAll('#niMenu .nav-menu-item').forEach(function(x){x.classList.remove('active');});
+      this.classList.add('active');
+      switchPage(this.dataset.page, this.dataset.view);
+      document.getElementById('niMenu').classList.remove('open');
+    });
+  });
+  document.addEventListener('click', function(){
+    document.getElementById('niMenu').classList.remove('open');
+  });
+
+  // Table/Map buttons in filter bar
+  document.querySelectorAll('#page-dashboard .view-btn').forEach(function(btn){
+    btn.addEventListener('click', function(){
+      if (this.textContent.indexOf('Map') >= 0) {
+        switchPage('dashboard','map');
+      }
+    });
+  });
+
+  /* ════════════ BO IMPORTS PAGE ════════════ */
+  var boActiveTab = 'imports';
+  var boData = [];
+
+  window.switchBoTab = function(tab) {
+    boActiveTab = tab;
+    document.getElementById('boTabImports').classList.toggle('active', tab==='imports');
+    document.getElementById('boTabTurnins').classList.toggle('active', tab==='turnins');
+    document.getElementById('boPageTitle').textContent = tab==='imports' ? 'Back Office Imports' : 'Turn-ins';
+    renderBo();
+  };
+
+  async function loadBoImports() {
+    document.getElementById('boTableBody').innerHTML = '<tr class="loading-row"><td colspan="12"><span class="spinner"></span>Loading...</td></tr>';
+    try {
+      var r = await db.from('back_office_imports').select('*').order('created_at', { ascending: false });
+      if (r.error) throw r.error;
+      boData = r.data || [];
+      document.getElementById('turninCount').textContent = boData.length;
+      renderBo();
+    } catch(err) {
+      document.getElementById('boTableBody').innerHTML = '<tr class="loading-row"><td colspan="12" style="color:#ef4444;">Error: '+err.message+'</td></tr>';
+    }
+  }
+
+  function renderBo() {
+    var thead = document.getElementById('boThead');
+    var tbody = document.getElementById('boTableBody');
+
+    if (boActiveTab === 'imports') {
+      thead.innerHTML = '<tr><th>Count</th><th><input type="checkbox" class="bo-checkbox"></th><th>Turn-in Date</th><th>Reference ID</th><th>JO Number</th><th>Account Number</th><th>Customer Name</th><th>Assigned TL</th><th>Sales Agent</th><th>Status</th><th>Uploaded By</th><th>Action</th></tr>';
+    } else {
+      thead.innerHTML = '<tr><th>Count</th><th>Turn-in Date</th><th>Dispatch Date</th><th>Reference ID</th><th>JO Number</th><th>Account Number</th><th>Customer Name</th><th>Assigned TL</th><th>Sales Agent</th><th>BO Status</th><th>Uploaded By</th></tr>';
+    }
+
+    if (!boData.length) {
+      var cols = boActiveTab === 'imports' ? 12 : 11;
+      tbody.innerHTML = '<tr class="loading-row"><td colspan="'+cols+'">No records found. Import data via CSV to populate this page.</td></tr>';
+      document.getElementById('boRowCount').textContent = '0';
+      return;
+    }
+
+    var html = '';
+    boData.forEach(function(r, i) {
+      var statusClass = (r.status === 'Activated') ? 'bo-activated' : 'bo-pending';
+      var statusText = r.status || 'Pending Review';
+      var tlBadge = r.assigned_tl ? '<span class="bo-tl-badge">'+r.assigned_tl+'</span>' : '—';
+      if (boActiveTab === 'imports') {
+        html += '<tr>'
+          +'<td class="count-cell">'+(i+1)+'</td>'
+          +'<td><input type="checkbox" class="bo-checkbox"></td>'
+          +'<td>'+v(r.turnin_date)+'</td>'
+          +'<td>'+v(r.reference_id)+'</td>'
+          +'<td><span class="jo-link has-team">'+v(r.jo_number)+'</span></td>'
+          +'<td>'+v(r.account_number)+'</td>'
+          +'<td>'+v(r.customer_name)+'</td>'
+          +'<td>'+tlBadge+'</td>'
+          +'<td>'+v(r.sales_agent)+'</td>'
+          +'<td><span class="bo-status '+statusClass+'">'+statusText+'</span></td>'
+          +'<td>'+v(r.uploaded_by)+'</td>'
+          +'<td><span style="color:#1d4ed8;cursor:pointer;font-size:11px;">Review</span></td>'
+          +'</tr>';
+      } else {
+        html += '<tr>'
+          +'<td class="count-cell">'+(i+1)+'</td>'
+          +'<td>'+v(r.turnin_date)+'</td>'
+          +'<td>'+v(r.dispatch_date)+'</td>'
+          +'<td>'+v(r.reference_id)+'</td>'
+          +'<td><span class="jo-link has-team">'+v(r.jo_number)+'</span></td>'
+          +'<td>'+v(r.account_number)+'</td>'
+          +'<td>'+v(r.customer_name)+'</td>'
+          +'<td>'+tlBadge+'</td>'
+          +'<td>'+v(r.sales_agent)+'</td>'
+          +'<td><span class="bo-status '+statusClass+'">'+statusText+'</span></td>'
+          +'<td>'+v(r.uploaded_by)+'</td>'
+          +'</tr>';
+      }
+    });
+    tbody.innerHTML = html;
+    document.getElementById('boRowCount').textContent = boData.length;
+  }
+
+  document.getElementById('boToday').addEventListener('click', loadBoImports);
+  document.getElementById('boViewAll').addEventListener('click', loadBoImports);
+  document.getElementById('boSearch').addEventListener('input', function(){
+    var q = this.value.toLowerCase().trim();
+    var tbody = document.getElementById('boTableBody');
+    // simple client filter handled by re-render
+  });
+
+  /* ════════════ MAP (NI DASHBOARD) ════════════ */
+  function initMap() {
+    if (!mapInitialized) {
+      leafletMap = L.map('leafletMap').setView(MAP_CENTER, 12);
+      L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+        attribution: 'Esri', maxZoom: 19
+      }).addTo(leafletMap);
+      mapInitialized = true;
+    }
+    setTimeout(function(){ leafletMap.invalidateSize(); }, 200);
+    updateMapData();
+  }
+
+  function updateMapData() {
+    if (!leafletMap) return;
+    // Clear old markers
+    mapMarkers.forEach(function(m){ leafletMap.removeLayer(m); });
+    mapMarkers = [];
+
+    // Use allOrders (loaded for the date)
+    var statusColors = { 'Completed':'#16a34a','Pending':'#f59e0b','Rescheduled':'#f97316','Cancelled':'#ef4444' };
+
+    allOrders.forEach(function(o) {
+      var coords = BRGY_COORDS[o.barangay];
+      if (!coords) return;
+      // jitter so pins don't stack
+      var lat = coords[0] + (Math.random()-0.5)*0.008;
+      var lng = coords[1] + (Math.random()-0.5)*0.008;
+      var color = statusColors[o.status] || '#64748b';
+      var marker = L.circleMarker([lat,lng], {
+        radius: 7, fillColor: color, color: 'white', weight: 2, fillOpacity: 0.9
+      }).addTo(leafletMap);
+      marker.bindPopup('<b>'+o.customer_name+'</b><br>'+o.jo_number+'<br>'+o.barangay+'<br>Status: '+o.status);
+      mapMarkers.push(marker);
+    });
+
+    // Update map KPI counts
+    var setMC = function(id,val){ var el=document.getElementById(id); if(el) el.textContent=val; };
+    setMC('mapCntPending', allOrders.filter(function(r){return r.status==='Pending';}).length);
+    setMC('mapCntActive', allOrders.filter(function(r){return r.gofib_status==='Active'||r.status==='Completed';}).length);
+    setMC('mapCntResched', allOrders.filter(function(r){return r.status==='Rescheduled';}).length);
+    setMC('mapCntCancel', allOrders.filter(function(r){return r.status==='Cancelled';}).length);
+
+    buildBrgyPanels();
+    buildTeamsLegend();
+  }
+
+  function buildBrgyPanels() {
+    function countBy(filterFn) {
+      var counts = {};
+      allOrders.filter(filterFn).forEach(function(o){
+        if (!o.barangay) return;
+        counts[o.barangay] = (counts[o.barangay]||0) + 1;
+      });
+      return Object.keys(counts).map(function(k){ return {name:k, count:counts[k]}; })
+        .sort(function(a,b){ return b.count - a.count; });
+    }
+    function brgyLoc(name) {
+      // crude municipality guess
+      var pasig = ['PINAGBUHATAN','CANIOGAN','MAYBUNGA','SANTOLAN','SANTA LUCIA','KALAWAAN','SAN MIGUEL','DELA PAZ','SAGAD','MANGGAHAN','SAN ANTONIO','SAN JOSE','ROSARIO','SANTO NIÑO'];
+      var marikina = ['TUMANA','MALANDAY','CONCEPCION UNO','CONCEPCION DOS','NANGKA','KALUMPANG'];
+      if (pasig.indexOf(name) >= 0) return 'PASIG';
+      if (marikina.indexOf(name) >= 0) return 'MARIKINA';
+      return 'MANDALUYONG';
+    }
+    function fill(listId, totalId, data) {
+      var el = document.getElementById(listId);
+      if (!el) return;
+      el.innerHTML = data.slice(0,8).map(function(b,i){
+        return '<div class="map-brgy-item"><span><span class="map-brgy-rank">'+(i+1)+'.</span><span class="map-brgy-name">'+b.name+'</span></span><span><span class="map-brgy-loc">'+brgyLoc(b.name)+'</span><span class="map-brgy-count">'+b.count+'</span></span></div>';
+      }).join('') || '<div style="padding:12px;color:#94a3b8;font-size:11px;">None</div>';
+      if (totalId) { var t=document.getElementById(totalId); if(t) t.textContent = data.length; }
+    }
+    fill('brgyPendingList','brgyPendingTotal', countBy(function(r){return r.status==='Pending';}));
+    fill('brgyCompletionList',null, countBy(function(r){return r.status==='Completed';}));
+    fill('brgyReschedList','brgyReschedTotal', countBy(function(r){return r.status==='Rescheduled';}));
+    fill('brgyCancelList','brgyCancelTotal', countBy(function(r){return r.status==='Cancelled';}));
+  }
+
+  function buildTeamsLegend() {
+    var el = document.getElementById('teamsLegend');
+    if (!el) return;
+    var colors = ['#ef4444','#8b5cf6','#0d9488','#f59e0b','#3b82f6','#ec4899'];
+    var teamsWithJobs = {};
+    allOrders.forEach(function(o){
+      if (!o.team_id) return;
+      var tn = teamNum(o.team_id);
+      if (!tn) return;
+      if (!teamsWithJobs[tn]) teamsWithJobs[tn] = { pending:0, completed:0, cancelled:0, resched:0 };
+      if (o.status==='Pending') teamsWithJobs[tn].pending++;
+      if (o.status==='Completed') teamsWithJobs[tn].completed++;
+      if (o.status==='Cancelled') teamsWithJobs[tn].cancelled++;
+      if (o.status==='Rescheduled') teamsWithJobs[tn].resched++;
+    });
+    var keys = Object.keys(teamsWithJobs);
+    if (!keys.length) { el.innerHTML = '<div style="color:#94a3b8;font-size:11px;padding:8px 0;">No teams dispatched today</div>'; return; }
+    el.innerHTML = keys.map(function(tn,i){
+      var s = teamsWithJobs[tn];
+      var c = colors[i % colors.length];
+      return '<div class="team-legend-item"><span class="team-dot" style="background:'+c+'"></span>'+tn+'<span class="team-stats">P'+s.pending+' C'+s.completed+' X'+s.cancelled+' R'+s.resched+'</span></div>';
+    }).join('');
+  }
 
   load();
 })();
