@@ -16,7 +16,7 @@
   thead th { position: sticky; top: 0; z-index: 10; background: #f1f5f9 !important; }
 
   /* NAVBAR */
-  .topnav { background: linear-gradient(135deg, #0f3460 0%, #1d4ed8 100%); height: 52px; display: flex; align-items: center; padding: 0 20px; gap: 14px; position: sticky; top: 0; z-index: 100; box-shadow: 0 2px 8px rgba(0,0,0,0.12); }
+  .topnav { background: linear-gradient(135deg, #0f3460 0%, #1d4ed8 100%); height: 52px; display: flex; align-items: center; padding: 0 20px; gap: 14px; position: sticky; top: 0; z-index: 9000; box-shadow: 0 2px 8px rgba(0,0,0,0.12); }
   .logo { display: flex; align-items: center; gap: 10px; margin-right: 10px; }
   .logo-icon { width: 32px; height: 32px; background: rgba(255,255,255,0.15); border-radius: 8px; display: flex; align-items: center; justify-content: center; }
   .logo-text { color: white; font-size: 14px; font-weight: 700; white-space: nowrap; }
@@ -39,7 +39,7 @@
   .density-check { color: #1d4ed8; font-weight: 700; margin-left: auto; }
 
   /* FILTER BAR */
-  .filterbar { background: white; border-bottom: 1px solid #e5eaf2; padding: 10px 20px; display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+  .filterbar { background: white; border-bottom: 1px solid #e5eaf2; padding: 10px 20px; display: flex; align-items: center; gap: 10px; flex-wrap: wrap; position: relative; z-index: 20; }
   .search-input { border: 1px solid #dce3ed; border-radius: 8px; padding: 7px 12px; font-size: 12px; width: 200px; outline: none; background: #f7f9fc; }
   .search-input:focus { border-color: #1d4ed8; background: white; box-shadow: 0 0 0 3px rgba(29,78,216,0.08); }
   .date-nav { background: #1d4ed8; color: white; border: none; width: 30px; height: 30px; border-radius: 6px; cursor: pointer; font-size: 16px; display: flex; align-items: center; justify-content: center; }
@@ -56,7 +56,7 @@
   .view-btn.active { background: #1d4ed8; color: white; border-color: #1d4ed8; }
 
   /* KPI CARDS */
-  .summary-row { display: flex; gap: 10px; padding: 12px 20px; background: white; border-bottom: 1px solid #e5eaf2; flex-wrap: wrap; align-items: stretch; }
+  .summary-row { display: flex; gap: 10px; padding: 12px 20px; background: white; border-bottom: 1px solid #e5eaf2; flex-wrap: wrap; align-items: stretch; position: relative; z-index: 10; }
   .new-install-btn { background: linear-gradient(135deg, #1d4ed8, #1e40af); color: white; border: none; padding: 10px 16px; border-radius: 8px; font-size: 12px; font-weight: 700; cursor: pointer; white-space: nowrap; display: flex; align-items: center; gap: 6px; }
   .sum-card { flex: 1; min-width: 160px; border-radius: 10px; border: 1px solid; padding: 12px 16px; display: flex; flex-direction: column; gap: 6px; }
   .sum-card.pending { background: linear-gradient(135deg, #fffbeb, #fef3c7); border-color: #fcd34d; }
@@ -83,10 +83,10 @@
   .sub-pill { background: rgba(0,0,0,0.06); border-radius: 4px; padding: 2px 7px; font-size: 10px; font-weight: 500; white-space: nowrap; cursor: pointer; transition: all 0.15s; border: 1.5px solid transparent; }
   .sub-pill:hover { background: rgba(0,0,0,0.12); }
   .sub-pill.active-filter { background: #1d4ed8; color: white; border-color: #1d4ed8; }
-  .sum-card.pending .sub-pill.active-filter { background: #92400e; border-color: #92400e; color: white; }
-  .sum-card.active .sub-pill.active-filter { background: #15803d; border-color: #15803d; color: white; }
-  .sum-card.rescheduled .sub-pill.active-filter { background: #1d4ed8; border-color: #1d4ed8; color: white; }
-  .sum-card.cancelled .sub-pill.active-filter { background: #b91c1c; border-color: #b91c1c; color: white; }
+  .sum-card.pending .sub-pill.active-filter { background: #92400e; border-color: #92400e; color: white; box-shadow: none; }
+  .sum-card.active .sub-pill.active-filter { background: #15803d; border-color: #15803d; color: white; box-shadow: none; }
+  .sum-card.rescheduled .sub-pill.active-filter { background: #1d4ed8; border-color: #1d4ed8; color: white; box-shadow: none; }
+  .sum-card.cancelled .sub-pill.active-filter { background: #b91c1c; border-color: #b91c1c; color: white; box-shadow: none; }
 
   /* TABLE */
   .table-wrap { padding: 0 20px 10px; background: white; }
@@ -440,7 +440,7 @@
 
   /* NAV DROPDOWN */
   .nav-dropdown { position: relative; }
-  .nav-menu { display: none; position: absolute; top: 40px; left: 0; background: white; border: 1px solid #e2e8f0; border-radius: 10px; box-shadow: 0 8px 24px rgba(0,0,0,0.15); z-index: 400; min-width: 180px; overflow: hidden; padding: 6px 0; }
+  .nav-menu { display: none; position: absolute; top: 40px; left: 0; background: white; border: 1px solid #e2e8f0; border-radius: 10px; box-shadow: 0 8px 24px rgba(0,0,0,0.15); z-index: 9000; min-width: 180px; overflow: hidden; padding: 6px 0; }
   .nav-menu.open { display: block; }
   .nav-menu-item { padding: 10px 18px; font-size: 13px; color: #1e293b; cursor: pointer; transition: background 0.15s; white-space: nowrap; }
   .nav-menu-item:hover { background: #eff6ff; color: #1d4ed8; }
@@ -670,8 +670,8 @@
   </div>
 
   <div class="teams-badge">TEAMS <span id="teamCount">0</span></div>
-  <button class="view-btn active">⊞ Table</button>
-  <button class="view-btn">🗺 Map</button>
+  <button class="view-btn active" id="btnTableView">⊞ Table</button>
+  <button class="view-btn" id="btnMapView">🗺 Map</button>
 </div>
 
 <!-- KPI CARDS -->
@@ -1178,11 +1178,15 @@
     // Toggle off if same filter clicked
     if (activeFilter === filterType) {
       activeFilter = null;
-      document.querySelectorAll('.sub-pill').forEach(function(p){ p.classList.remove('active-filter'); });
+      ['subWT','subWOT','subGF','subJO','subBoth','subResOther','subResCust','subResPerm','subCancelNAP','subCancelOther'].forEach(function(id){
+        var el = document.getElementById(id); if(el) el.classList.remove('active-filter');
+      });
       render(allOrders); summary(allOrders); return;
     }
     activeFilter = filterType;
-    document.querySelectorAll('.sub-pill').forEach(function(p){ p.classList.remove('active-filter'); });
+    ['subWT','subWOT','subGF','subJO','subBoth','subResOther','subResCust','subResPerm','subCancelNAP','subCancelOther'].forEach(function(id){
+      var el = document.getElementById(id); if(el) el.classList.remove('active-filter');
+    });
     var filterToId = {
       'with-team':'subWT','without-team':'subWOT',
       'gf':'subGF','jo':'subJO','both':'subBoth',
@@ -1640,11 +1644,26 @@
     if (page === 'bo') {
       document.getElementById('page-bo').classList.add('active');
       loadBoImports();
+      // Reset table/map buttons
+      var tb = document.getElementById('btnTableView');
+      var mb = document.getElementById('btnMapView');
+      if(tb) { tb.classList.remove('active'); }
+      if(mb) { mb.classList.remove('active'); }
     } else if (page === 'dashboard' && view === 'map') {
       document.getElementById('page-map').classList.add('active');
       setTimeout(initMap, 100);
+      // Set Map button active
+      var tb = document.getElementById('btnTableView');
+      var mb = document.getElementById('btnMapView');
+      if(tb) tb.classList.remove('active');
+      if(mb) mb.classList.add('active');
     } else {
       document.getElementById('page-dashboard').classList.add('active');
+      // Set Table button active
+      var tb = document.getElementById('btnTableView');
+      var mb = document.getElementById('btnMapView');
+      if(tb) tb.classList.add('active');
+      if(mb) mb.classList.remove('active');
     }
 
     // Update menu active states
@@ -1670,12 +1689,15 @@
   });
 
   // Table/Map buttons in filter bar
-  document.querySelectorAll('#page-dashboard .view-btn').forEach(function(btn){
-    btn.addEventListener('click', function(){
-      if (this.textContent.indexOf('Map') >= 0) {
-        switchPage('dashboard','map');
-      }
-    });
+  document.getElementById('btnTableView').addEventListener('click', function(){
+    switchPage('dashboard','table');
+    document.getElementById('btnTableView').classList.add('active');
+    document.getElementById('btnMapView').classList.remove('active');
+  });
+  document.getElementById('btnMapView').addEventListener('click', function(){
+    switchPage('dashboard','map');
+    document.getElementById('btnMapView').classList.add('active');
+    document.getElementById('btnTableView').classList.remove('active');
   });
 
   /* ════════════ BO IMPORTS PAGE ════════════ */
