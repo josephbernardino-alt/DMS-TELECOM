@@ -1865,36 +1865,36 @@
     if (!mapInitialized) {
       leafletMap = L.map('leafletMap', { zoomControl: true }).setView(MAP_CENTER, 13);
 
-      /* Base layers */
+      /* Base layers - all HTTPS compatible */
       mapLayers.satellite = L.tileLayer(
-        'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
-        { attribution: '© Esri', maxZoom: 19 }
+        'https://mt{s}.google.com/vt/lyrs=s&x={x}&y={y}&z={z}',
+        { attribution: '© Google', maxZoom: 20, subdomains: ['0','1','2','3'] }
       );
       mapLayers.street = L.tileLayer(
-        'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
-        { attribution: '© OpenStreetMap', maxZoom: 19 }
+        'https://mt{s}.google.com/vt/lyrs=m&x={x}&y={y}&z={z}',
+        { attribution: '© Google', maxZoom: 20, subdomains: ['0','1','2','3'] }
       );
 
       /* Overlay layers */
       mapLayers.streetNames = L.tileLayer(
-        'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
-        { attribution: '© OpenStreetMap', maxZoom: 19, opacity: 0.4 }
+        'https://mt{s}.google.com/vt/lyrs=h&x={x}&y={y}&z={z}',
+        { attribution: '© Google', maxZoom: 20, subdomains: ['0','1','2','3'], opacity: 0.8 }
       );
       mapLayers.landmarks = L.tileLayer(
-        'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
-        { attribution: '© OpenStreetMap', maxZoom: 19, opacity: 0.6 }
+        'https://mt{s}.google.com/vt/lyrs=r&x={x}&y={y}&z={z}',
+        { attribution: '© Google', maxZoom: 20, subdomains: ['0','1','2','3'], opacity: 0.7 }
       );
       mapLayers.cityBoundaries = L.tileLayer(
-        'https://stamen-tiles-{s}.a.ssl.fastly.net/toner-lines/{z}/{x}/{y}.png',
-        { attribution: '© Stamen', maxZoom: 19, opacity: 0.5 }
+        'https://mt{s}.google.com/vt/lyrs=p&x={x}&y={y}&z={z}',
+        { attribution: '© Google', maxZoom: 20, subdomains: ['0','1','2','3'], opacity: 0.4 }
       );
       mapLayers.brgyBoundaries = L.tileLayer(
-        'https://stamen-tiles-{s}.a.ssl.fastly.net/toner-lines/{z}/{x}/{y}.png',
-        { attribution: '© Stamen', maxZoom: 19, opacity: 0.3 }
+        'https://mt{s}.google.com/vt/lyrs=p&x={x}&y={y}&z={z}',
+        { attribution: '© Google', maxZoom: 20, subdomains: ['0','1','2','3'], opacity: 0.3 }
       );
       mapLayers.brgyNames = L.tileLayer(
-        'https://stamen-tiles-{s}.a.ssl.fastly.net/toner-labels/{z}/{x}/{y}.png',
-        { attribution: '© Stamen', maxZoom: 19, opacity: 0.7 }
+        'https://mt{s}.google.com/vt/lyrs=h&x={x}&y={y}&z={z}',
+        { attribution: '© Google', maxZoom: 20, subdomains: ['0','1','2','3'], opacity: 0.9 }
       );
 
       /* Mobile users layer - shows team markers */
