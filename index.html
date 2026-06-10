@@ -1726,7 +1726,7 @@
       var statusText = r.status || 'Pending Review';
       var tlBadge = r.assigned_tl ? '<span class="bo-tl-badge">'+r.assigned_tl+'</span>' : '—';
       if (boActiveTab === 'imports') {
-        html += '<tr>'
+        html += '<tr onclick="openStagingModal('+i+')" style="cursor:pointer;">'
           +'<td class="count-cell">'+(i+1)+'</td>'
           +'<td><input type="checkbox" class="bo-checkbox"></td>'
           +'<td>'+v(r.turnin_date)+'</td>'
