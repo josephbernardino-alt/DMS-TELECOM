@@ -63,6 +63,7 @@
   .sum-card.active { background: linear-gradient(135deg, #f0fdf4, #dcfce7); border-color: #86efac; }
   .sum-card.active.dimmed { background: #f8fafc; border-color: #e2e8f0; opacity: 0.6; }
   .sum-card.rescheduled { background: linear-gradient(135deg, #eff6ff, #dbeafe); border-color: #93c5fd; }
+  .sum-card .sub-pill:focus { outline: none; }
   .sum-card.cancelled { background: linear-gradient(135deg, #fef2f2, #fee2e2); border-color: #fca5a5; }
   .sum-card.cancelled.dimmed { background: #f8fafc; border-color: #e2e8f0; opacity: 0.6; }
   .sum-label { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; }
@@ -775,10 +776,39 @@
 <div class="page-view" id="page-map">
   <div class="summary-row sticky-top" id="mapSummaryRow">
     <button class="new-install-btn">⊕ NEW INSTALLATION</button>
-    <div class="sum-card pending"><span class="sum-label">Pending</span><span class="sum-count" id="mapCntPending">0</span></div>
-    <div class="sum-card active"><span class="sum-label">Active / Complete</span><span class="sum-count" id="mapCntActive">0</span></div>
-    <div class="sum-card rescheduled"><span class="sum-label">Rescheduled</span><span class="sum-count" id="mapCntResched">0</span></div>
-    <div class="sum-card cancelled"><span class="sum-label">Cancelled</span><span class="sum-count" id="mapCntCancel">0</span></div>
+    <div class="sum-card pending">
+      <span class="sum-label">Pending</span>
+      <span class="sum-count" id="mapCntPending">0</span>
+      <div class="sum-sub">
+        <span class="sub-pill" id="mapSubWT" onclick="applyMapFilter('with-team')">0 w/ Team</span>
+        <span class="sub-pill" id="mapSubWOT" onclick="applyMapFilter('without-team')">0 w/o Team</span>
+      </div>
+    </div>
+    <div class="sum-card active" id="mapCardActive">
+      <span class="sum-label">Active / Complete</span>
+      <span class="sum-count" id="mapCntActive">0</span>
+      <div class="sum-sub">
+        <span class="sub-pill" id="mapSubGF" onclick="applyMapFilter('gf')">0 GF</span>
+        <span class="sub-pill" id="mapSubJO" onclick="applyMapFilter('jo')">0 JO</span>
+        <span class="sub-pill" id="mapSubBoth" onclick="applyMapFilter('both')">0 Both</span>
+      </div>
+    </div>
+    <div class="sum-card rescheduled">
+      <span class="sum-label">Rescheduled</span>
+      <span class="sum-count" id="mapCntResched">0</span>
+      <div class="sum-sub">
+        <span class="sub-pill" id="mapSubResOther" onclick="applyMapFilter('res-other')">0 Other reason</span>
+        <span class="sub-pill" id="mapSubResCust" onclick="applyMapFilter('res-customer')">0 By customer</span>
+      </div>
+    </div>
+    <div class="sum-card cancelled" id="mapCardCancelled">
+      <span class="sum-label">Cancelled</span>
+      <span class="sum-count" id="mapCntCancel">0</span>
+      <div class="sum-sub">
+        <span class="sub-pill" id="mapSubCancelNAP" onclick="applyMapFilter('can-nap')">0 Full NAP</span>
+        <span class="sub-pill" id="mapSubCancelOther" onclick="applyMapFilter('can-other')">0 Other</span>
+      </div>
+    </div>
   </div>
   <div id="mapContainer">
     <!-- LEFT SIDEBAR -->
@@ -1792,12 +1822,20 @@
 
   /* ════════════ MAP (NI DASHBOARD) ════════════ */
   function houseIcon(color) {
-    var svg = '<svg xmlns="http://www.w3.org/2000/svg" width="22" height="26" viewBox="0 0 22 26">'
-      +'<polygon points="11,2 22,11 18,11 18,24 4,24 4,11 0,11" fill="'+color+'" stroke="white" stroke-width="1.5"/>'
-      +'<rect x="8" y="16" width="6" height="8" fill="white" opacity="0.8"/>'
+    var svg = '<svg xmlns="http://www.w3.org/2000/svg" width="28" height="32" viewBox="0 0 28 32">'
+      +'<filter id="shadow"><feDropShadow dx="0" dy="1" stdDeviation="1" flood-opacity="0.3"/></filter>'
+      +'<g filter="url(#shadow)">'
+      +'<polygon points="14,3 27,13 22,13 22,27 6,27 6,13 1,13" fill="'+color+'" stroke="white" stroke-width="2"/>'
+      +'<rect x="10" y="19" width="8" height="8" rx="1" fill="rgba(255,255,255,0.85)"/>'
+      +'<rect x="11.5" y="19" width="1.5" height="8" fill="'+color+'" opacity="0.4"/>'
+      +'</g>'
       +'</svg>';
     return L.divIcon({
-      html: svg, className: '', iconSize:[22,26], iconAnchor:[11,26], popupAnchor:[0,-26]
+      html: svg,
+      className: '',
+      iconSize: [28, 32],
+      iconAnchor: [14, 32],
+      popupAnchor: [0, -32]
     });
   }
 
@@ -1828,10 +1866,21 @@
       'Rescheduled':'#f97316', 'Cancelled':'#ef4444'
     };
 
-    // Track teams for label positioning
+    renderMapPins(allOrders);
+  }
+
+  function renderMapPins(orders) {
+    // Clear existing pins
+    mapMarkers.forEach(function(m){ leafletMap.removeLayer(m); });
+    mapMarkers = [];
+
+    var statusColors = {
+      'Completed':'#16a34a','Pending':'#f59e0b',
+      'Rescheduled':'#f97316','Cancelled':'#ef4444'
+    };
     var teamPositions = {};
 
-    allOrders.forEach(function(o) {
+    orders.forEach(function(o) {
       var coords = BRGY_COORDS[o.barangay];
       if (!coords) return;
       var lat = coords[0] + (Math.random()-0.5)*0.007;
@@ -1843,44 +1892,66 @@
         +'<b>'+o.customer_name+'</b><br>'
         +'<span style="color:#64748b">'+o.jo_number+'</span><br>'
         +'<span>'+o.barangay+'</span><br>'
-        +'<span class="status-badge '+sBadge(o.status)+'">'+o.status+'</span>'
+        +'<span style="font-weight:700;color:'+color+'">'+o.status+'</span>'
         +'</div>'
       );
       mapMarkers.push(marker);
 
-      // Track team center
       var tn = teamNum(o.team_id);
       if (tn) {
-        if (!teamPositions[tn]) teamPositions[tn] = { lats:[], lngs:[], color: null };
+        if (!teamPositions[tn]) teamPositions[tn] = { lats:[], lngs:[] };
         teamPositions[tn].lats.push(lat);
         teamPositions[tn].lngs.push(lng);
       }
     });
 
-    // Add team labels
-    var teamColors = ['#ef4444','#8b5cf6','#0d9488','#f59e0b','#3b82f6','#ec4899'];
-    var ti = 0;
+    /* Team labels */
+    var teamColors2 = ['#ef4444','#8b5cf6','#0d9488','#f59e0b','#3b82f6','#ec4899'];
+    var ti2 = 0;
     Object.keys(teamPositions).forEach(function(tn) {
       var pos = teamPositions[tn];
       if (!pos.lats.length) return;
       var avgLat = pos.lats.reduce(function(a,b){return a+b;},0)/pos.lats.length;
       var avgLng = pos.lngs.reduce(function(a,b){return a+b;},0)/pos.lngs.length;
-      var col = teamColors[ti++ % teamColors.length];
-      var label = L.marker([avgLat, avgLng], {
+      var col = teamColors2[ti2++ % teamColors2.length];
+      var label = L.marker([avgLat,avgLng], {
         icon: L.divIcon({
-          html: '<div style="background:'+col+';color:white;padding:2px 8px;border-radius:4px;font-size:11px;font-weight:700;white-space:nowrap;box-shadow:0 1px 4px rgba(0,0,0,0.3);">'+tn+'</div>',
-          className: '', iconAnchor: [0,0]
+          html: '<div style="background:'+col+';color:white;padding:3px 10px;border-radius:5px;font-size:11px;font-weight:700;white-space:nowrap;box-shadow:0 2px 6px rgba(0,0,0,0.35);">'+tn+'</div>',
+          className:'', iconAnchor:[0,0]
         }),
-        interactive: false, zIndexOffset: -100
+        interactive: false, zIndexOffset: 1000
       }).addTo(leafletMap);
       mapMarkers.push(label);
     });
 
     var setMC = function(id,val){ var el=document.getElementById(id); if(el) el.textContent=val; };
-    setMC('mapCntPending', allOrders.filter(function(r){return r.status==='Pending';}).length);
-    setMC('mapCntActive', allOrders.filter(function(r){return r.gofib_status==='Active'||r.status==='Completed';}).length);
-    setMC('mapCntResched', allOrders.filter(function(r){return r.status==='Rescheduled';}).length);
-    setMC('mapCntCancel', allOrders.filter(function(r){return r.status==='Cancelled';}).length);
+    var pending   = allOrders.filter(function(r){return r.status==='Pending';});
+    var active    = allOrders.filter(function(r){return r.gofib_status==='Active';});
+    var completed = allOrders.filter(function(r){return r.status==='Completed';});
+    var resched   = allOrders.filter(function(r){return r.status==='Rescheduled';});
+    var cancel    = allOrders.filter(function(r){return r.status==='Cancelled';});
+
+    setMC('mapCntPending', pending.length);
+    setMC('mapCntActive',  active.length + completed.length);
+    setMC('mapCntResched', resched.length);
+    setMC('mapCntCancel',  cancel.length);
+
+    /* Update sub-pills */
+    setMC('mapSubWT',  pending.filter(function(r){return r.team_id;}).length+' w/ Team');
+    setMC('mapSubWOT', pending.filter(function(r){return !r.team_id;}).length+' w/o Team');
+    setMC('mapSubGF',  active.length+' GF');
+    setMC('mapSubJO',  completed.length+' JO');
+    setMC('mapSubBoth',(active.length+completed.length)+' Both');
+    setMC('mapSubResOther', resched.filter(function(r){return !r.status_remarks||!r.status_remarks.toLowerCase().includes('customer');}).length+' Other reason');
+    setMC('mapSubResCust',  resched.filter(function(r){return r.status_remarks&&r.status_remarks.toLowerCase().includes('customer');}).length+' By customer');
+    setMC('mapSubCancelNAP',   cancel.filter(function(r){return r.status_remarks&&r.status_remarks.toLowerCase().includes('nap');}).length+' Full NAP');
+    setMC('mapSubCancelOther', cancel.length+' Other');
+
+    /* Dim cards */
+    var ca = document.getElementById('mapCardActive');
+    var cc = document.getElementById('mapCardCancelled');
+    if(ca){ if(active.length+completed.length===0) ca.classList.add('dimmed'); else ca.classList.remove('dimmed'); }
+    if(cc){ if(cancel.length===0) cc.classList.add('dimmed'); else cc.classList.remove('dimmed'); }
 
     buildBrgyPanels();
     buildTeamsLegend();
@@ -1941,6 +2012,43 @@
       return '<div class="team-legend-item"><span class="team-dot" style="background:'+c+'"></span>'+tn+'<span class="team-stats">P'+s.pending+' C'+s.completed+' X'+s.cancelled+' R'+s.resched+'</span></div>';
     }).join('');
   }
+
+  /* ── MAP FILTER ── */
+  var mapActiveFilter = null;
+  var mapAllMarkers = [];
+
+  window.applyMapFilter = function(filterType) {
+    if (mapActiveFilter === filterType) {
+      mapActiveFilter = null;
+      document.querySelectorAll('#mapSummaryRow .sub-pill').forEach(function(p){ p.classList.remove('active-filter'); });
+      updateMapData();
+      return;
+    }
+    mapActiveFilter = filterType;
+    document.querySelectorAll('#mapSummaryRow .sub-pill').forEach(function(p){ p.classList.remove('active-filter'); });
+    var filterToId = {
+      'with-team':'mapSubWT','without-team':'mapSubWOT',
+      'gf':'mapSubGF','jo':'mapSubJO','both':'mapSubBoth',
+      'res-other':'mapSubResOther','res-customer':'mapSubResCust',
+      'can-nap':'mapSubCancelNAP','can-other':'mapSubCancelOther'
+    };
+    var el = document.getElementById(filterToId[filterType]);
+    if(el) el.classList.add('active-filter');
+
+    var filtered = allOrders.filter(function(r){
+      if(filterType==='with-team')    return r.status==='Pending'&&r.team_id;
+      if(filterType==='without-team') return r.status==='Pending'&&!r.team_id;
+      if(filterType==='gf')           return r.gofib_status==='Active';
+      if(filterType==='jo')           return r.status==='Completed';
+      if(filterType==='both')         return r.gofib_status==='Active'||r.status==='Completed';
+      if(filterType==='res-other')    return r.status==='Rescheduled'&&(!r.status_remarks||!r.status_remarks.toLowerCase().includes('customer'));
+      if(filterType==='res-customer') return r.status==='Rescheduled'&&r.status_remarks&&r.status_remarks.toLowerCase().includes('customer');
+      if(filterType==='can-nap')      return r.status==='Cancelled'&&r.status_remarks&&r.status_remarks.toLowerCase().includes('nap');
+      if(filterType==='can-other')    return r.status==='Cancelled';
+      return true;
+    });
+    renderMapPins(filtered);
+  };
 
   /* ── COLLAPSIBLE MAP PANELS ── */
   window.toggleMapPanel = function(head) {
