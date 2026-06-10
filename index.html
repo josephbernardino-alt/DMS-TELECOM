@@ -1857,22 +1857,127 @@
     });
   }
 
+  /* ── MAP LAYERS ── */
+  var mapLayers = {};
+
   function initMap() {
     syncMapDates();
     if (!mapInitialized) {
-      leafletMap = L.map('leafletMap').setView(MAP_CENTER, 13);
-      // Satellite tile
-      L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
-        attribution: 'Esri', maxZoom: 19
-      }).addTo(leafletMap);
-      // Street names overlay
-      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-        attribution: 'OSM', opacity: 0.25, maxZoom: 19
-      }).addTo(leafletMap);
+      leafletMap = L.map('leafletMap', { zoomControl: true }).setView(MAP_CENTER, 13);
+
+      /* Base layers */
+      mapLayers.satellite = L.tileLayer(
+        'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
+        { attribution: '© Esri', maxZoom: 19 }
+      );
+      mapLayers.street = L.tileLayer(
+        'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
+        { attribution: '© OpenStreetMap', maxZoom: 19 }
+      );
+
+      /* Overlay layers */
+      mapLayers.streetNames = L.tileLayer(
+        'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
+        { attribution: '© OpenStreetMap', maxZoom: 19, opacity: 0.4 }
+      );
+      mapLayers.landmarks = L.tileLayer(
+        'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+        { attribution: '© OpenStreetMap', maxZoom: 19, opacity: 0.6 }
+      );
+      mapLayers.cityBoundaries = L.tileLayer(
+        'https://stamen-tiles-{s}.a.ssl.fastly.net/toner-lines/{z}/{x}/{y}.png',
+        { attribution: '© Stamen', maxZoom: 19, opacity: 0.5 }
+      );
+      mapLayers.brgyBoundaries = L.tileLayer(
+        'https://stamen-tiles-{s}.a.ssl.fastly.net/toner-lines/{z}/{x}/{y}.png',
+        { attribution: '© Stamen', maxZoom: 19, opacity: 0.3 }
+      );
+      mapLayers.brgyNames = L.tileLayer(
+        'https://stamen-tiles-{s}.a.ssl.fastly.net/toner-labels/{z}/{x}/{y}.png',
+        { attribution: '© Stamen', maxZoom: 19, opacity: 0.7 }
+      );
+
+      /* Mobile users layer - shows team markers */
+      mapLayers.mobileUsers = L.layerGroup();
+
+      /* Add default layers */
+      mapLayers.satellite.addTo(leafletMap);
+      mapLayers.streetNames.addTo(leafletMap);
+      mapLayers.cityBoundaries.addTo(leafletMap);
+
+      /* Wire up layer checkboxes */
+      function wireLayer(checkboxId, layer, isBase) {
+        var chk = document.getElementById(checkboxId);
+        if (!chk) return;
+        chk.addEventListener('change', function() {
+          if (this.checked) {
+            /* If base layer, remove other base first */
+            if (isBase === 'satellite') {
+              leafletMap.removeLayer(mapLayers.street);
+              document.getElementById('layerStreet').checked = false;
+              mapLayers.satellite.addTo(leafletMap);
+            } else if (isBase === 'street') {
+              leafletMap.removeLayer(mapLayers.satellite);
+              document.getElementById('layerSatellite').checked = false;
+              mapLayers.street.addTo(leafletMap);
+            } else {
+              layer.addTo(leafletMap);
+            }
+          } else {
+            leafletMap.removeLayer(layer);
+          }
+        });
+      }
+
+      wireLayer('layerSatellite',    mapLayers.satellite,      'satellite');
+      wireLayer('layerStreet',       mapLayers.street,         'street');
+      wireLayer('layerStreetNames',  mapLayers.streetNames,    false);
+      wireLayer('layerLandmarks',    mapLayers.landmarks,      false);
+      wireLayer('layerCityBound',    mapLayers.cityBoundaries, false);
+      wireLayer('layerBrgyBound',    mapLayers.brgyBoundaries, false);
+      wireLayer('layerBrgyNames',    mapLayers.brgyNames,      false);
+      wireLayer('layerMobileUsers',  mapLayers.mobileUsers,    false);
+
+      /* Mobile Users - show team vehicle markers */
+      var mobileUserChk = document.getElementById('layerMobileUsers');
+      if (mobileUserChk) {
+        mobileUserChk.addEventListener('change', function() {
+          if (this.checked) {
+            buildMobileUsers();
+          } else {
+            mapLayers.mobileUsers.clearLayers();
+            leafletMap.removeLayer(mapLayers.mobileUsers);
+          }
+        });
+      }
+
       mapInitialized = true;
     }
     setTimeout(function(){ leafletMap.invalidateSize(); }, 200);
     updateMapData();
+  }
+
+  function buildMobileUsers() {
+    mapLayers.mobileUsers.clearLayers();
+    var teamColors = ['#ef4444','#8b5cf6','#0d9488','#f59e0b','#3b82f6','#ec4899'];
+    var teamsAdded = {};
+    var ti = 0;
+    allOrders.forEach(function(o) {
+      var tn = teamNum(o.team_id);
+      if (!tn || teamsAdded[tn]) return;
+      var coords = BRGY_COORDS[o.barangay];
+      if (!coords) return;
+      teamsAdded[tn] = true;
+      var col = teamColors[ti++ % teamColors.length];
+      var phoneIcon = L.divIcon({
+        html: '<div style="background:'+col+';color:white;border-radius:50%;width:28px;height:28px;display:flex;align-items:center;justify-content:center;font-size:14px;box-shadow:0 2px 6px rgba(0,0,0,0.3);border:2px solid white;">📱</div>',
+        className: '', iconSize:[28,28], iconAnchor:[14,14]
+      });
+      var m = L.marker([coords[0]+(Math.random()-0.5)*0.01, coords[1]+(Math.random()-0.5)*0.01], { icon: phoneIcon });
+      m.bindPopup('<b>'+tn+'</b><br>Mobile User<br>Last seen: Just now');
+      mapLayers.mobileUsers.addLayer(m);
+    });
+    mapLayers.mobileUsers.addTo(leafletMap);
   }
 
   function updateMapData() {
