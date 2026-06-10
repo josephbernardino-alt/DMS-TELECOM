@@ -463,26 +463,52 @@
 
   /* MAP PAGE */
   #mapContainer { display: flex; height: calc(100vh - 165px); }
-  .map-sidebar-left { width: 260px; background: white; border-right: 1px solid #e5eaf2; overflow-y: auto; flex-shrink: 0; }
-  .map-sidebar-right { width: 240px; background: white; border-left: 1px solid #e5eaf2; overflow-y: auto; flex-shrink: 0; padding: 14px; }
+  .map-sidebar-left { width: 220px; background: white; border-right: 1px solid #e5eaf2; overflow-y: auto; flex-shrink: 0; }
+  .map-sidebar-right { width: 220px; background: white; border-left: 1px solid #e5eaf2; overflow-y: auto; flex-shrink: 0; padding: 12px; }
   #leafletMap { flex: 1; }
   .map-panel { border-bottom: 1px solid #f1f5f9; }
-  .map-panel-head { padding: 12px 14px; font-size: 11px; font-weight: 700; color: #475569; text-transform: uppercase; letter-spacing: 0.4px; display: flex; justify-content: space-between; align-items: center; cursor: pointer; background: #f8fafc; }
-  .map-panel-head .badge-num { background: #1d4ed8; color: white; border-radius: 10px; padding: 1px 8px; font-size: 11px; }
-  .map-brgy-item { padding: 8px 14px; font-size: 12px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #f8fafc; }
-  .map-brgy-rank { color: #94a3b8; font-weight: 700; margin-right: 8px; }
-  .map-brgy-name { flex: 1; color: #1e293b; }
-  .map-brgy-loc { color: #94a3b8; font-size: 10px; margin-right: 8px; }
-  .map-brgy-count { background: #f1f5f9; border-radius: 5px; padding: 1px 8px; font-weight: 700; color: #475569; font-size: 11px; }
-  .layer-section-title { font-size: 11px; font-weight: 700; color: #94a3b8; text-transform: uppercase; margin: 14px 0 8px; }
-  .layer-item { display: flex; align-items: center; gap: 8px; padding: 5px 0; font-size: 12px; color: #1e293b; cursor: pointer; }
+  .map-panel-head { padding: 10px 12px; font-size: 10px; font-weight: 700; color: #475569; text-transform: uppercase; letter-spacing: 0.4px; display: flex; justify-content: space-between; align-items: center; cursor: pointer; background: #f8fafc; user-select: none; }
+  .map-panel-head:hover { background: #f1f5f9; }
+  .map-panel-head .badge-num { background: #1d4ed8; color: white; border-radius: 10px; padding: 1px 8px; font-size: 10px; }
+  .map-panel-head .arrow { font-size: 10px; color: #94a3b8; transition: transform 0.2s; }
+  .map-panel-head.collapsed .arrow { transform: rotate(-90deg); }
+  .map-panel-body { overflow: hidden; transition: max-height 0.25s ease; }
+  .map-panel-body.collapsed { max-height: 0 !important; }
+  .map-brgy-item { padding: 7px 12px; font-size: 11px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #f8fafc; }
+  .map-brgy-rank { color: #94a3b8; font-weight: 700; margin-right: 6px; min-width: 18px; }
+  .map-brgy-name { flex: 1; color: #1e293b; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .map-brgy-loc { color: #94a3b8; font-size: 9px; margin-right: 6px; }
+  .map-brgy-count { background: #f1f5f9; border-radius: 5px; padding: 1px 7px; font-weight: 700; color: #475569; font-size: 10px; flex-shrink: 0; }
+  .layer-section-title { font-size: 10px; font-weight: 700; color: #94a3b8; text-transform: uppercase; margin: 12px 0 6px; }
+  .layer-item { display: flex; align-items: center; gap: 8px; padding: 4px 0; font-size: 11px; color: #1e293b; cursor: pointer; }
   .layer-item input { accent-color: #1d4ed8; }
-  .map-tabs { display: flex; border-bottom: 1px solid #e2e8f0; margin-bottom: 12px; }
-  .map-tab { flex: 1; padding: 8px; border: none; background: none; font-size: 11px; font-weight: 600; color: #64748b; cursor: pointer; border-bottom: 2px solid transparent; }
+  .map-tabs { display: flex; border-bottom: 1px solid #e2e8f0; margin-bottom: 10px; }
+  .map-tab { flex: 1; padding: 7px; border: none; background: none; font-size: 10px; font-weight: 600; color: #64748b; cursor: pointer; border-bottom: 2px solid transparent; }
   .map-tab.active { color: #1d4ed8; border-bottom-color: #1d4ed8; }
-  .team-legend-item { display: flex; align-items: center; gap: 6px; padding: 5px 0; font-size: 11px; border-bottom: 1px solid #f8fafc; }
+  .team-legend-item { display: flex; align-items: center; gap: 5px; padding: 4px 0; font-size: 10px; border-bottom: 1px solid #f8fafc; }
   .team-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
-  .team-stats { margin-left: auto; color: #64748b; font-size: 10px; }
+  .team-stats { margin-left: auto; color: #64748b; font-size: 9px; }
+  .map-legend-box { position: absolute; bottom: 30px; left: 230px; background: white; border-radius: 8px; padding: 10px 14px; box-shadow: 0 2px 8px rgba(0,0,0,0.15); z-index: 500; font-size: 11px; }
+  .map-legend-item { display: flex; align-items: center; gap: 6px; padding: 2px 0; }
+
+  /* BO STAGING MODAL */
+  .staging-overlay { display: none; position: fixed; inset: 0; background: rgba(15,23,42,0.55); z-index: 9999; justify-content: center; align-items: flex-start; padding: 30px 20px; overflow-y: auto; }
+  .staging-overlay.open { display: flex; }
+  .staging-modal { background: white; border-radius: 12px; width: 760px; max-width: 96vw; box-shadow: 0 25px 80px rgba(0,0,0,0.2); margin: auto; flex-shrink: 0; }
+  .staging-header { padding: 16px 22px; border-bottom: 1px solid #e2e8f0; display: flex; justify-content: space-between; align-items: center; }
+  .staging-title { font-size: 15px; font-weight: 700; color: #0f172a; }
+  .staging-body { padding: 20px 22px; max-height: 70vh; overflow-y: auto; }
+  .staging-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 14px; }
+  .staging-field { display: flex; flex-direction: column; gap: 4px; }
+  .staging-label { font-size: 11px; font-weight: 600; color: #64748b; }
+  .staging-input { border: 1px solid #e2e8f0; border-radius: 7px; padding: 8px 10px; font-size: 13px; color: #1e293b; background: white; font-family: inherit; }
+  .staging-input:focus { outline: none; border-color: #1d4ed8; box-shadow: 0 0 0 3px rgba(29,78,216,0.08); }
+  .staging-section { border: 1px solid #e2e8f0; border-radius: 8px; margin-bottom: 10px; overflow: hidden; }
+  .staging-section-head { padding: 12px 16px; font-size: 13px; font-weight: 500; color: #1e293b; cursor: pointer; display: flex; justify-content: space-between; align-items: center; background: white; }
+  .staging-section-head:hover { background: #f8fafc; }
+  .staging-footer { padding: 14px 22px; border-top: 1px solid #e2e8f0; display: flex; justify-content: flex-end; gap: 8px; background: #f8fafc; border-radius: 0 0 12px 12px; }
+  .btn-make-active { background: #16a34a; color: white; border: none; padding: 9px 18px; border-radius: 7px; font-size: 12px; font-weight: 700; cursor: pointer; }
+  .btn-cancel-jo2 { background: white; color: #ef4444; border: 1px solid #ef4444; padding: 9px 18px; border-radius: 7px; font-size: 12px; font-weight: 700; cursor: pointer; }
 
 </style>
 </head>
@@ -758,20 +784,32 @@
     <!-- LEFT SIDEBAR -->
     <div class="map-sidebar-left">
       <div class="map-panel">
-        <div class="map-panel-head">Top Barangays (Pending) <span class="badge-num" id="brgyPendingTotal">0</span></div>
-        <div id="brgyPendingList"></div>
+        <div class="map-panel-head" onclick="toggleMapPanel(this)">
+          <span>Top Barangays (Pending)</span>
+          <span style="display:flex;align-items:center;gap:6px;"><span class="badge-num" id="brgyPendingTotal">0</span><span class="arrow">▾</span></span>
+        </div>
+        <div class="map-panel-body" id="brgyPendingList"></div>
       </div>
       <div class="map-panel">
-        <div class="map-panel-head">Barangay with High Completion</div>
-        <div id="brgyCompletionList"></div>
+        <div class="map-panel-head collapsed" onclick="toggleMapPanel(this)">
+          <span>Barangay with High Completion</span>
+          <span class="arrow" style="transform:rotate(-90deg);">▾</span>
+        </div>
+        <div class="map-panel-body collapsed" style="max-height:0;" id="brgyCompletionList"></div>
       </div>
       <div class="map-panel">
-        <div class="map-panel-head">Barangay with High Rescheduled <span class="badge-num" id="brgyReschedTotal">0</span></div>
-        <div id="brgyReschedList"></div>
+        <div class="map-panel-head collapsed" onclick="toggleMapPanel(this)">
+          <span>Barangay with High Rescheduled</span>
+          <span style="display:flex;align-items:center;gap:6px;"><span class="badge-num" id="brgyReschedTotal">0</span><span class="arrow" style="transform:rotate(-90deg);">▾</span></span>
+        </div>
+        <div class="map-panel-body collapsed" style="max-height:0;" id="brgyReschedList"></div>
       </div>
       <div class="map-panel">
-        <div class="map-panel-head">Barangay with High Cancelled <span class="badge-num" id="brgyCancelTotal">0</span></div>
-        <div id="brgyCancelList"></div>
+        <div class="map-panel-head collapsed" onclick="toggleMapPanel(this)">
+          <span>Barangay with High Cancelled</span>
+          <span style="display:flex;align-items:center;gap:6px;"><span class="badge-num" id="brgyCancelTotal">0</span><span class="arrow" style="transform:rotate(-90deg);">▾</span></span>
+        </div>
+        <div class="map-panel-body collapsed" style="max-height:0;" id="brgyCancelList"></div>
       </div>
     </div>
     <!-- MAP -->
@@ -1703,7 +1741,7 @@
           +'<td><span style="color:#1d4ed8;cursor:pointer;font-size:11px;">Review</span></td>'
           +'</tr>';
       } else {
-        html += '<tr>'
+        html += '<tr onclick="openStagingModal('+i+')" style="cursor:pointer;">'
           +'<td class="count-cell">'+(i+1)+'</td>'
           +'<td>'+v(r.turnin_date)+'</td>'
           +'<td>'+v(r.dispatch_date)+'</td>'
@@ -1731,11 +1769,26 @@
   });
 
   /* ════════════ MAP (NI DASHBOARD) ════════════ */
+  function houseIcon(color) {
+    var svg = '<svg xmlns="http://www.w3.org/2000/svg" width="22" height="26" viewBox="0 0 22 26">'
+      +'<polygon points="11,2 22,11 18,11 18,24 4,24 4,11 0,11" fill="'+color+'" stroke="white" stroke-width="1.5"/>'
+      +'<rect x="8" y="16" width="6" height="8" fill="white" opacity="0.8"/>'
+      +'</svg>';
+    return L.divIcon({
+      html: svg, className: '', iconSize:[22,26], iconAnchor:[11,26], popupAnchor:[0,-26]
+    });
+  }
+
   function initMap() {
     if (!mapInitialized) {
-      leafletMap = L.map('leafletMap').setView(MAP_CENTER, 12);
+      leafletMap = L.map('leafletMap').setView(MAP_CENTER, 13);
+      // Satellite tile
       L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
         attribution: 'Esri', maxZoom: 19
+      }).addTo(leafletMap);
+      // Street names overlay
+      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: 'OSM', opacity: 0.25, maxZoom: 19
       }).addTo(leafletMap);
       mapInitialized = true;
     }
@@ -1745,28 +1798,62 @@
 
   function updateMapData() {
     if (!leafletMap) return;
-    // Clear old markers
     mapMarkers.forEach(function(m){ leafletMap.removeLayer(m); });
     mapMarkers = [];
 
-    // Use allOrders (loaded for the date)
-    var statusColors = { 'Completed':'#16a34a','Pending':'#f59e0b','Rescheduled':'#f97316','Cancelled':'#ef4444' };
+    var statusColors = {
+      'Completed':'#16a34a', 'Pending':'#f59e0b',
+      'Rescheduled':'#f97316', 'Cancelled':'#ef4444'
+    };
+
+    // Track teams for label positioning
+    var teamPositions = {};
 
     allOrders.forEach(function(o) {
       var coords = BRGY_COORDS[o.barangay];
       if (!coords) return;
-      // jitter so pins don't stack
-      var lat = coords[0] + (Math.random()-0.5)*0.008;
-      var lng = coords[1] + (Math.random()-0.5)*0.008;
+      var lat = coords[0] + (Math.random()-0.5)*0.007;
+      var lng = coords[1] + (Math.random()-0.5)*0.007;
       var color = statusColors[o.status] || '#64748b';
-      var marker = L.circleMarker([lat,lng], {
-        radius: 7, fillColor: color, color: 'white', weight: 2, fillOpacity: 0.9
-      }).addTo(leafletMap);
-      marker.bindPopup('<b>'+o.customer_name+'</b><br>'+o.jo_number+'<br>'+o.barangay+'<br>Status: '+o.status);
+      var marker = L.marker([lat,lng], { icon: houseIcon(color) }).addTo(leafletMap);
+      marker.bindPopup(
+        '<div style="font-size:12px;min-width:160px;">'
+        +'<b>'+o.customer_name+'</b><br>'
+        +'<span style="color:#64748b">'+o.jo_number+'</span><br>'
+        +'<span>'+o.barangay+'</span><br>'
+        +'<span class="status-badge '+sBadge(o.status)+'">'+o.status+'</span>'
+        +'</div>'
+      );
       mapMarkers.push(marker);
+
+      // Track team center
+      var tn = teamNum(o.team_id);
+      if (tn) {
+        if (!teamPositions[tn]) teamPositions[tn] = { lats:[], lngs:[], color: null };
+        teamPositions[tn].lats.push(lat);
+        teamPositions[tn].lngs.push(lng);
+      }
     });
 
-    // Update map KPI counts
+    // Add team labels
+    var teamColors = ['#ef4444','#8b5cf6','#0d9488','#f59e0b','#3b82f6','#ec4899'];
+    var ti = 0;
+    Object.keys(teamPositions).forEach(function(tn) {
+      var pos = teamPositions[tn];
+      if (!pos.lats.length) return;
+      var avgLat = pos.lats.reduce(function(a,b){return a+b;},0)/pos.lats.length;
+      var avgLng = pos.lngs.reduce(function(a,b){return a+b;},0)/pos.lngs.length;
+      var col = teamColors[ti++ % teamColors.length];
+      var label = L.marker([avgLat, avgLng], {
+        icon: L.divIcon({
+          html: '<div style="background:'+col+';color:white;padding:2px 8px;border-radius:4px;font-size:11px;font-weight:700;white-space:nowrap;box-shadow:0 1px 4px rgba(0,0,0,0.3);">'+tn+'</div>',
+          className: '', iconAnchor: [0,0]
+        }),
+        interactive: false, zIndexOffset: -100
+      }).addTo(leafletMap);
+      mapMarkers.push(label);
+    });
+
     var setMC = function(id,val){ var el=document.getElementById(id); if(el) el.textContent=val; };
     setMC('mapCntPending', allOrders.filter(function(r){return r.status==='Pending';}).length);
     setMC('mapCntActive', allOrders.filter(function(r){return r.gofib_status==='Active'||r.status==='Completed';}).length);
@@ -1832,6 +1919,105 @@
       return '<div class="team-legend-item"><span class="team-dot" style="background:'+c+'"></span>'+tn+'<span class="team-stats">P'+s.pending+' C'+s.completed+' X'+s.cancelled+' R'+s.resched+'</span></div>';
     }).join('');
   }
+
+  /* ── COLLAPSIBLE MAP PANELS ── */
+  window.toggleMapPanel = function(head) {
+    var body = head.nextElementSibling;
+    var isCollapsed = head.classList.contains('collapsed');
+    if (isCollapsed) {
+      head.classList.remove('collapsed');
+      body.classList.remove('collapsed');
+      body.style.maxHeight = body.scrollHeight + 'px';
+      var arrow = head.querySelector('.arrow');
+      if (arrow) arrow.style.transform = '';
+    } else {
+      head.classList.add('collapsed');
+      body.classList.add('collapsed');
+      body.style.maxHeight = '0';
+      var arrow = head.querySelector('.arrow');
+      if (arrow) arrow.style.transform = 'rotate(-90deg)';
+    }
+  };
+
+  /* ── BO STAGING MODAL ── */
+  var currentBORecord = null;
+
+  window.openStagingModal = function(idx) {
+    var r = boData[idx];
+    if (!r) return;
+    currentBORecord = r;
+    var badge = document.getElementById('stagingStatusBadge');
+    if (badge) {
+      badge.textContent = r.status || 'Pending Review';
+      badge.className = 'bo-status ' + ((r.status==='Activated')?'bo-activated':'bo-pending');
+    }
+    function sfield(label, val, id) {
+      return '<div class="staging-field"><label class="staging-label">'+label+'</label>'
+        +'<input class="staging-input" id="'+id+'" value="'+(val||'')+'" placeholder="—"></div>';
+    }
+    function ssection(title) {
+      return '<div class="staging-section"><div class="staging-section-head">'+title+' <span style="color:#94a3b8">▾</span></div></div>';
+    }
+    document.getElementById('stagingBody').innerHTML =
+      '<div class="staging-grid">'
+      +sfield('JO Number', r.jo_number, 'stJO')
+      +sfield('Job Date', r.turnin_date, 'stDate')
+      +'</div>'
+      +'<div class="staging-grid">'
+      +sfield('Account Number', r.account_number, 'stAccount')
+      +sfield('Customer Full Name', r.customer_name, 'stName')
+      +'</div>'
+      +'<div class="staging-grid">'
+      +sfield('Mobile Number', r.mobile_number||'', 'stMobile')
+      +sfield('Alt. Mobile Number', '', 'stAltMobile')
+      +'</div>'
+      +'<div class="staging-grid">'
+      +sfield('Municipality', r.municipality||'', 'stMunicipality')
+      +sfield('Barangay', r.barangay||'', 'stBarangay')
+      +'</div>'
+      +'<div class="staging-grid">'
+      +sfield('Plan', r.plan||'', 'stPlan')
+      +sfield('Complete Address', r.address||'', 'stAddress')
+      +'</div>'
+      +'<div class="staging-grid">'
+      +'<div class="staging-field"><label class="staging-label">Assigned TL</label><select class="staging-input" id="stTL"><option value="">— Select TL —</option>'
+      +allTeams.map(function(t){return '<option value="'+t.team_number+'"'+(r.assigned_tl===t.team_number?' selected':'')+'>'+t.team_number+'</option>';}).join('')
+      +'</select></div>'
+      +sfield('Sales Agent', r.sales_agent||'', 'stSalesAgent')
+      +'</div>'
+      +ssection('Application Information')
+      +ssection('Customer / Personal Information')
+      +ssection('Business Information')
+      +ssection('Location / Address Information')
+      +ssection('Plan / Billing / Payment Information')
+      +ssection('Sales / Agency Information')
+      +ssection('Contact Information')
+      +ssection('Reason / Notes');
+    document.getElementById('stagingOverlay').style.display = 'flex';
+    document.body.style.overflow = 'hidden';
+  };
+
+  window.closeStagingModal = function() {
+    document.getElementById('stagingOverlay').style.display = 'none';
+    document.body.style.overflow = '';
+  };
+
+  window.makeJobOrderActive = async function() {
+    if (!currentBORecord) return;
+    try {
+      var { error } = await db.from('back_office_imports')
+        .update({ status: 'Activated' })
+        .eq('id', currentBORecord.id);
+      if (error) throw error;
+      showToast('✓ Job Order marked as Active!', 'success');
+      closeStagingModal();
+      loadBoImports();
+    } catch(err) { showToast('Error: '+err.message, 'error'); }
+  };
+
+  document.getElementById('stagingOverlay').addEventListener('click', function(e){
+    if (e.target === this) closeStagingModal();
+  });
 
   load();
 })();
@@ -1913,6 +2099,27 @@
     <div class="sub-modal-footer">
       <button class="btn btn-close" onclick="closeCancelModal()">Back</button>
       <button class="btn btn-cancel-jo" onclick="confirmCancel()">✕ Confirm Cancellation</button>
+    </div>
+  </div>
+</div>
+
+
+<!-- BO STAGING MODAL -->
+<div class="staging-overlay" id="stagingOverlay">
+  <div class="staging-modal">
+    <div class="staging-header">
+      <span class="staging-title">Staging Record Detail</span>
+      <button class="modal-close" onclick="closeStagingModal()">✕</button>
+    </div>
+    <div style="padding:0 22px 8px;">
+      <span class="bo-status bo-pending" id="stagingStatusBadge">Pending Review</span>
+    </div>
+    <div class="staging-body" id="stagingBody"></div>
+    <div class="staging-footer">
+      <button class="btn btn-close" onclick="closeStagingModal()">Close</button>
+      <button class="btn-cancel-jo2" onclick="closeStagingModal()">Cancel Job Order</button>
+      <button class="btn-make-active" onclick="makeJobOrderActive()">Make Job Order Active</button>
+      <button class="btn btn-save" onclick="closeStagingModal()">Save</button>
     </div>
   </div>
 </div>
