@@ -1865,36 +1865,76 @@
     if (!mapInitialized) {
       leafletMap = L.map('leafletMap', { zoomControl: true }).setView(MAP_CENTER, 13);
 
-      /* Base layers - all HTTPS compatible */
+      /* Base layers - 100% public CDN, work on GitHub Pages */
       mapLayers.satellite = L.tileLayer(
-        'https://mt{s}.google.com/vt/lyrs=s&x={x}&y={y}&z={z}',
-        { attribution: '© Google', maxZoom: 20, subdomains: ['0','1','2','3'] }
+        'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
+        { attribution: '© Esri World Imagery', maxZoom: 19, crossOrigin: true }
       );
       mapLayers.street = L.tileLayer(
-        'https://mt{s}.google.com/vt/lyrs=m&x={x}&y={y}&z={z}',
-        { attribution: '© Google', maxZoom: 20, subdomains: ['0','1','2','3'] }
+        'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png',
+        { attribution: '© Carto © OSM', maxZoom: 19, subdomains: 'abcd', crossOrigin: true }
       );
 
       /* Overlay layers */
       mapLayers.streetNames = L.tileLayer(
-        'https://mt{s}.google.com/vt/lyrs=h&x={x}&y={y}&z={z}',
-        { attribution: '© Google', maxZoom: 20, subdomains: ['0','1','2','3'], opacity: 0.8 }
+        'https://{s}.basemaps.cartocdn.com/rastertiles/voyager_only_labels/{z}/{x}/{y}{r}.png',
+        { attribution: '© Carto', maxZoom: 19, subdomains: 'abcd', opacity: 0.9, crossOrigin: true }
       );
       mapLayers.landmarks = L.tileLayer(
-        'https://mt{s}.google.com/vt/lyrs=r&x={x}&y={y}&z={z}',
-        { attribution: '© Google', maxZoom: 20, subdomains: ['0','1','2','3'], opacity: 0.7 }
+        'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png',
+        { attribution: '© Carto', maxZoom: 19, subdomains: 'abcd', opacity: 0.6, crossOrigin: true }
       );
-      mapLayers.cityBoundaries = L.tileLayer(
-        'https://mt{s}.google.com/vt/lyrs=p&x={x}&y={y}&z={z}',
-        { attribution: '© Google', maxZoom: 20, subdomains: ['0','1','2','3'], opacity: 0.4 }
-      );
-      mapLayers.brgyBoundaries = L.tileLayer(
-        'https://mt{s}.google.com/vt/lyrs=p&x={x}&y={y}&z={z}',
-        { attribution: '© Google', maxZoom: 20, subdomains: ['0','1','2','3'], opacity: 0.3 }
-      );
-      mapLayers.brgyNames = L.tileLayer(
-        'https://mt{s}.google.com/vt/lyrs=h&x={x}&y={y}&z={z}',
-        { attribution: '© Google', maxZoom: 20, subdomains: ['0','1','2','3'], opacity: 0.9 }
+
+      /* City & Barangay boundaries - drawn as GeoJSON */
+      var cityStyle = { color: '#1d4ed8', weight: 2.5, fill: false, opacity: 0.8 };
+      var brgyStyle = { color: '#60a5fa', weight: 1, fill: false, opacity: 0.6 };
+
+      /* Metro Manila city boundaries (simplified polygons) */
+      var cityGeoJSON = {
+        "type": "FeatureCollection",
+        "features": [
+          { "type": "Feature", "properties": { "name": "PASIG" }, "geometry": { "type": "Polygon", "coordinates": [[[121.063,14.530],[121.095,14.530],[121.102,14.550],[121.095,14.595],[121.078,14.608],[121.060,14.595],[121.048,14.570],[121.063,14.530]]] }},
+          { "type": "Feature", "properties": { "name": "MARIKINA" }, "geometry": { "type": "Polygon", "coordinates": [[[121.090,14.625],[121.118,14.625],[121.130,14.650],[121.125,14.690],[121.100,14.700],[121.080,14.685],[121.075,14.655],[121.090,14.625]]] }},
+          { "type": "Feature", "properties": { "name": "MANDALUYONG" }, "geometry": { "type": "Polygon", "coordinates": [[[121.025,14.570],[121.050,14.570],[121.058,14.590],[121.050,14.610],[121.030,14.608],[121.018,14.590],[121.025,14.570]]] }},
+          { "type": "Feature", "properties": { "name": "SAN JUAN" }, "geometry": { "type": "Polygon", "coordinates": [[[121.025,14.595],[121.048,14.595],[121.055,14.610],[121.048,14.625],[121.025,14.620],[121.018,14.608],[121.025,14.595]]] }}
+        ]
+      };
+
+      mapLayers.cityBoundaries = L.geoJSON(cityGeoJSON, {
+        style: cityStyle,
+        onEachFeature: function(feature, layer) {
+          layer.bindTooltip(feature.properties.name, { permanent: false, className: 'city-label' });
+        }
+      });
+
+      /* Barangay boundaries using approximate coords */
+      var brgyFeatures = Object.keys(BRGY_COORDS).map(function(name) {
+        var c = BRGY_COORDS[name];
+        var d = 0.008;
+        return {
+          "type": "Feature",
+          "properties": { "name": name },
+          "geometry": { "type": "Polygon", "coordinates": [[
+            [c[1]-d, c[0]-d],[c[1]+d, c[0]-d],
+            [c[1]+d, c[0]+d],[c[1]-d, c[0]+d],
+            [c[1]-d, c[0]-d]
+          ]]}
+        };
+      });
+      mapLayers.brgyBoundaries = L.geoJSON({ "type":"FeatureCollection","features": brgyFeatures }, { style: brgyStyle });
+
+      /* Barangay name labels */
+      mapLayers.brgyNames = L.layerGroup(
+        Object.keys(BRGY_COORDS).map(function(name) {
+          var c = BRGY_COORDS[name];
+          return L.marker([c[0], c[1]], {
+            icon: L.divIcon({
+              html: '<div style="font-size:9px;font-weight:700;color:#1e40af;background:rgba(255,255,255,0.85);padding:1px 4px;border-radius:3px;white-space:nowrap;box-shadow:0 1px 3px rgba(0,0,0,0.2);">'+name+'</div>',
+              className: '', iconAnchor: [0,0]
+            }),
+            interactive: false
+          });
+        })
       );
 
       /* Mobile users layer - shows team markers */
@@ -1904,6 +1944,10 @@
       mapLayers.satellite.addTo(leafletMap);
       mapLayers.streetNames.addTo(leafletMap);
       mapLayers.cityBoundaries.addTo(leafletMap);
+      /* Sync checkboxes with defaults */
+      document.getElementById('layerSatellite').checked = true;
+      document.getElementById('layerStreetNames').checked = true;
+      document.getElementById('layerCityBound').checked = true;
 
       /* Wire up layer checkboxes */
       function wireLayer(checkboxId, layer, isBase) {
@@ -1911,20 +1955,19 @@
         if (!chk) return;
         chk.addEventListener('change', function() {
           if (this.checked) {
-            /* If base layer, remove other base first */
             if (isBase === 'satellite') {
-              leafletMap.removeLayer(mapLayers.street);
+              if (leafletMap.hasLayer(mapLayers.street)) leafletMap.removeLayer(mapLayers.street);
               document.getElementById('layerStreet').checked = false;
-              mapLayers.satellite.addTo(leafletMap);
+              layer.addTo(leafletMap);
             } else if (isBase === 'street') {
-              leafletMap.removeLayer(mapLayers.satellite);
+              if (leafletMap.hasLayer(mapLayers.satellite)) leafletMap.removeLayer(mapLayers.satellite);
               document.getElementById('layerSatellite').checked = false;
-              mapLayers.street.addTo(leafletMap);
+              layer.addTo(leafletMap);
             } else {
               layer.addTo(leafletMap);
             }
           } else {
-            leafletMap.removeLayer(layer);
+            if (leafletMap.hasLayer(layer)) leafletMap.removeLayer(layer);
           }
         });
       }
