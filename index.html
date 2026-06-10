@@ -1141,7 +1141,8 @@
       }
       var r1 = await db.from('job_orders').select('*')
         .gte('dispatch_date', dateFrom).lte('dispatch_date', dateTo)
-        .order('dispatch_date', { ascending: false });
+        .order('dispatch_date', { ascending: false })
+        .limit(1000);
       if (r1.error) throw r1.error;
       allOrders = r1.data||[];
       shown = allOrders;
@@ -1762,7 +1763,7 @@
   async function loadBoImports() {
     document.getElementById('boTableBody').innerHTML = '<tr class="loading-row"><td colspan="12"><span class="spinner"></span>Loading...</td></tr>';
     try {
-      var r = await db.from('back_office_imports').select('*').order('created_at', { ascending: false });
+      var r = await db.from('back_office_imports').select('*').order('created_at', { ascending: false }).limit(1000);
       if (r.error) throw r.error;
       boData = r.data || [];
       document.getElementById('turninCount').textContent = boData.length;
