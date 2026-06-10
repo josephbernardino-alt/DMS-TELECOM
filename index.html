@@ -774,6 +774,21 @@
 
 <!-- ============ MAP PAGE (NI DASHBOARD) ============ -->
 <div class="page-view" id="page-map">
+  <!-- MAP FILTER BAR -->
+  <div class="filterbar sticky-top">
+    <input class="search-input" id="mapSearch" type="text" placeholder="Search JO#, name, account...">
+    <button class="date-nav" id="mapPrev">‹</button>
+    <button class="date-nav" id="mapNext">›</button>
+    <span class="date-label">Date from:</span>
+    <input class="date-input" type="date" id="mapDateFrom">
+    <span class="date-label">to:</span>
+    <input class="date-input" type="date" id="mapDateTo">
+    <button class="today-btn" id="mapToday">Today</button>
+    <div class="filter-spacer"></div>
+    <div class="teams-badge">TEAMS <span id="mapTeamCount">0</span></div>
+    <button class="view-btn active" id="btnMapTableView">⊞ Table</button>
+    <button class="view-btn active" style="background:#16a34a;border-color:#16a34a;color:white;">🗺 Map</button>
+  </div>
   <div class="summary-row sticky-top" id="mapSummaryRow">
     <button class="new-install-btn">⊕ NEW INSTALLATION</button>
     <div class="sum-card pending">
@@ -1120,7 +1135,9 @@
     try {
       if (!allTeams.length) {
         var r2 = await db.from('teams').select('*');
-        if (!r2.error) { allTeams = r2.data||[]; document.getElementById('teamCount').textContent = allTeams.length; }
+        if (!r2.error) { allTeams = r2.data||[]; document.getElementById('teamCount').textContent = allTeams.length;
+      var mtc = document.getElementById('mapTeamCount');
+      if(mtc) mtc.textContent = allTeams.length; }
       }
       var r1 = await db.from('job_orders').select('*')
         .gte('dispatch_date', dateFrom).lte('dispatch_date', dateTo)
@@ -1840,6 +1857,7 @@
   }
 
   function initMap() {
+    syncMapDates();
     if (!mapInitialized) {
       leafletMap = L.map('leafletMap').setView(MAP_CENTER, 13);
       // Satellite tile
@@ -2012,6 +2030,59 @@
       return '<div class="team-legend-item"><span class="team-dot" style="background:'+c+'"></span>'+tn+'<span class="team-stats">P'+s.pending+' C'+s.completed+' X'+s.cancelled+' R'+s.resched+'</span></div>';
     }).join('');
   }
+
+  /* ── MAP FILTER BAR ── */
+  // Sync map date inputs with main date inputs on init
+  function syncMapDates() {
+    var mdf = document.getElementById('mapDateFrom');
+    var mdt = document.getElementById('mapDateTo');
+    var df  = document.getElementById('dateFrom');
+    var dt  = document.getElementById('dateTo');
+    if(mdf && df) mdf.value = df.value;
+    if(mdt && dt) mdt.value = dt.value;
+    var mc = document.getElementById('mapTeamCount');
+    var tc = document.getElementById('teamCount');
+    if(mc && tc) mc.textContent = tc.textContent;
+  }
+
+  document.getElementById('mapPrev').addEventListener('click', function(){
+    document.getElementById('btnPrev').click();
+    setTimeout(syncMapDates, 800);
+    if(mapInitialized) setTimeout(updateMapData, 900);
+  });
+  document.getElementById('mapNext').addEventListener('click', function(){
+    document.getElementById('btnNext').click();
+    setTimeout(syncMapDates, 800);
+    if(mapInitialized) setTimeout(updateMapData, 900);
+  });
+  document.getElementById('mapToday').addEventListener('click', function(){
+    document.getElementById('btnToday').click();
+    setTimeout(syncMapDates, 800);
+    if(mapInitialized) setTimeout(updateMapData, 900);
+  });
+  document.getElementById('mapDateFrom').addEventListener('change', function(){
+    document.getElementById('dateFrom').value = this.value;
+    dateFrom = this.value;
+    load();
+    if(mapInitialized) setTimeout(updateMapData, 800);
+  });
+  document.getElementById('mapDateTo').addEventListener('change', function(){
+    document.getElementById('dateTo').value = this.value;
+    dateTo = this.value;
+    load();
+    if(mapInitialized) setTimeout(updateMapData, 800);
+  });
+  document.getElementById('mapSearch').addEventListener('input', function(){
+    document.getElementById('searchInput').value = this.value;
+    document.getElementById('searchInput').dispatchEvent(new Event('input'));
+  });
+  document.getElementById('btnMapTableView').addEventListener('click', function(){
+    switchPage('dashboard','table');
+    var tb = document.getElementById('btnTableView');
+    var mb = document.getElementById('btnMapView');
+    if(tb) tb.classList.add('active');
+    if(mb) mb.classList.remove('active');
+  });
 
   /* ── MAP FILTER ── */
   var mapActiveFilter = null;
