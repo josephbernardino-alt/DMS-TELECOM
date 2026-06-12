@@ -11,7 +11,9 @@
   * { margin: 0; padding: 0; box-sizing: border-box; }
   html, body { height: 100%; }
   body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; font-size: 13px; background: #f7f9fc; color: #2c3e50; }
-  .sticky-top { position: sticky; top: 0; z-index: 50; }
+  .sticky-top.pinned { position: fixed; left: 0; right: 0; }
+  .sticky-placeholder { display: none; }
+  .sticky-placeholder.active { display: block; }
   .table-section { display: block; }
   thead th { background: #f1f5f9; }
 
@@ -946,15 +948,37 @@
     var navH = nav ? nav.offsetHeight : 0;
 
     document.querySelectorAll('.page-view').forEach(function(page) {
+      var isActive = page.classList.contains('active');
       var offset = navH;
-      var stickies = page.querySelectorAll(':scope > .sticky-top, :scope > .filterbar.sticky-top, :scope > .summary-row.sticky-top');
-      // de-dup using a Set in case selector overlaps
-      var seen = [];
-      stickies.forEach(function(el) {
-        if (seen.indexOf(el) !== -1) return;
-        seen.push(el);
-        el.style.top = offset + 'px';
-        offset += el.offsetHeight;
+      var children = Array.prototype.slice.call(page.children);
+      children.forEach(function(el) {
+        if (!el.classList || !el.classList.contains('sticky-top')) return;
+
+        // Ensure placeholder exists right before this element
+        if (!el._ph) {
+          var ph = document.createElement('div');
+          ph.className = 'sticky-placeholder';
+          el.parentNode.insertBefore(ph, el);
+          el._ph = ph;
+        }
+
+        if (isActive) {
+          // Temporarily unpin to measure natural height accurately
+          el.classList.remove('pinned');
+          el.style.top = '';
+          var h = el.offsetHeight;
+
+          el.classList.add('pinned');
+          el.style.top = offset + 'px';
+          el._ph.style.height = h + 'px';
+          el._ph.classList.add('active');
+          offset += h;
+        } else {
+          el.classList.remove('pinned');
+          el.style.top = '';
+          el._ph.classList.remove('active');
+          el._ph.style.height = '';
+        }
       });
     });
   }
