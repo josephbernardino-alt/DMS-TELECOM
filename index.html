@@ -18,7 +18,7 @@
   thead th { background: #f1f5f9; }
 
   /* NAVBAR */
-  .topnav { background: linear-gradient(135deg, #0f3460 0%, #1d4ed8 100%); height: 52px; display: flex; align-items: center; padding: 0 20px; gap: 14px; position: sticky; top: 0; z-index: 9000; box-shadow: 0 2px 8px rgba(0,0,0,0.12); }
+  .topnav { background: linear-gradient(135deg, #0f3460 0%, #1d4ed8 100%); height: 52px; display: flex; align-items: center; padding: 0 20px; gap: 14px; position: fixed; top: 0; left: 0; right: 0; z-index: 9000; box-shadow: 0 2px 8px rgba(0,0,0,0.12); }
   .logo { display: flex; align-items: center; gap: 10px; margin-right: 10px; }
   .logo-icon { width: 32px; height: 32px; background: rgba(255,255,255,0.15); border-radius: 8px; display: flex; align-items: center; justify-content: center; }
   .logo-text { color: white; font-size: 14px; font-weight: 700; white-space: nowrap; }
@@ -636,6 +636,7 @@
   </div>
   <div class="nav-avatar">FB</div>
 </div>
+<div style="height:52px;flex-shrink:0;"></div>
 
 <!-- ============ DASHBOARD PAGE ============ -->
 <div class="page-view active" id="page-dashboard">
