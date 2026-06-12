@@ -13,7 +13,7 @@
   body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; font-size: 13px; background: #f7f9fc; color: #2c3e50; }
   .sticky-top { position: sticky; top: 0; z-index: 50; }
   .table-section { display: block; }
-  thead th { position: sticky; top: 0; z-index: 10; background: #f1f5f9 !important; }
+  thead th { background: #f1f5f9; }
 
   /* NAVBAR */
   .topnav { background: linear-gradient(135deg, #0f3460 0%, #1d4ed8 100%); height: 52px; display: flex; align-items: center; padding: 0 20px; gap: 14px; position: sticky; top: 0; z-index: 9000; box-shadow: 0 2px 8px rgba(0,0,0,0.12); }
@@ -39,7 +39,7 @@
   .density-check { color: #1d4ed8; font-weight: 700; margin-left: auto; }
 
   /* FILTER BAR */
-  .filterbar { background: white; border-bottom: 1px solid #e5eaf2; padding: 10px 20px; display: flex; align-items: center; gap: 10px; flex-wrap: wrap; position: relative; z-index: 20; }
+  .filterbar { background: white; border-bottom: 1px solid #e5eaf2; padding: 10px 20px; display: flex; align-items: center; gap: 10px; flex-wrap: wrap; z-index: 20; }
   .search-input { border: 1px solid #dce3ed; border-radius: 8px; padding: 7px 12px; font-size: 12px; width: 200px; outline: none; background: #f7f9fc; }
   .search-input:focus { border-color: #1d4ed8; background: white; box-shadow: 0 0 0 3px rgba(29,78,216,0.08); }
   .date-nav { background: #1d4ed8; color: white; border: none; width: 30px; height: 30px; border-radius: 6px; cursor: pointer; font-size: 16px; display: flex; align-items: center; justify-content: center; }
@@ -56,7 +56,7 @@
   .view-btn.active { background: #1d4ed8; color: white; border-color: #1d4ed8; }
 
   /* KPI CARDS */
-  .summary-row { display: flex; gap: 10px; padding: 12px 20px; background: white; border-bottom: 1px solid #e5eaf2; flex-wrap: wrap; align-items: stretch; position: relative; z-index: 10; }
+  .summary-row { display: flex; gap: 10px; padding: 12px 20px; background: white; border-bottom: 1px solid #e5eaf2; flex-wrap: wrap; align-items: stretch; z-index: 10; }
   .new-install-btn { background: linear-gradient(135deg, #1d4ed8, #1e40af); color: white; border: none; padding: 10px 16px; border-radius: 8px; font-size: 12px; font-weight: 700; cursor: pointer; white-space: nowrap; display: flex; align-items: center; gap: 6px; }
   .sum-card { flex: 1; min-width: 160px; border-radius: 10px; border: 1px solid; padding: 12px 16px; display: flex; flex-direction: column; gap: 6px; }
   .sum-card.pending { background: linear-gradient(135deg, #fffbeb, #fef3c7); border-color: #fcd34d; }
@@ -955,11 +955,6 @@
         seen.push(el);
         el.style.top = offset + 'px';
         offset += el.offsetHeight;
-      });
-      // table headers stick below the accumulated offset
-      var ths = page.querySelectorAll('thead th');
-      ths.forEach(function(th) {
-        th.style.top = offset + 'px';
       });
     });
   }
