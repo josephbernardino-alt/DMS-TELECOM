@@ -984,22 +984,29 @@
   }
 
   /* ── FROZEN TABLE HEADER (clone overlay) ── */
-  function refreshFrozenHeaders() {
+  function getStickyThreshold(page) {
     var nav = document.querySelector('.topnav');
     var navH = nav ? nav.offsetHeight : 0;
+    var threshold = navH;
+    Array.prototype.forEach.call(page.children, function(el){
+      if (el.classList && el.classList.contains('sticky-top')) threshold += el.offsetHeight;
+    });
+    return threshold;
+  }
 
+  // Full refresh: rebuild clone if needed, recompute position/size/widths
+  function refreshFrozenHeaders() {
     document.querySelectorAll('.page-view').forEach(function(page) {
       var table = page.querySelector('.table-section table');
       var isActive = page.classList.contains('active');
 
       if (!table) {
-        if (page._frozenClone) { page._frozenClone.style.display = 'none'; }
+        if (page._frozenClone) page._frozenClone.style.display = 'none';
         return;
       }
       var thead = table.querySelector('thead');
       if (!thead) return;
 
-      // Recreate clone if missing or thead structure changed
       var sig = thead.innerHTML.length + ':' + thead.children.length;
       if (!page._frozenClone || page._frozenSig !== sig) {
         if (page._frozenClone) page._frozenClone.remove();
@@ -1016,42 +1023,68 @@
       }
 
       var clone = page._frozenClone;
-      if (!isActive) { clone.style.display = 'none'; return; }
+      if (!isActive) { clone.style.display = 'none'; clone.dataset.shown = '0'; return; }
 
-      var threshold = navH;
-      Array.prototype.forEach.call(page.children, function(el){
-        if (el.classList && el.classList.contains('sticky-top')) threshold += el.offsetHeight;
-      });
+      var threshold = getStickyThreshold(page);
+      page._frozenThreshold = threshold;
 
       var theadRect = thead.getBoundingClientRect();
       var tableRect = table.getBoundingClientRect();
+      page._frozenTableRect = { left: tableRect.left, width: tableRect.width };
 
-      if (theadRect.top < threshold) {
-        clone.style.display = 'table';
-        clone.style.position = 'fixed';
-        clone.style.top = threshold + 'px';
-        clone.style.left = tableRect.left + 'px';
-        clone.style.width = tableRect.width + 'px';
-        clone.style.tableLayout = 'fixed';
-        clone.style.borderCollapse = 'separate';
-        clone.style.borderSpacing = '0';
-        clone.style.zIndex = '15';
-        clone.style.margin = '0';
-        clone.style.background = '#f1f5f9';
-        clone.style.boxShadow = '0 1px 3px rgba(0,0,0,0.08)';
+      var shouldShow = theadRect.top < threshold;
+      clone.style.display = shouldShow ? 'table' : 'none';
+      clone.dataset.shown = shouldShow ? '1' : '0';
 
-        var origThs = thead.querySelectorAll('th');
-        var cloneThs = clone.querySelectorAll('th');
-        for (var i = 0; i < origThs.length; i++) {
-          if (cloneThs[i]) cloneThs[i].style.width = origThs[i].getBoundingClientRect().width + 'px';
-        }
-      } else {
-        clone.style.display = 'none';
+      clone.style.position = 'fixed';
+      clone.style.top = threshold + 'px';
+      clone.style.left = tableRect.left + 'px';
+      clone.style.width = tableRect.width + 'px';
+      clone.style.tableLayout = 'fixed';
+      clone.style.borderCollapse = 'separate';
+      clone.style.borderSpacing = '0';
+      clone.style.zIndex = '15';
+      clone.style.margin = '0';
+      clone.style.background = '#f1f5f9';
+      clone.style.boxShadow = '0 1px 3px rgba(0,0,0,0.08)';
+
+      var origThs = thead.querySelectorAll('th');
+      var cloneThs = clone.querySelectorAll('th');
+      for (var i = 0; i < origThs.length; i++) {
+        if (cloneThs[i]) cloneThs[i].style.width = origThs[i].getBoundingClientRect().width + 'px';
       }
     });
   }
 
-  window.addEventListener('scroll', refreshFrozenHeaders);
+  // Cheap scroll handler: just toggle visibility, no layout recalculation
+  function onScrollToggleFrozenHeaders() {
+    document.querySelectorAll('.page-view.active').forEach(function(page) {
+      var clone = page._frozenClone;
+      if (!clone) return;
+      var table = page.querySelector('.table-section table');
+      if (!table) return;
+      var thead = table.querySelector('thead');
+      if (!thead) return;
+      var threshold = page._frozenThreshold;
+      if (threshold === undefined) return;
+      var shouldShow = thead.getBoundingClientRect().top < threshold;
+      var isShown = clone.dataset.shown === '1';
+      if (shouldShow !== isShown) {
+        clone.style.display = shouldShow ? 'table' : 'none';
+        clone.dataset.shown = shouldShow ? '1' : '0';
+      }
+    });
+  }
+
+  var scrollRafPending = false;
+  window.addEventListener('scroll', function() {
+    if (scrollRafPending) return;
+    scrollRafPending = true;
+    requestAnimationFrame(function() {
+      scrollRafPending = false;
+      onScrollToggleFrozenHeaders();
+    });
+  });
 
   function refreshLayout() {
     updateStickyOffsets();
