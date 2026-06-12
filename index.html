@@ -15,7 +15,7 @@
   .sticky-placeholder { display: none; }
   .sticky-placeholder.active { display: block; }
   .table-section { display: block; }
-  thead th { background: #f1f5f9; }
+  thead th { background: #f1f5f9; position: sticky; z-index: 5; }
 
   /* NAVBAR */
   .topnav { background: linear-gradient(135deg, #0f3460 0%, #1d4ed8 100%); height: 52px; display: flex; align-items: center; padding: 0 20px; gap: 14px; position: sticky; top: 0; z-index: 9000; box-shadow: 0 2px 8px rgba(0,0,0,0.12); }
@@ -979,6 +979,12 @@
           el._ph.classList.remove('active');
           el._ph.style.height = '';
         }
+      });
+
+      // Table header row sticks right below the pinned KPI cards
+      var ths = page.querySelectorAll('thead th');
+      ths.forEach(function(th) {
+        th.style.top = offset + 'px';
       });
     });
   }
