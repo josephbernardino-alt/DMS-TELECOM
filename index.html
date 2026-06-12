@@ -465,7 +465,7 @@
   .bo-checkbox { width: 15px; height: 15px; accent-color: #1d4ed8; cursor: pointer; }
 
   /* MAP PAGE */
-  #mapContainer { display: flex; height: calc(100vh - 165px); }
+  #mapContainer { display: flex; position: fixed; left: 0; right: 0; bottom: 0; z-index: 1; }
   .map-sidebar-left { width: 220px; background: white; border-right: 1px solid #e5eaf2; overflow-y: auto; flex-shrink: 0; }
   .map-sidebar-right { width: 220px; background: white; border-left: 1px solid #e5eaf2; overflow-y: auto; flex-shrink: 0; padding: 12px; }
   #leafletMap { flex: 1; position: relative; z-index: 1; }
@@ -1056,6 +1056,20 @@
   function refreshLayout() {
     updateStickyOffsets();
     refreshFrozenHeaders();
+
+    // Map page: fill exact remaining viewport (no page scroll)
+    var mapPage = document.getElementById('page-map');
+    var mapContainer = document.getElementById('mapContainer');
+    if (mapPage && mapContainer && mapPage.classList.contains('active')) {
+      var nav = document.querySelector('.topnav');
+      var navH = nav ? nav.offsetHeight : 0;
+      var threshold = navH;
+      Array.prototype.forEach.call(mapPage.children, function(el){
+        if (el.classList && el.classList.contains('sticky-top')) threshold += el.offsetHeight;
+      });
+      mapContainer.style.top = threshold + 'px';
+      if (leafletMap) setTimeout(function(){ leafletMap.invalidateSize(); }, 50);
+    }
   }
 
   window.addEventListener('resize', function(){ refreshLayout(); });
@@ -1989,7 +2003,8 @@
   function initMap() {
     syncMapDates();
     if (!mapInitialized) {
-      leafletMap = L.map('leafletMap', { zoomControl: true }).setView(MAP_CENTER, 13);
+      leafletMap = L.map('leafletMap', { zoomControl: false }).setView(MAP_CENTER, 13);
+      L.control.zoom({ position: 'bottomleft' }).addTo(leafletMap);
 
       /* Base layers - 100% public CDN, work on GitHub Pages */
       mapLayers.satellite = L.tileLayer(
