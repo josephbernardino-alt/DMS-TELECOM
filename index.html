@@ -940,6 +940,33 @@
   }
   setInterval(tick, 1000); tick();
 
+  /* ── STICKY HEADER OFFSETS ── */
+  function updateStickyOffsets() {
+    var nav = document.querySelector('.topnav');
+    var navH = nav ? nav.offsetHeight : 0;
+
+    document.querySelectorAll('.page-view').forEach(function(page) {
+      var offset = navH;
+      var stickies = page.querySelectorAll(':scope > .sticky-top, :scope > .filterbar.sticky-top, :scope > .summary-row.sticky-top');
+      // de-dup using a Set in case selector overlaps
+      var seen = [];
+      stickies.forEach(function(el) {
+        if (seen.indexOf(el) !== -1) return;
+        seen.push(el);
+        el.style.top = offset + 'px';
+        offset += el.offsetHeight;
+      });
+      // table headers stick below the accumulated offset
+      var ths = page.querySelectorAll('thead th');
+      ths.forEach(function(th) {
+        th.style.top = offset + 'px';
+      });
+    });
+  }
+
+  window.addEventListener('resize', function(){ updateStickyOffsets(); });
+
+
   /* ── INIT DATES ── */
   document.getElementById('dateFrom').value = dateFrom;
   document.getElementById('dateTo').value   = dateTo;
@@ -1017,6 +1044,7 @@
       chk.className = 'density-check'; chk.textContent = '✓';
       this.appendChild(chk);
       document.getElementById('densityMenu').classList.remove('open');
+      setTimeout(updateStickyOffsets, 60);
     });
   });
 
@@ -1217,6 +1245,7 @@
     tbody.innerHTML = html;
     document.getElementById('rowCount').textContent = data.length;
   applyColumnVisibility();
+  setTimeout(updateStickyOffsets, 50);
   }
 
   /* ── ACTIVE FILTER STATE ── */
@@ -1716,6 +1745,8 @@
 
     // Update menu active states
     document.querySelectorAll('.nav-menu-item').forEach(function(mi){ mi.classList.remove('active'); });
+
+    setTimeout(updateStickyOffsets, 60);
   }
 
   // NI dropdown toggle
@@ -1828,6 +1859,7 @@
     });
     tbody.innerHTML = html;
     document.getElementById('boRowCount').textContent = boData.length;
+    setTimeout(updateStickyOffsets, 50);
   }
 
   document.getElementById('boToday').addEventListener('click', loadBoImports);
@@ -2370,6 +2402,7 @@
   });
 
   load();
+  setTimeout(updateStickyOffsets, 200);
 })();
 </script>
 
