@@ -23,6 +23,25 @@
   .table-body-wrap { overflow: auto; }
   .table-body-table { border-collapse: separate; border-spacing: 0; table-layout: auto; font-size: 12px; width: max-content; min-width: 100%; }
   .table-body-table td { white-space: nowrap; }
+  /* Fixed column floors so the table is always wider than the viewport → horizontal scroll */
+  .table-body-table td:nth-child(1)  { min-width: 50px; }   /* Count */
+  .table-body-table td:nth-child(2)  { min-width: 52px; }   /* Chat */
+  .table-body-table td:nth-child(3)  { min-width: 104px; }  /* Dispatch Date */
+  .table-body-table td:nth-child(4)  { min-width: 116px; }  /* GoFiber Status */
+  .table-body-table td:nth-child(5)  { min-width: 108px; }  /* JO Number */
+  .table-body-table td:nth-child(6)  { min-width: 108px; }  /* Team Number */
+  .table-body-table td:nth-child(7)  { min-width: 150px; }  /* Personnel */
+  .table-body-table td:nth-child(8)  { min-width: 92px; }   /* TL */
+  .table-body-table td:nth-child(9)  { min-width: 132px; }  /* Account No. */
+  .table-body-table td:nth-child(10) { min-width: 124px; }  /* Barangay */
+  .table-body-table td:nth-child(11) { min-width: 210px; }  /* Customer Name */
+  .table-body-table td:nth-child(12) { min-width: 96px; }   /* Status */
+  .table-body-table td:nth-child(13) { min-width: 160px; max-width: 200px; overflow: hidden; text-overflow: ellipsis; }  /* Status Remarks */
+  .table-body-table td:nth-child(14) { min-width: 150px; }  /* NAP Code */
+  .table-body-table td:nth-child(15) { min-width: 132px; }  /* Call Status */
+  .table-body-table td:nth-child(16) { min-width: 150px; max-width: 200px; overflow: hidden; text-overflow: ellipsis; }  /* Call Remarks */
+  .table-body-table td:nth-child(17) { min-width: 150px; }  /* Mobile No. */
+  .table-body-table td:nth-child(18) { min-width: 104px; }  /* Updated By */
   thead th { background: #f1f5f9; white-space: nowrap; }
 
   /* NAVBAR */
