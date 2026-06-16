@@ -1356,6 +1356,17 @@
 
 <script>
 (function () {
+  function safeOn(id, event, handler) {
+    var el = document.getElementById(id);
+    if (el) { el.addEventListener(event, handler); }
+    else { console.warn('safeOn: element not found:', id); }
+  }
+  function safeOnSel(sel, event, handler) {
+    var el = document.querySelector(sel);
+    if (el) { el.addEventListener(event, handler); }
+    else { console.warn('safeOnSel: element not found:', sel); }
+  }
+
   var SURL = 'https://inlhnajpnlvlkycedooz.supabase.co';
   var SKEY = 'sb_publishable_RUWUqeOHlQFgBboRGLE6gA_a27TuHUQ';
   var db = null;
@@ -1522,7 +1533,7 @@
     });
   }
 
-  document.getElementById('columnsBtn').addEventListener('click', function(e) {
+  safeOn('columnsBtn', 'click', function(e) {
     e.stopPropagation();
     document.getElementById('columnsPanel').classList.toggle('open');
     document.getElementById('densityMenu').classList.remove('open');
@@ -1537,7 +1548,7 @@
   });
 
   /* ── DENSITY (VIEW) ── */
-  document.getElementById('densityBtn').addEventListener('click', function(e) {
+  safeOn('densityBtn', 'click', function(e) {
     e.stopPropagation();
     document.getElementById('densityMenu').classList.toggle('open');
     document.getElementById('columnsPanel').classList.remove('open');
@@ -1647,7 +1658,7 @@
     } catch(e) { console.log('Notif error:', e); }
   }
 
-  document.getElementById('notifBtn').addEventListener('click', function(e) {
+  safeOn('notifBtn', 'click', function(e) {
     e.stopPropagation();
     var panel = document.getElementById('notifPanel');
     var isOpen = panel.classList.contains('open');
@@ -1875,14 +1886,14 @@
     var day = String(dt.getDate()).padStart(2,'0');
     return y+'-'+m+'-'+day;
   }
-  document.getElementById('btnPrev').addEventListener('click', function(){ dateFrom=shift(dateFrom,-1); dateTo=shift(dateTo,-1); document.getElementById('dateFrom').value=dateFrom; document.getElementById('dateTo').value=dateTo; load(); });
-  document.getElementById('btnNext').addEventListener('click', function(){ if(dateFrom>=today())return; dateFrom=shift(dateFrom,1); dateTo=shift(dateTo,1); document.getElementById('dateFrom').value=dateFrom; document.getElementById('dateTo').value=dateTo; load(); });
-  document.getElementById('btnToday').addEventListener('click', function(){ dateFrom=today(); dateTo=today(); document.getElementById('dateFrom').value=dateFrom; document.getElementById('dateTo').value=dateTo; load(); });
-  document.getElementById('dateFrom').addEventListener('change', function(){ dateFrom=this.value; load(); });
-  document.getElementById('dateTo').addEventListener('change', function(){ dateTo=this.value; load(); });
+  safeOn('btnPrev', 'click', function(){ dateFrom=shift(dateFrom,-1); dateTo=shift(dateTo,-1); document.getElementById('dateFrom').value=dateFrom; document.getElementById('dateTo').value=dateTo; load(); });
+  safeOn('btnNext', 'click', function(){ if(dateFrom>=today())return; dateFrom=shift(dateFrom,1); dateTo=shift(dateTo,1); document.getElementById('dateFrom').value=dateFrom; document.getElementById('dateTo').value=dateTo; load(); });
+  safeOn('btnToday', 'click', function(){ dateFrom=today(); dateTo=today(); document.getElementById('dateFrom').value=dateFrom; document.getElementById('dateTo').value=dateTo; load(); });
+  safeOn('dateFrom', 'change', function(){ dateFrom=this.value; load(); });
+  safeOn('dateTo', 'change', function(){ dateTo=this.value; load(); });
 
   /* ── SEARCH ── */
-  document.getElementById('searchInput').addEventListener('input', function(){
+  safeOn('searchInput', 'input', function(){
     var q=this.value.toLowerCase().trim();
     if(!q){render(allOrders);summary(allOrders);return;}
     var f=allOrders.filter(function(r){
@@ -1892,7 +1903,7 @@
   });
 
   /* ── ROW CLICK ── */
-  document.getElementById('tableBody').addEventListener('click', function(e){
+  safeOn('tableBody', 'click', function(e){
     var tr=e.target.closest('tr');
     if(!tr||!tr.dataset.idx)return;
     var idx=parseInt(tr.dataset.idx,10);
@@ -1998,9 +2009,9 @@
 
   /* ── CLOSE MODAL ── */
   function closeModal() { document.getElementById('modalOverlay').style.display='none'; document.body.style.overflow=''; }
-  document.getElementById('btnClose').addEventListener('click', closeModal);
-  document.getElementById('btnClose2').addEventListener('click', closeModal);
-  document.getElementById('modalOverlay').addEventListener('click', function(e){ if(e.target===this)closeModal(); });
+  safeOn('btnClose', 'click', closeModal);
+  safeOn('btnClose2', 'click', closeModal);
+  safeOn('modalOverlay', 'click', function(e){ if(e.target===this)closeModal(); });
 
 
   /* ── LOGIN ── */
@@ -2027,7 +2038,7 @@
     showLogin();
   }
 
-  document.getElementById('togglePw').addEventListener('click', function() {
+  safeOn('togglePw', 'click', function() {
     var inp = document.getElementById('loginPassword');
     inp.type = inp.type === 'password' ? 'text' : 'password';
   });
@@ -2063,9 +2074,9 @@
     }, 500);
   }
 
-  document.getElementById('loginBtn').addEventListener('click', doLogin);
-  document.getElementById('loginPassword').addEventListener('keydown', function(e) { if (e.key === 'Enter') doLogin(); });
-  document.getElementById('loginUsername').addEventListener('keydown', function(e) { if (e.key === 'Enter') document.getElementById('loginPassword').focus(); });
+  safeOn('loginBtn', 'click', doLogin);
+  safeOn('loginPassword', 'keydown', function(e) { if (e.key === 'Enter') doLogin(); });
+  safeOn('loginUsername', 'keydown', function(e) { if (e.key === 'Enter') document.getElementById('loginPassword').focus(); });
 
 
   /* ── ACTION BUTTONS ── */
@@ -2083,7 +2094,7 @@
   }
 
   /* COMPLETE JO */
-  document.querySelector('.btn-complete').addEventListener('click', async function() {
+  safeOnSel('.btn-complete', 'click', async function() {
     if (!currentJO) return;
     if (!confirm('Mark "' + currentJO.customer_name + '" as Completed?')) return;
     try {
@@ -2105,7 +2116,7 @@
   });
 
   /* SAVE CHANGES */
-  document.querySelector('.btn-save').addEventListener('click', async function() {
+  safeOnSel('.btn-save', 'click', async function() {
     if (!currentJO) return;
     try {
       var user = getCurrentUser();
@@ -2129,7 +2140,7 @@
   });
 
   /* RESCHEDULE - Open sub-modal */
-  document.querySelector('.btn-reschedule').addEventListener('click', function() {
+  safeOnSel('.btn-reschedule', 'click', function() {
     if (!currentJO) return;
     document.getElementById('reschedJO').value = currentJO.jo_number;
     var tomorrow = new Date();
@@ -2183,7 +2194,7 @@
   };
 
   /* CANCEL - Open sub-modal */
-  document.querySelector('.btn-cancel-jo').addEventListener('click', function() {
+  safeOnSel('.btn-cancel-jo', 'click', function() {
     if (!currentJO) return;
     document.getElementById('cancelJO').value = currentJO.jo_number;
     document.getElementById('cancelReason').value = '';
@@ -2278,14 +2289,14 @@
   }
 
   // NI dropdown toggle
-  document.getElementById('niBtn').addEventListener('click', function(e){
+  safeOn('niBtn', 'click', function(e){
     e.stopPropagation();
     document.getElementById('niMenu').classList.toggle('open');
     document.getElementById('migMenu').classList.remove('open');
   });
 
   /* ── MIGRATION DROPDOWN ── */
-  document.getElementById('migBtn').addEventListener('click', function(e){
+  safeOn('migBtn', 'click', function(e){
     e.stopPropagation();
     document.getElementById('migMenu').classList.toggle('open');
     document.getElementById('niMenu').classList.remove('open');
@@ -2304,7 +2315,7 @@
   });
 
   /* ── REPORTS ── */
-  document.getElementById('reportsBtn').addEventListener('click', function(){
+  safeOn('reportsBtn', 'click', function(){
     switchPage('reports');
   });
   document.querySelectorAll('.report-card').forEach(function(card){
@@ -2314,21 +2325,21 @@
   });
 
   /* ── USER MENU / LOGOUT ── */
-  document.getElementById('userAvatarBtn').addEventListener('click', function(e){
+  safeOn('userAvatarBtn', 'click', function(e){
     e.stopPropagation();
     document.getElementById('userMenu').classList.toggle('open');
   });
-  document.getElementById('teamsBtn').addEventListener('click', function(e){
+  safeOn('teamsBtn', 'click', function(e){
     e.stopPropagation();
     document.getElementById('userMenu').classList.remove('open');
     showToast('Teams management coming soon', 'warning');
   });
-  document.getElementById('changePwBtn').addEventListener('click', function(e){
+  safeOn('changePwBtn', 'click', function(e){
     e.stopPropagation();
     document.getElementById('userMenu').classList.remove('open');
     showToast('Change Password coming soon', 'warning');
   });
-  document.getElementById('logoutBtn').addEventListener('click', function(e){
+  safeOn('logoutBtn', 'click', function(e){
     e.stopPropagation();
     sessionStorage.removeItem('bestdms_user');
     document.getElementById('userMenu').classList.remove('open');
@@ -2355,12 +2366,12 @@
   });
 
   // Table/Map buttons in filter bar
-  document.getElementById('btnTableView').addEventListener('click', function(){
+  safeOn('btnTableView', 'click', function(){
     switchPage('dashboard','table');
     document.getElementById('btnTableView').classList.add('active');
     document.getElementById('btnMapView').classList.remove('active');
   });
-  document.getElementById('btnMapView').addEventListener('click', function(){
+  safeOn('btnMapView', 'click', function(){
     switchPage('dashboard','map');
     document.getElementById('btnMapView').classList.add('active');
     document.getElementById('btnTableView').classList.remove('active');
@@ -2449,9 +2460,9 @@
     setTimeout(refreshLayout, 50);
   }
 
-  document.getElementById('boToday').addEventListener('click', loadBoImports);
-  document.getElementById('boViewAll').addEventListener('click', loadBoImports);
-  document.getElementById('boSearch').addEventListener('input', function(){
+  safeOn('boToday', 'click', loadBoImports);
+  safeOn('boViewAll', 'click', loadBoImports);
+  safeOn('boSearch', 'input', function(){
     var q = this.value.toLowerCase().trim();
     var tbody = document.getElementById('boTableBody');
     // simple client filter handled by re-render
@@ -2814,38 +2825,38 @@
     if(mc && tc) mc.textContent = tc.textContent;
   }
 
-  document.getElementById('mapPrev').addEventListener('click', function(){
+  safeOn('mapPrev', 'click', function(){
     document.getElementById('btnPrev').click();
     setTimeout(syncMapDates, 800);
     if(mapInitialized) setTimeout(updateMapData, 900);
   });
-  document.getElementById('mapNext').addEventListener('click', function(){
+  safeOn('mapNext', 'click', function(){
     document.getElementById('btnNext').click();
     setTimeout(syncMapDates, 800);
     if(mapInitialized) setTimeout(updateMapData, 900);
   });
-  document.getElementById('mapToday').addEventListener('click', function(){
+  safeOn('mapToday', 'click', function(){
     document.getElementById('btnToday').click();
     setTimeout(syncMapDates, 800);
     if(mapInitialized) setTimeout(updateMapData, 900);
   });
-  document.getElementById('mapDateFrom').addEventListener('change', function(){
+  safeOn('mapDateFrom', 'change', function(){
     document.getElementById('dateFrom').value = this.value;
     dateFrom = this.value;
     load();
     if(mapInitialized) setTimeout(updateMapData, 800);
   });
-  document.getElementById('mapDateTo').addEventListener('change', function(){
+  safeOn('mapDateTo', 'change', function(){
     document.getElementById('dateTo').value = this.value;
     dateTo = this.value;
     load();
     if(mapInitialized) setTimeout(updateMapData, 800);
   });
-  document.getElementById('mapSearch').addEventListener('input', function(){
+  safeOn('mapSearch', 'input', function(){
     document.getElementById('searchInput').value = this.value;
     document.getElementById('searchInput').dispatchEvent(new Event('input'));
   });
-  document.getElementById('btnMapTableView').addEventListener('click', function(){
+  safeOn('btnMapTableView', 'click', function(){
     switchPage('dashboard','table');
     var tb = document.getElementById('btnTableView');
     var mb = document.getElementById('btnMapView');
@@ -2985,7 +2996,7 @@
     } catch(err) { showToast('Error: '+err.message, 'error'); }
   };
 
-  document.getElementById('stagingOverlay').addEventListener('click', function(e){
+  safeOn('stagingOverlay', 'click', function(e){
     if (e.target === this) closeStagingModal();
   });
 
@@ -3588,21 +3599,21 @@
   };
 
   /* ── Right sidebar tab switching ── */
-  document.getElementById('migTabLayers').addEventListener('click', function(){
+  safeOn('migTabLayers', 'click', function(){
     document.querySelectorAll('#page-mig-dispatch .map-tab').forEach(function(t){t.classList.remove('active');});
     this.classList.add('active');
     document.getElementById('migLayersPanel').style.display = 'block';
     document.getElementById('migSubscriberPanel').style.display = 'none';
     document.getElementById('migNoTeamsPanel').style.display = 'none';
   });
-  document.getElementById('migTabSubscriber').addEventListener('click', function(){
+  safeOn('migTabSubscriber', 'click', function(){
     document.querySelectorAll('#page-mig-dispatch .map-tab').forEach(function(t){t.classList.remove('active');});
     this.classList.add('active');
     document.getElementById('migLayersPanel').style.display = 'none';
     document.getElementById('migSubscriberPanel').style.display = 'block';
     document.getElementById('migNoTeamsPanel').style.display = 'none';
   });
-  document.getElementById('migTabNoTeams').addEventListener('click', function(){
+  safeOn('migTabNoTeams', 'click', function(){
     document.querySelectorAll('#page-mig-dispatch .map-tab').forEach(function(t){t.classList.remove('active');});
     this.classList.add('active');
     document.getElementById('migLayersPanel').style.display = 'none';
@@ -3681,7 +3692,7 @@
     } catch(err) { showToast('Error: '+err.message, 'error'); }
   };
 
-  document.getElementById('assignTeamOverlay').addEventListener('click', function(e){
+  safeOn('assignTeamOverlay', 'click', function(e){
     if (e.target === this) closeAssignTeamModal();
   });
 
