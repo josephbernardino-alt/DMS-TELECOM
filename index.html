@@ -577,6 +577,26 @@
   .mig-progress-bar { height: 8px; border-radius: 99px; background: linear-gradient(90deg,#7c3aed,#a78bfa); transition: width 0.5s; }
   .mig-progress-label { display: flex; justify-content: space-between; font-size: 11px; color: #64748b; }
 
+
+  /* MIGRATION DISPATCH MAP */
+  #migMapContainer { display: flex; position: fixed; left: 0; right: 0; bottom: 0; z-index: 1; }
+  #migLeafletMap { flex: 1; position: relative; z-index: 1; }
+  .mig-team-card { border-bottom: 1px solid #f1f5f9; padding: 10px 14px; }
+  .mig-team-card-head { display: flex; align-items: center; gap: 8px; cursor: pointer; }
+  .mig-team-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+  .mig-team-name { font-weight: 700; font-size: 13px; color: #1e293b; }
+  .mig-team-count-badge { background: #f1f5f9; border-radius: 99px; padding: 1px 7px; font-size: 10px; color: #475569; }
+  .mig-team-stats { margin-left: auto; font-size: 10px; color: #64748b; }
+  .mig-team-personnel { font-size: 11px; color: #94a3b8; padding-left: 18px; margin-top: 2px; }
+  .no-teams-card { border: 1px solid #e5eaf2; border-radius: 8px; padding: 10px 12px; margin-bottom: 10px; }
+  .no-teams-acct { display: flex; justify-content: space-between; align-items: center; font-size: 12px; font-weight: 700; color: #1e293b; }
+  .no-teams-pending-badge { background: #fef9c3; color: #92400e; border-radius: 5px; padding: 2px 8px; font-size: 10px; font-weight: 700; }
+  .no-teams-name { color: #1d4ed8; font-weight: 700; font-size: 12px; margin: 3px 0; }
+  .no-teams-loc { font-size: 11px; color: #64748b; }
+  .no-teams-addr { font-size: 10px; color: #94a3b8; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin: 2px 0 8px; }
+  .no-teams-assign-btn { width: 100%; background: #eff6ff; color: #1d4ed8; border: 1px solid #bfdbfe; border-radius: 6px; padding: 6px; font-size: 11px; font-weight: 700; cursor: pointer; }
+  .no-teams-assign-btn:hover { background: #dbeafe; }
+
 </style>
 </head>
 <body class="density-normal">
@@ -1039,30 +1059,80 @@
     <div class="filter-spacer"></div>
     <div class="teams-badge">TEAMS <span id="migDispTeamCount">0</span></div>
     <button class="view-btn active" id="migDispTableBtn">⊞ Table</button>
-    <button class="view-btn" style="background:#16a34a;border-color:#16a34a;color:white;">🗺 Map</button>
+    <button class="view-btn active" style="background:#16a34a;border-color:#16a34a;color:white;">🗺 Map</button>
   </div>
-  <div class="mig-kpi-strip">
-    <button class="mig-header-btn">⊕ MIGRATION</button>
+  <div class="mig-kpi-strip sticky-top">
+    <button class="mig-header-btn">⇄ MIGRATION</button>
     <div class="mig-kpi pending"><div class="mig-kpi-label">Pending</div><div class="mig-kpi-count" id="migDispPending">0</div><div class="mig-kpi-sub"><span id="migDispWT">0 w/ Team</span> | <span id="migDispWOT">0 w/o Team</span></div></div>
     <div class="mig-kpi completed"><div class="mig-kpi-label">Completed</div><div class="mig-kpi-count" id="migDispCompleted">0</div><div class="mig-kpi-sub" id="migDispCompSub">—</div></div>
     <div class="mig-kpi rescheduled"><div class="mig-kpi-label">Rescheduled</div><div class="mig-kpi-count" id="migDispResched">0</div><div class="mig-kpi-sub" id="migDispReschedSub">—</div></div>
     <div class="mig-kpi cancelled"><div class="mig-kpi-label">Cancelled</div><div class="mig-kpi-count" id="migDispCancelled">0</div><div class="mig-kpi-sub" id="migDispCancelSub">—</div></div>
   </div>
-  <div class="mig-head-wrap" id="migDispHeadWrap">
-    <table class="mig-head-table" id="migDispHeadTable">
-      <tbody><tr id="migDispHeadRow">
-        <td>#</td><td>Old Acct No</td><td>Name</td><td>Municipality</td><td>Barangay</td>
-        <td>Contact</td><td>Bundle Type</td><td>Team</td><td>Personnel</td>
-        <td>JO Status</td><td>Remarks</td><td>Date Completed</td>
-      </tr></tbody>
-    </table>
+  <div id="migMapContainer">
+    <!-- LEFT SIDEBAR: DEPLOYED TEAMS -->
+    <div class="map-sidebar-left">
+      <div class="map-panel-head" style="cursor:default;">
+        <span>Deployed Teams</span>
+        <span class="badge-num" id="migDeployedTotal">0</span>
+      </div>
+      <div id="migDeployedTeamsList"></div>
+    </div>
+    <!-- MAP -->
+    <div id="migLeafletMap"></div>
+    <!-- RIGHT SIDEBAR -->
+    <div class="map-sidebar-right">
+      <div class="map-tabs">
+        <button class="map-tab active" id="migTabLayers">Layers</button>
+        <button class="map-tab" id="migTabSubscriber">Subscriber</button>
+        <button class="map-tab" id="migTabNoTeams">No Teams</button>
+      </div>
+      <div id="migLayersPanel">
+        <div class="layer-section-title">Map Layers</div>
+        <label class="layer-item"><input type="checkbox" id="migLayerStreet" checked> Street Map</label>
+        <label class="layer-item"><input type="checkbox" id="migLayerSatellite"> Satellite</label>
+        <label class="layer-item"><input type="checkbox" id="migLayerStreetNames" checked> Street/Road Names</label>
+        <label class="layer-item"><input type="checkbox" id="migLayerLandmarks"> Landmarks</label>
+        <label class="layer-item"><input type="checkbox" id="migLayerCityBound" checked> City Boundaries</label>
+        <label class="layer-item"><input type="checkbox" id="migLayerBrgyBound"> Barangay Boundaries</label>
+        <label class="layer-item"><input type="checkbox" id="migLayerBrgyNames" checked> Barangay Names</label>
+        <label class="layer-item"><input type="checkbox" id="migLayerTeamLabels" checked> Team Labels</label>
+        <label class="layer-item"><input type="checkbox" id="migLayerMobileUsers"> Mobile Users</label>
+      </div>
+      <div id="migSubscriberPanel" style="display:none;">
+        <div class="layer-section-title">Subscriber Search</div>
+        <input class="search-input" id="migSubSearch" type="text" placeholder="Search subscriber..." style="width:100%;margin-bottom:10px;">
+        <div id="migSubscriberList" style="font-size:11px;color:#94a3b8;">Type to search subscribers</div>
+      </div>
+      <div id="migNoTeamsPanel" style="display:none;">
+        <div class="layer-section-title">No Teams <span class="badge-num" id="migNoTeamsCount" style="margin-left:6px;">0</span></div>
+        <div id="migNoTeamsList" style="max-height:calc(100vh - 320px);overflow-y:auto;"></div>
+      </div>
+    </div>
   </div>
-  <div class="mig-body-wrap" id="migDispBodyWrap">
-    <table class="mig-body-table"><tbody id="migDispBody">
-      <tr class="loading-row"><td colspan="12"><span class="spinner"></span>Loading...</td></tr>
-    </tbody></table>
+</div>
+
+<!-- ASSIGN TEAM MODAL -->
+<div class="staging-overlay" id="assignTeamOverlay">
+  <div class="staging-modal" style="width:380px;">
+    <div class="staging-header">
+      <span class="staging-title">Assign Team</span>
+      <button class="modal-close" onclick="closeAssignTeamModal()">✕</button>
+    </div>
+    <div class="staging-body">
+      <div class="staging-field">
+        <label class="staging-label">Customer</label>
+        <div id="assignCustomerName" style="font-weight:700;color:#1e293b;font-size:14px;margin-bottom:10px;"></div>
+        <label class="staging-label">Select Team</label>
+        <select class="staging-input" id="assignTeamSelect" style="width:100%;">
+          <option value="">— Select Team —</option>
+        </select>
+      </div>
+    </div>
+    <div class="staging-footer">
+      <button class="btn btn-close" onclick="closeAssignTeamModal()">Cancel</button>
+      <button class="btn-make-active" onclick="confirmAssignTeam()">Assign</button>
+    </div>
   </div>
-  <div class="mig-footer"><span id="migDispCount">0</span> records</div>
 </div>
 
 <!-- 2. UPLOADED FOR MIGRATION -->
@@ -1071,7 +1141,7 @@
     <input class="search-input" id="migUpSearch" type="text" placeholder="Search account, name, barangay...">
     <div class="filter-spacer"></div>
   </div>
-  <div class="mig-kpi-strip">
+  <div class="mig-kpi-strip sticky-top">
     <button class="mig-header-btn">📤 UPLOADED FOR MIGRATION</button>
     <div class="mig-kpi pending"><div class="mig-kpi-label">Total Uploaded</div><div class="mig-kpi-count" id="migUpTotal">0</div></div>
     <div class="mig-kpi completed"><div class="mig-kpi-label">Completed</div><div class="mig-kpi-count" id="migUpCompleted">0</div></div>
@@ -1099,7 +1169,7 @@
     <input class="search-input" id="migCallSearch" type="text" placeholder="Search account, name, contact...">
     <div class="filter-spacer"></div>
   </div>
-  <div class="mig-kpi-strip">
+  <div class="mig-kpi-strip sticky-top">
     <button class="mig-header-btn">📞 FOR CALLING/SCHEDULING</button>
     <div class="mig-kpi pending"><div class="mig-kpi-label">For Calling</div><div class="mig-kpi-count" id="migCallTotal">0</div></div>
     <div class="mig-kpi completed"><div class="mig-kpi-label">Confirmed</div><div class="mig-kpi-count" id="migCallConfirmed">0</div></div>
@@ -1134,7 +1204,7 @@
     <button class="today-btn" id="migFDToday">Today</button>
     <div class="filter-spacer"></div>
   </div>
-  <div class="mig-kpi-strip">
+  <div class="mig-kpi-strip sticky-top">
     <button class="mig-header-btn">🚀 FOR DISPATCH</button>
     <div class="mig-kpi pending"><div class="mig-kpi-label">Pending</div><div class="mig-kpi-count" id="migFDPending">0</div><div class="mig-kpi-sub"><span id="migFDWT">0 w/ Team</span> | <span id="migFDWOT">0 w/o Team</span></div></div>
     <div class="mig-kpi completed"><div class="mig-kpi-label">Completed</div><div class="mig-kpi-count" id="migFDCompleted">0</div></div>
@@ -1169,7 +1239,7 @@
     <button class="today-btn" id="migCompToday">Today</button>
     <div class="filter-spacer"></div>
   </div>
-  <div class="mig-kpi-strip">
+  <div class="mig-kpi-strip sticky-top">
     <button class="mig-header-btn">✅ COMPLETED / VISITED / CALLED</button>
     <div class="mig-kpi completed"><div class="mig-kpi-label">Completed</div><div class="mig-kpi-count" id="migCompCompleted">0</div></div>
     <div class="mig-kpi rescheduled"><div class="mig-kpi-label">Visited</div><div class="mig-kpi-count" id="migCompVisited">0</div></div>
@@ -1197,7 +1267,7 @@
     <div class="filter-spacer"></div>
     <button class="today-btn" id="migOverallRefresh">🔄 Refresh</button>
   </div>
-  <div class="mig-kpi-strip">
+  <div class="mig-kpi-strip sticky-top">
     <button class="mig-header-btn">📊 OVERALL MIGRATION PROGRESS</button>
     <div class="mig-kpi pending"><div class="mig-kpi-label">Total Records</div><div class="mig-kpi-count" id="migOvTotal">0</div></div>
     <div class="mig-kpi completed"><div class="mig-kpi-label">Completed</div><div class="mig-kpi-count" id="migOvCompleted">0</div></div>
@@ -1363,6 +1433,20 @@
       });
       mapContainer.style.top = threshold + 'px';
       if (leafletMap) setTimeout(function(){ leafletMap.invalidateSize(); }, 50);
+    }
+
+    // Migration Dispatch map page: same fill-viewport treatment
+    var migDispPage = document.getElementById('page-mig-dispatch');
+    var migMapContainer = document.getElementById('migMapContainer');
+    if (migDispPage && migMapContainer && migDispPage.classList.contains('active')) {
+      var nav2 = document.querySelector('.topnav');
+      var navH2 = nav2 ? nav2.offsetHeight : 0;
+      var threshold2 = navH2;
+      Array.prototype.forEach.call(migDispPage.children, function(el){
+        if (el.classList && el.classList.contains('sticky-top')) threshold2 += el.offsetHeight;
+      });
+      migMapContainer.style.top = threshold2 + 'px';
+      if (migLeafletMap) setTimeout(function(){ migLeafletMap.invalidateSize(); }, 50);
     }
   }
 
@@ -2926,6 +3010,7 @@
     if (!pageId) return;
     document.getElementById(pageId).classList.add('active');
     setTimeout(refreshLayout, 60);
+    if (pg === 'dispatch') setTimeout(initMigMap, 100);
     loadMigData(pg);
   }
 
@@ -3001,19 +3086,7 @@
   function renderMigPage(pg) {
     var emptyRow = '<tr class="loading-row"><td colspan="12" style="text-align:center;padding:40px;color:#94a3b8;">No migration records found. Import data to populate this page.</td></tr>';
 
-    if (pg === 'dispatch' || pg === 'fordispatch') {
-      var bodyId   = pg==='dispatch' ? 'migDispBody'   : 'migFDBody';
-      var countId  = pg==='dispatch' ? 'migDispCount'  : 'migFDCount';
-      var pendId   = pg==='dispatch' ? 'migDispPending': 'migFDPending';
-      var compId   = pg==='dispatch' ? 'migDispCompleted':'migFDCompleted';
-      var rescId   = pg==='dispatch' ? 'migDispResched' : 'migFDResched';
-      var canId    = pg==='dispatch' ? 'migDispCancelled':'migFDCancelled';
-      var wtId     = pg==='dispatch' ? 'migDispWT'     : 'migFDWT';
-      var wotId    = pg==='dispatch' ? 'migDispWOT'    : 'migFDWOT';
-      var hwId     = pg==='dispatch' ? 'migDispHeadWrap':'migFDHeadWrap';
-      var bwId     = pg==='dispatch' ? 'migDispBodyWrap':'migFDBodyWrap';
-      var hrId     = pg==='dispatch' ? 'migDispHeadRow' :'migFDHeadRow';
-
+    if (pg === 'dispatch') {
       var pending   = migData.filter(function(r){return !r.jo_status||r.jo_status==='Pending';});
       var completed = migData.filter(function(r){var s=r.jo_status||''; return s==='Done'||s==='Completed';});
       var resched   = migData.filter(function(r){return r.jo_status==='Rescheduled';});
@@ -3022,15 +3095,35 @@
       var noTeam    = migData.filter(function(r){return !r.team_number;});
 
       function setME(id,v){ var el=document.getElementById(id); if(el) el.textContent=v; }
-      setME(countId, migData.length);
-      setME(pendId,  pending.length);
-      setME(compId,  completed.length);
-      setME(rescId,  resched.length);
-      setME(canId,   cancel.length);
-      setME(wtId,    withTeam.length+' w/ Team');
-      setME(wotId,   noTeam.length+' w/o Team');
+      setME('migDispPending',   pending.length);
+      setME('migDispCompleted', completed.length);
+      setME('migDispResched',   resched.length);
+      setME('migDispCancelled', cancel.length);
+      setME('migDispWT',  withTeam.length+' w/ Team');
+      setME('migDispWOT', noTeam.length+' w/o Team');
 
-      var tbody = document.getElementById(bodyId);
+      buildDeployedTeams(withTeam);
+      buildNoTeamsPanel(noTeam);
+      if (migLeafletMap) renderMigMapPins(migData);
+
+    } else if (pg === 'fordispatch') {
+      var pending   = migData.filter(function(r){return !r.jo_status||r.jo_status==='Pending';});
+      var completed = migData.filter(function(r){var s=r.jo_status||''; return s==='Done'||s==='Completed';});
+      var resched   = migData.filter(function(r){return r.jo_status==='Rescheduled';});
+      var cancel    = migData.filter(function(r){return r.jo_status==='Cancelled';});
+      var withTeam  = migData.filter(function(r){return r.team_number;});
+      var noTeam    = migData.filter(function(r){return !r.team_number;});
+
+      function setMF(id,v){ var el=document.getElementById(id); if(el) el.textContent=v; }
+      setMF('migFDCount',     migData.length);
+      setMF('migFDPending',   pending.length);
+      setMF('migFDCompleted', completed.length);
+      setMF('migFDResched',   resched.length);
+      setMF('migFDCancelled', cancel.length);
+      setMF('migFDWT',  withTeam.length+' w/ Team');
+      setMF('migFDWOT', noTeam.length+' w/o Team');
+
+      var tbody = document.getElementById('migFDBody');
       if (!tbody) return;
       if (!migData.length) { tbody.innerHTML = emptyRow; return; }
       tbody.innerHTML = migData.map(function(r,i){
@@ -3049,7 +3142,7 @@
           +'<td>'+mv(r.date_completed)+'</td>'
           +'</tr>';
       }).join('');
-      setTimeout(function(){ syncMigHeader(bwId, hwId, hrId); }, 80);
+      setTimeout(function(){ syncMigHeader('migFDBodyWrap', 'migFDHeadWrap', 'migFDHeadRow'); }, 80);
 
     } else if (pg === 'uploaded') {
       var tbody = document.getElementById('migUpBody');
@@ -3216,6 +3309,287 @@
       }
     }
   }
+
+  /* ════════════ MIGRATION DISPATCH MAP ════════════ */
+  var migLeafletMap = null;
+  var migMapInitialized = false;
+  var migMapMarkers = [];
+  var migMapLayers = {};
+  var pendingAssignRecord = null;
+
+  function initMigMap() {
+    var nav = document.querySelector('.topnav');
+    var navH = nav ? nav.offsetHeight : 0;
+    var page = document.getElementById('page-mig-dispatch');
+    var threshold = navH;
+    Array.prototype.forEach.call(page.children, function(el){
+      if (el.classList && el.classList.contains('sticky-top')) threshold += el.offsetHeight;
+    });
+    var container = document.getElementById('migMapContainer');
+    if (container) container.style.top = threshold + 'px';
+
+    if (!migMapInitialized) {
+      migLeafletMap = L.map('migLeafletMap', { zoomControl: false }).setView(MAP_CENTER, 13);
+      L.control.zoom({ position: 'bottomleft' }).addTo(migLeafletMap);
+
+      migMapLayers.street = L.tileLayer(
+        'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png',
+        { attribution: '© Carto © OSM', maxZoom: 19, subdomains: 'abcd' }
+      ).addTo(migLeafletMap);
+      migMapLayers.satellite = L.tileLayer(
+        'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
+        { attribution: '© Esri', maxZoom: 19 }
+      );
+      migMapLayers.streetNames = L.tileLayer(
+        'https://{s}.basemaps.cartocdn.com/rastertiles/voyager_only_labels/{z}/{x}/{y}{r}.png',
+        { attribution: '© Carto', maxZoom: 19, subdomains: 'abcd', opacity: 0.9 }
+      ).addTo(migLeafletMap);
+      migMapLayers.landmarks = L.tileLayer(
+        'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png',
+        { attribution: '© Carto', maxZoom: 19, subdomains: 'abcd', opacity: 0.6 }
+      );
+
+      var cityStyle = { color: '#1d4ed8', weight: 2.5, fill: false, opacity: 0.8, dashArray: '6,4' };
+      var brgyStyle = { color: '#60a5fa', weight: 1, fill: false, opacity: 0.6 };
+      var cityGeoJSON = {
+        "type":"FeatureCollection","features":[
+          {"type":"Feature","properties":{"name":"PASIG"},"geometry":{"type":"Polygon","coordinates":[[[121.063,14.530],[121.095,14.530],[121.102,14.550],[121.095,14.595],[121.078,14.608],[121.060,14.595],[121.048,14.570],[121.063,14.530]]]}},
+          {"type":"Feature","properties":{"name":"MARIKINA"},"geometry":{"type":"Polygon","coordinates":[[[121.090,14.625],[121.118,14.625],[121.130,14.650],[121.125,14.690],[121.100,14.700],[121.080,14.685],[121.075,14.655],[121.090,14.625]]]}},
+          {"type":"Feature","properties":{"name":"MANDALUYONG"},"geometry":{"type":"Polygon","coordinates":[[[121.025,14.570],[121.050,14.570],[121.058,14.590],[121.050,14.610],[121.030,14.608],[121.018,14.590],[121.025,14.570]]]}},
+          {"type":"Feature","properties":{"name":"SAN JUAN"},"geometry":{"type":"Polygon","coordinates":[[[121.025,14.595],[121.048,14.595],[121.055,14.610],[121.048,14.625],[121.025,14.620],[121.018,14.608],[121.025,14.595]]]}}
+        ]
+      };
+      migMapLayers.cityBoundaries = L.geoJSON(cityGeoJSON, { style: cityStyle }).addTo(migLeafletMap);
+
+      var brgyFeatures = Object.keys(BRGY_COORDS).map(function(name){
+        var c = BRGY_COORDS[name]; var d = 0.008;
+        return { "type":"Feature","properties":{"name":name},"geometry":{"type":"Polygon","coordinates":[[
+          [c[1]-d,c[0]-d],[c[1]+d,c[0]-d],[c[1]+d,c[0]+d],[c[1]-d,c[0]+d],[c[1]-d,c[0]-d]
+        ]]}};
+      });
+      migMapLayers.brgyBoundaries = L.geoJSON({"type":"FeatureCollection","features":brgyFeatures}, { style: brgyStyle });
+
+      migMapLayers.brgyNames = L.layerGroup(
+        Object.keys(BRGY_COORDS).map(function(name){
+          var c = BRGY_COORDS[name];
+          return L.marker([c[0],c[1]], {
+            icon: L.divIcon({
+              html: '<div style="font-size:9px;font-weight:700;color:#1e40af;background:rgba(255,255,255,0.85);padding:1px 4px;border-radius:3px;white-space:nowrap;box-shadow:0 1px 3px rgba(0,0,0,0.2);">'+name+'</div>',
+              className:'', iconAnchor:[0,0]
+            }), interactive:false
+          });
+        })
+      ).addTo(migLeafletMap);
+
+      migMapLayers.teamLabels = L.layerGroup();
+      migMapLayers.mobileUsers = L.layerGroup();
+
+      function wireMigLayer(checkboxId, layer, isBase) {
+        var chk = document.getElementById(checkboxId);
+        if (!chk) return;
+        chk.addEventListener('change', function(){
+          if (this.checked) {
+            if (isBase === 'satellite') {
+              if (migLeafletMap.hasLayer(migMapLayers.street)) migLeafletMap.removeLayer(migMapLayers.street);
+              document.getElementById('migLayerStreet').checked = false;
+              layer.addTo(migLeafletMap);
+            } else if (isBase === 'street') {
+              if (migLeafletMap.hasLayer(migMapLayers.satellite)) migLeafletMap.removeLayer(migMapLayers.satellite);
+              document.getElementById('migLayerSatellite').checked = false;
+              layer.addTo(migLeafletMap);
+            } else { layer.addTo(migLeafletMap); }
+          } else {
+            if (migLeafletMap.hasLayer(layer)) migLeafletMap.removeLayer(layer);
+          }
+        });
+      }
+      wireMigLayer('migLayerSatellite', migMapLayers.satellite, 'satellite');
+      wireMigLayer('migLayerStreet', migMapLayers.street, 'street');
+      wireMigLayer('migLayerStreetNames', migMapLayers.streetNames, false);
+      wireMigLayer('migLayerLandmarks', migMapLayers.landmarks, false);
+      wireMigLayer('migLayerCityBound', migMapLayers.cityBoundaries, false);
+      wireMigLayer('migLayerBrgyBound', migMapLayers.brgyBoundaries, false);
+      wireMigLayer('migLayerBrgyNames', migMapLayers.brgyNames, false);
+      wireMigLayer('migLayerTeamLabels', migMapLayers.teamLabels, false);
+      wireMigLayer('migLayerMobileUsers', migMapLayers.mobileUsers, false);
+
+      migMapInitialized = true;
+    }
+    setTimeout(function(){ migLeafletMap.invalidateSize(); }, 200);
+  }
+
+  function renderMigMapPins(data) {
+    if (!migLeafletMap) return;
+    migMapMarkers.forEach(function(m){ migLeafletMap.removeLayer(m); });
+    migMapMarkers = [];
+    migMapLayers.teamLabels.clearLayers();
+
+    var statusColors = { 'Done':'#16a34a','Completed':'#16a34a','Pending':'#f59e0b','Rescheduled':'#f97316','Cancelled':'#ef4444' };
+    var teamPositions = {};
+
+    data.forEach(function(r){
+      var coords = BRGY_COORDS[r.barangay];
+      if (!coords) return;
+      var lat = coords[0] + (Math.random()-0.5)*0.007;
+      var lng = coords[1] + (Math.random()-0.5)*0.007;
+      var color = statusColors[r.jo_status] || '#f59e0b';
+      var marker = L.marker([lat,lng], { icon: houseIcon(color) }).addTo(migLeafletMap);
+      marker.bindPopup('<div style="font-size:12px;min-width:160px;"><b>'+(r.name||'—')+'</b><br><span style="color:#64748b">'+(r.old_acct_no||'')+'</span><br>'+(r.barangay||'')+'<br><span style="font-weight:700;color:'+color+'">'+(r.jo_status||'Pending')+'</span></div>');
+      migMapMarkers.push(marker);
+      if (r.team_number) {
+        if (!teamPositions[r.team_number]) teamPositions[r.team_number] = { lats:[], lngs:[] };
+        teamPositions[r.team_number].lats.push(lat);
+        teamPositions[r.team_number].lngs.push(lng);
+      }
+    });
+
+    var teamColors = ['#ef4444','#8b5cf6','#0d9488','#f59e0b','#3b82f6','#ec4899'];
+    var ti = 0;
+    Object.keys(teamPositions).forEach(function(tn){
+      var pos = teamPositions[tn];
+      var avgLat = pos.lats.reduce(function(a,b){return a+b;},0)/pos.lats.length;
+      var avgLng = pos.lngs.reduce(function(a,b){return a+b;},0)/pos.lngs.length;
+      var col = teamColors[ti++ % teamColors.length];
+      var label = L.marker([avgLat,avgLng], {
+        icon: L.divIcon({
+          html: '<div style="background:'+col+';color:white;padding:3px 10px;border-radius:5px;font-size:11px;font-weight:700;white-space:nowrap;box-shadow:0 2px 6px rgba(0,0,0,0.35);">'+tn+'</div>',
+          className:'', iconAnchor:[0,0]
+        }), interactive:false, zIndexOffset:1000
+      });
+      migMapLayers.teamLabels.addLayer(label);
+    });
+  }
+
+  /* ── Deployed Teams sidebar (left) ── */
+  function buildDeployedTeams(withTeamRecords) {
+    var byTeam = {};
+    withTeamRecords.forEach(function(r){
+      var tn = r.team_number;
+      if (!byTeam[tn]) byTeam[tn] = { records: [], personnel: r.personnel };
+      byTeam[tn].records.push(r);
+    });
+    var teamColors = ['#ef4444','#8b5cf6','#0d9488','#f59e0b','#3b82f6','#ec4899'];
+    var keys = Object.keys(byTeam);
+    var totalEl = document.getElementById('migDeployedTotal');
+    if (totalEl) totalEl.textContent = keys.length;
+
+    var list = document.getElementById('migDeployedTeamsList');
+    if (!list) return;
+    if (!keys.length) { list.innerHTML = '<div style="padding:16px;color:#94a3b8;font-size:12px;">No teams deployed for this date range</div>'; return; }
+
+    list.innerHTML = keys.map(function(tn, i){
+      var t = byTeam[tn];
+      var p = t.records.filter(function(r){return !r.jo_status||r.jo_status==='Pending';}).length;
+      var c = t.records.filter(function(r){var s=r.jo_status||''; return s==='Done'||s==='Completed';}).length;
+      var rs = t.records.filter(function(r){return r.jo_status==='Rescheduled';}).length;
+      var x = t.records.filter(function(r){return r.jo_status==='Cancelled';}).length;
+      var col = teamColors[i % teamColors.length];
+      return '<div class="mig-team-card">'
+        +'<div class="mig-team-card-head">'
+        +'<span class="mig-team-dot" style="background:'+col+'"></span>'
+        +'<span class="mig-team-name">'+tn+'</span>'
+        +'<span class="mig-team-count-badge">'+t.records.length+'</span>'
+        +'<span class="mig-team-stats">P:'+p+' C:'+c+' R:'+rs+' X:'+x+'</span>'
+        +'</div>'
+        +(t.personnel ? '<div class="mig-team-personnel">'+t.personnel+'</div>' : '')
+        +'</div>';
+    }).join('');
+  }
+
+  /* ── No Teams sidebar (right) ── */
+  function buildNoTeamsPanel(noTeamRecords) {
+    var countEl = document.getElementById('migNoTeamsCount');
+    if (countEl) countEl.textContent = noTeamRecords.length;
+    var list = document.getElementById('migNoTeamsList');
+    if (!list) return;
+    if (!noTeamRecords.length) { list.innerHTML = '<div style="padding:16px;color:#94a3b8;font-size:12px;">All records have teams assigned</div>'; return; }
+
+    list.innerHTML = noTeamRecords.slice(0, 100).map(function(r){
+      return '<div class="no-teams-card">'
+        +'<div class="no-teams-acct"><span>'+(r.old_acct_no||'—')+'</span>'+migStatusBadge(r.jo_status)+'</div>'
+        +'<div class="no-teams-name">'+(r.name||'—')+'</div>'
+        +'<div class="no-teams-loc">'+(r.barangay||'')+(r.municipality?', '+r.municipality:'')+'</div>'
+        +'<div class="no-teams-addr">'+(r.address||'')+'</div>'
+        +'<button class="no-teams-assign-btn" onclick="openAssignTeamModal(\''+r.id+'\')">+ Assign team</button>'
+        +'</div>';
+    }).join('');
+  }
+
+  /* ── Right sidebar tab switching ── */
+  document.getElementById('migTabLayers').addEventListener('click', function(){
+    document.querySelectorAll('#page-mig-dispatch .map-tab').forEach(function(t){t.classList.remove('active');});
+    this.classList.add('active');
+    document.getElementById('migLayersPanel').style.display = 'block';
+    document.getElementById('migSubscriberPanel').style.display = 'none';
+    document.getElementById('migNoTeamsPanel').style.display = 'none';
+  });
+  document.getElementById('migTabSubscriber').addEventListener('click', function(){
+    document.querySelectorAll('#page-mig-dispatch .map-tab').forEach(function(t){t.classList.remove('active');});
+    this.classList.add('active');
+    document.getElementById('migLayersPanel').style.display = 'none';
+    document.getElementById('migSubscriberPanel').style.display = 'block';
+    document.getElementById('migNoTeamsPanel').style.display = 'none';
+  });
+  document.getElementById('migTabNoTeams').addEventListener('click', function(){
+    document.querySelectorAll('#page-mig-dispatch .map-tab').forEach(function(t){t.classList.remove('active');});
+    this.classList.add('active');
+    document.getElementById('migLayersPanel').style.display = 'none';
+    document.getElementById('migSubscriberPanel').style.display = 'none';
+    document.getElementById('migNoTeamsPanel').style.display = 'block';
+  });
+
+  /* Subscriber search (client-side over current migData) */
+  var migSubSearchEl = document.getElementById('migSubSearch');
+  if (migSubSearchEl) {
+    migSubSearchEl.addEventListener('input', function(){
+      var q = this.value.toLowerCase().trim();
+      var listEl = document.getElementById('migSubscriberList');
+      if (!q) { listEl.innerHTML = '<span style="color:#94a3b8;">Type to search subscribers</span>'; return; }
+      var matches = migData.filter(function(r){
+        return (r.name||'').toLowerCase().includes(q) || (r.old_acct_no||'').toLowerCase().includes(q);
+      }).slice(0, 20);
+      if (!matches.length) { listEl.innerHTML = '<span style="color:#94a3b8;">No matches</span>'; return; }
+      listEl.innerHTML = matches.map(function(r){
+        return '<div style="padding:8px 0;border-bottom:1px solid #f1f5f9;">'
+          +'<div style="font-weight:700;color:#1e293b;">'+(r.name||'—')+'</div>'
+          +'<div style="color:#64748b;">'+(r.old_acct_no||'')+' — '+(r.barangay||'')+'</div>'
+          +'</div>';
+      }).join('');
+    });
+  }
+
+  /* ── Assign Team Modal ── */
+  window.openAssignTeamModal = function(recordId) {
+    pendingAssignRecord = migData.find(function(r){ return String(r.id) === String(recordId); });
+    if (!pendingAssignRecord) return;
+    document.getElementById('assignCustomerName').textContent = pendingAssignRecord.name || pendingAssignRecord.old_acct_no || 'Customer';
+    var select = document.getElementById('assignTeamSelect');
+    select.innerHTML = '<option value="">— Select Team —</option>' +
+      allTeams.map(function(t){ return '<option value="'+t.team_number+'">'+t.team_number+'</option>'; }).join('');
+    document.getElementById('assignTeamOverlay').style.display = 'flex';
+  };
+
+  window.closeAssignTeamModal = function() {
+    document.getElementById('assignTeamOverlay').style.display = 'none';
+    pendingAssignRecord = null;
+  };
+
+  window.confirmAssignTeam = async function() {
+    var teamVal = document.getElementById('assignTeamSelect').value;
+    if (!teamVal) { showToast('Please select a team', 'warning'); return; }
+    if (!pendingAssignRecord) return;
+    try {
+      var { error } = await db.from(MIG_TABLE).update({ team_number: teamVal }).eq('id', pendingAssignRecord.id);
+      if (error) throw error;
+      showToast('✓ Team '+teamVal+' assigned!', 'success');
+      closeAssignTeamModal();
+      loadMigData('dispatch');
+    } catch(err) { showToast('Error: '+err.message, 'error'); }
+  };
+
+  document.getElementById('assignTeamOverlay').addEventListener('click', function(e){
+    if (e.target === this) closeAssignTeamModal();
+  });
 
   /* ── Overall refresh button ── */
   var migOverallRefreshBtn = document.getElementById('migOverallRefresh');
