@@ -597,6 +597,28 @@
   .no-teams-assign-btn { width: 100%; background: #eff6ff; color: #1d4ed8; border: 1px solid #bfdbfe; border-radius: 6px; padding: 6px; font-size: 11px; font-weight: 700; cursor: pointer; }
   .no-teams-assign-btn:hover { background: #dbeafe; }
 
+
+  /* SUBSCRIBER PANEL */
+  .subscriber-empty { display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: 60px 20px; height: 100%; }
+  .subscriber-empty-icon { width: 56px; height: 56px; border-radius: 50%; background: #f1f5f9; display: flex; align-items: center; justify-content: center; margin-bottom: 16px; }
+  .subscriber-empty-text { font-size: 13px; color: #94a3b8; line-height: 1.5; }
+  .subscriber-detail-card { padding: 4px; }
+  .subscriber-detail-name { font-size: 15px; font-weight: 700; color: #1e293b; margin-bottom: 2px; }
+  .subscriber-detail-acct { font-size: 12px; color: #94a3b8; margin-bottom: 14px; }
+  .subscriber-detail-row { display: flex; justify-content: space-between; padding: 7px 0; border-bottom: 1px solid #f1f5f9; font-size: 12px; }
+  .subscriber-detail-label { color: #94a3b8; }
+  .subscriber-detail-value { color: #1e293b; font-weight: 600; text-align: right; max-width: 60%; }
+
+  /* NO TEAMS CARD ACCENT */
+  .no-teams-card { border-left: 3px solid #f59e0b; }
+
+  /* TEAM ASSIGNMENT MODAL */
+  .team-assign-title { font-size: 14px; font-weight: 800; color: #1e293b; text-transform: uppercase; letter-spacing: 0.3px; }
+  .team-assign-label { font-size: 12px; font-weight: 700; color: #1e293b; margin-bottom: 6px; display: block; }
+  .team-assign-label .req { color: #ef4444; }
+  .team-assign-select { width: 100%; border: 1px solid #e2e8f0; border-radius: 8px; padding: 10px 12px; font-size: 13px; color: #1e293b; background: white; font-family: inherit; margin-bottom: 16px; }
+  .team-assign-select:focus { outline: none; border-color: #1d4ed8; }
+
 </style>
 </head>
 <body class="density-normal">
@@ -1099,9 +1121,12 @@
         <label class="layer-item"><input type="checkbox" id="migLayerMobileUsers"> Mobile Users</label>
       </div>
       <div id="migSubscriberPanel" style="display:none;">
-        <div class="layer-section-title">Subscriber Search</div>
-        <input class="search-input" id="migSubSearch" type="text" placeholder="Search subscriber..." style="width:100%;margin-bottom:10px;">
-        <div id="migSubscriberList" style="font-size:11px;color:#94a3b8;">Type to search subscribers</div>
+        <div id="migSubscriberContent" class="subscriber-empty">
+          <div class="subscriber-empty-icon">
+            <svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="#94a3b8" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M4 21v-1a8 8 0 0116 0v1"/></svg>
+          </div>
+          <div class="subscriber-empty-text">Click a job order or map marker<br>to view subscriber details.</div>
+        </div>
       </div>
       <div id="migNoTeamsPanel" style="display:none;">
         <div class="layer-section-title">No Teams <span class="badge-num" id="migNoTeamsCount" style="margin-left:6px;">0</span></div>
@@ -1113,24 +1138,32 @@
 
 <!-- ASSIGN TEAM MODAL -->
 <div class="staging-overlay" id="assignTeamOverlay">
-  <div class="staging-modal" style="width:380px;">
+  <div class="staging-modal" style="width:420px;">
     <div class="staging-header">
-      <span class="staging-title">Assign Team</span>
+      <span class="team-assign-title">Team Assignment</span>
       <button class="modal-close" onclick="closeAssignTeamModal()">✕</button>
     </div>
     <div class="staging-body">
-      <div class="staging-field">
-        <label class="staging-label">Customer</label>
-        <div id="assignCustomerName" style="font-weight:700;color:#1e293b;font-size:14px;margin-bottom:10px;"></div>
-        <label class="staging-label">Select Team</label>
-        <select class="staging-input" id="assignTeamSelect" style="width:100%;">
-          <option value="">— Select Team —</option>
-        </select>
-      </div>
+      <div id="assignCustomerName" style="display:none;"></div>
+
+      <label class="team-assign-label">Team Number <span class="req">*</span></label>
+      <select class="team-assign-select" id="assignTeamSelect">
+        <option value="">— Select Team —</option>
+      </select>
+
+      <label class="team-assign-label">Personnel 1 <span class="req">*</span></label>
+      <select class="team-assign-select" id="assignPersonnel1Select">
+        <option value="">— Select Personnel 1 —</option>
+      </select>
+
+      <label class="team-assign-label">Personnel 2</label>
+      <select class="team-assign-select" id="assignPersonnel2Select" style="margin-bottom:0;">
+        <option value="">None</option>
+      </select>
     </div>
     <div class="staging-footer">
       <button class="btn btn-close" onclick="closeAssignTeamModal()">Cancel</button>
-      <button class="btn-make-active" onclick="confirmAssignTeam()">Assign</button>
+      <button class="btn btn-save" onclick="confirmAssignTeam()">Save</button>
     </div>
   </div>
 </div>
@@ -1326,7 +1359,7 @@
   var SURL = 'https://inlhnajpnlvlkycedooz.supabase.co';
   var SKEY = 'sb_publishable_RUWUqeOHlQFgBboRGLE6gA_a27TuHUQ';
   var db = null;
-  var allOrders = [], shown = [], allTeams = [];
+  var allOrders = [], shown = [], allTeams = [], allPersonnel = [];
   var dateFrom = today(), dateTo = today();
   var currentDensity = 'normal';
 
@@ -1652,6 +1685,12 @@
         if (!r2.error) { allTeams = r2.data||[]; document.getElementById('teamCount').textContent = allTeams.length;
       var mtc = document.getElementById('mapTeamCount');
       if(mtc) mtc.textContent = allTeams.length; }
+      }
+      if (!allPersonnel.length) {
+        try {
+          var rp = await db.from('personnel').select('*');
+          if (!rp.error) allPersonnel = rp.data || [];
+        } catch(ep) { /* personnel table may not exist yet */ }
       }
       var r1 = await db.from('job_orders').select('*')
         .gte('dispatch_date', dateFrom).lte('dispatch_date', dateTo)
@@ -3435,6 +3474,7 @@
       var color = statusColors[r.jo_status] || '#f59e0b';
       var marker = L.marker([lat,lng], { icon: houseIcon(color) }).addTo(migLeafletMap);
       marker.bindPopup('<div style="font-size:12px;min-width:160px;"><b>'+(r.name||'—')+'</b><br><span style="color:#64748b">'+(r.old_acct_no||'')+'</span><br>'+(r.barangay||'')+'<br><span style="font-weight:700;color:'+color+'">'+(r.jo_status||'Pending')+'</span></div>');
+      marker.on('click', function(){ showSubscriberDetail(r.id); });
       migMapMarkers.push(marker);
       if (r.team_number) {
         if (!teamPositions[r.team_number]) teamPositions[r.team_number] = { lats:[], lngs:[] };
@@ -3505,15 +3545,47 @@
     if (!noTeamRecords.length) { list.innerHTML = '<div style="padding:16px;color:#94a3b8;font-size:12px;">All records have teams assigned</div>'; return; }
 
     list.innerHTML = noTeamRecords.slice(0, 100).map(function(r){
-      return '<div class="no-teams-card">'
+      return '<div class="no-teams-card" onclick="showSubscriberDetail(\'' + r.id + '\', event)" style="cursor:pointer;">'
         +'<div class="no-teams-acct"><span>'+(r.old_acct_no||'—')+'</span>'+migStatusBadge(r.jo_status)+'</div>'
         +'<div class="no-teams-name">'+(r.name||'—')+'</div>'
         +'<div class="no-teams-loc">'+(r.barangay||'')+(r.municipality?', '+r.municipality:'')+'</div>'
         +'<div class="no-teams-addr">'+(r.address||'')+'</div>'
-        +'<button class="no-teams-assign-btn" onclick="openAssignTeamModal(\''+r.id+'\')">+ Assign team</button>'
+        +'<button class="no-teams-assign-btn" onclick="event.stopPropagation();openAssignTeamModal(\'' + r.id + '\')">+ Assign team</button>'
         +'</div>';
     }).join('');
   }
+
+  /* ── Subscriber detail view ── */
+  window.showSubscriberDetail = function(recordId, evt) {
+    if (evt) evt.stopPropagation();
+    var r = migData.find(function(rec){ return String(rec.id) === String(recordId); });
+    if (!r) return;
+
+    document.querySelectorAll('#page-mig-dispatch .map-tab').forEach(function(t){t.classList.remove('active');});
+    document.getElementById('migTabSubscriber').classList.add('active');
+    document.getElementById('migLayersPanel').style.display = 'none';
+    document.getElementById('migSubscriberPanel').style.display = 'block';
+    document.getElementById('migNoTeamsPanel').style.display = 'none';
+
+    function row(label, val) {
+      return '<div class="subscriber-detail-row"><span class="subscriber-detail-label">'+label+'</span><span class="subscriber-detail-value">'+(val||'—')+'</span></div>';
+    }
+
+    document.getElementById('migSubscriberContent').outerHTML =
+      '<div id="migSubscriberContent" class="subscriber-detail-card">'
+      +'<div class="subscriber-detail-name">'+(r.name||'—')+'</div>'
+      +'<div class="subscriber-detail-acct">Acct # '+(r.old_acct_no||'—')+'</div>'
+      +row('Status', r.jo_status||'Pending')
+      +row('Municipality', r.municipality)
+      +row('Barangay', r.barangay)
+      +row('Address', r.address)
+      +row('Contact', r.contact_info)
+      +row('Bundle Type', r.bundle_type)
+      +row('Team', r.team_number)
+      +row('Personnel', r.personnel)
+      +row('Remarks', r.remarks)
+      +'</div>';
+  };
 
   /* ── Right sidebar tab switching ── */
   document.getElementById('migTabLayers').addEventListener('click', function(){
@@ -3559,13 +3631,26 @@
   }
 
   /* ── Assign Team Modal ── */
+  function personnelLabel(p) {
+    return p.name || p.full_name || (p.first_name ? (p.first_name+' '+(p.last_name||'')) : null) || p.username || ('Personnel '+p.id);
+  }
+
   window.openAssignTeamModal = function(recordId) {
     pendingAssignRecord = migData.find(function(r){ return String(r.id) === String(recordId); });
     if (!pendingAssignRecord) return;
-    document.getElementById('assignCustomerName').textContent = pendingAssignRecord.name || pendingAssignRecord.old_acct_no || 'Customer';
-    var select = document.getElementById('assignTeamSelect');
-    select.innerHTML = '<option value="">— Select Team —</option>' +
+
+    var teamSelect = document.getElementById('assignTeamSelect');
+    teamSelect.innerHTML = '<option value="">— Select Team —</option>' +
       allTeams.map(function(t){ return '<option value="'+t.team_number+'">'+t.team_number+'</option>'; }).join('');
+
+    var p1 = document.getElementById('assignPersonnel1Select');
+    var p2 = document.getElementById('assignPersonnel2Select');
+    var personnelOptions = allPersonnel.map(function(p){
+      return '<option value="'+personnelLabel(p)+'">'+personnelLabel(p)+'</option>';
+    }).join('');
+    p1.innerHTML = '<option value="">— Select Personnel 1 —</option>' + personnelOptions;
+    p2.innerHTML = '<option value="">None</option>' + personnelOptions;
+
     document.getElementById('assignTeamOverlay').style.display = 'flex';
   };
 
@@ -3576,10 +3661,19 @@
 
   window.confirmAssignTeam = async function() {
     var teamVal = document.getElementById('assignTeamSelect').value;
-    if (!teamVal) { showToast('Please select a team', 'warning'); return; }
+    var p1Val   = document.getElementById('assignPersonnel1Select').value;
+    var p2Val   = document.getElementById('assignPersonnel2Select').value;
+
+    if (!teamVal) { showToast('Team Number is required', 'warning'); return; }
+    if (!p1Val)   { showToast('Personnel 1 is required', 'warning'); return; }
     if (!pendingAssignRecord) return;
+
+    var personnelStr = p1Val + (p2Val ? ', '+p2Val : '');
+
     try {
-      var { error } = await db.from(MIG_TABLE).update({ team_number: teamVal }).eq('id', pendingAssignRecord.id);
+      var { error } = await db.from(MIG_TABLE)
+        .update({ team_number: teamVal, personnel: personnelStr })
+        .eq('id', pendingAssignRecord.id);
       if (error) throw error;
       showToast('✓ Team '+teamVal+' assigned!', 'success');
       closeAssignTeamModal();
