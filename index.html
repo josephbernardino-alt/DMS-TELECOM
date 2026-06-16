@@ -535,6 +535,48 @@
   @media (max-width: 1100px) { .reports-grid { grid-template-columns: repeat(2, 1fr); } }
   @media (max-width: 700px) { .reports-grid { grid-template-columns: 1fr; } }
 
+
+  /* MIGRATION PAGES */
+  .mig-header-btn { background: linear-gradient(135deg, #7c3aed, #6d28d9); color: white; border: none; padding: 10px 18px; border-radius: 8px; font-size: 13px; font-weight: 700; cursor: pointer; display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
+  .mig-kpi-strip { display: flex; gap: 12px; padding: 12px 20px; background: white; border-bottom: 1px solid #e5eaf2; flex-wrap: wrap; }
+  .mig-kpi { flex: 1; min-width: 180px; border-radius: 10px; padding: 12px 16px; }
+  .mig-kpi.pending  { background: #fefce8; border: 1px solid #fde68a; }
+  .mig-kpi.completed { background: #f0fdf4; border: 1px solid #86efac; }
+  .mig-kpi.rescheduled { background: #eff6ff; border: 1px solid #93c5fd; }
+  .mig-kpi.cancelled { background: #fef2f2; border: 1px solid #fca5a5; }
+  .mig-kpi-label { font-size: 11px; font-weight: 700; color: #64748b; text-transform: uppercase; letter-spacing: 0.3px; }
+  .mig-kpi-count { font-size: 28px; font-weight: 800; margin: 4px 0; }
+  .mig-kpi.pending .mig-kpi-count  { color: #92400e; }
+  .mig-kpi.completed .mig-kpi-count { color: #15803d; }
+  .mig-kpi.rescheduled .mig-kpi-count { color: #1d4ed8; }
+  .mig-kpi.cancelled .mig-kpi-count { color: #b91c1c; }
+  .mig-kpi-sub { font-size: 11px; color: #94a3b8; }
+  .mig-table-section { overflow: auto; background: white; }
+  .mig-head-wrap { overflow: hidden; background: #f8f5ff; border-bottom: 2px solid #e2e8f0; }
+  .mig-head-table { border-collapse: separate; border-spacing: 0; table-layout: fixed; font-size: 12px; }
+  .mig-head-table td { background: #f8f5ff; padding: 9px 12px; font-size: 10px; font-weight: 700; color: #6d28d9; text-transform: uppercase; white-space: nowrap; box-sizing: border-box; }
+  .mig-body-wrap { overflow: auto; }
+  .mig-body-table { border-collapse: separate; border-spacing: 0; font-size: 12px; width: 100%; }
+  .mig-body-table tbody tr:nth-child(even) { background: #faf5ff; }
+  .mig-body-table tbody tr:nth-child(odd) { background: #ffffff; }
+  .mig-body-table tbody tr:hover { background: #ede9fe !important; }
+  .mig-body-table td { padding: 8px 12px; border-bottom: 1px solid #f3f4f6; white-space: nowrap; font-size: 12px; vertical-align: middle; }
+  .mig-status { border-radius: 5px; padding: 2px 10px; font-size: 11px; font-weight: 700; display: inline-block; }
+  .mig-status.done { background: #dcfce7; color: #15803d; }
+  .mig-status.pending { background: #fef9c3; color: #92400e; }
+  .mig-status.rescheduled { background: #dbeafe; color: #1d4ed8; }
+  .mig-status.cancelled { background: #fee2e2; color: #b91c1c; }
+  .mig-status.visited { background: #e0e7ff; color: #4338ca; }
+  .mig-status.called { background: #ccfbf1; color: #0f766e; }
+  .mig-footer { padding: 10px 20px; font-size: 12px; color: #64748b; border-top: 1px solid #e5eaf2; background: white; }
+  /* Overall progress */
+  .mig-progress-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 16px; padding: 20px; }
+  .mig-progress-card { background: white; border: 1px solid #e5eaf2; border-radius: 10px; padding: 16px; }
+  .mig-progress-title { font-size: 13px; font-weight: 700; color: #1e293b; margin-bottom: 12px; }
+  .mig-progress-bar-wrap { background: #f1f5f9; border-radius: 99px; height: 8px; overflow: hidden; margin: 6px 0; }
+  .mig-progress-bar { height: 8px; border-radius: 99px; background: linear-gradient(90deg,#7c3aed,#a78bfa); transition: width 0.5s; }
+  .mig-progress-label { display: flex; justify-content: space-between; font-size: 11px; color: #64748b; }
+
 </style>
 </head>
 <body class="density-normal">
@@ -622,7 +664,17 @@
       <div class="nav-menu-item" data-page="dashboard" data-view="table">For Dispatch</div>
     </div>
   </div>
-  <button class="nav-btn">Migration ▾</button>
+  <div class="nav-dropdown">
+    <button class="nav-btn" id="migBtn">Migration ▾</button>
+    <div class="nav-menu" id="migMenu">
+      <div class="nav-menu-item" data-migpage="dispatch">Migration Dispatch</div>
+      <div class="nav-menu-item" data-migpage="uploaded">Uploaded for Migration</div>
+      <div class="nav-menu-item" data-migpage="calling">For Calling/Scheduling</div>
+      <div class="nav-menu-item" data-migpage="fordispatch">For Dispatch</div>
+      <div class="nav-menu-item" data-migpage="completed">Completed/Visited/Called</div>
+      <div class="nav-menu-item" data-migpage="overall">Overall Migration Progress</div>
+    </div>
+  </div>
   <button class="nav-btn" id="reportsBtn">Reports</button>
   <button class="nav-btn">NAP Locator</button>
   <div style="position:relative;">
@@ -967,6 +1019,210 @@
       <div class="report-card-desc">Weekly scorecard of individual FST/Team performance based on Done, Cancelled, Rescheduled, and Attachment Compliance.</div>
     </div>
 
+  </div>
+</div>
+
+
+<!-- ============ MIGRATION PAGES ============ -->
+
+<!-- 1. MIGRATION DISPATCH (MAP VIEW) -->
+<div class="page-view" id="page-mig-dispatch">
+  <div class="filterbar sticky-top">
+    <input class="search-input" id="migDispSearch" type="text" placeholder="Search...">
+    <button class="date-nav" id="migDispPrev">‹</button>
+    <button class="date-nav" id="migDispNext">›</button>
+    <span class="date-label">Date from:</span>
+    <input class="date-input" type="date" id="migDispDateFrom">
+    <span class="date-label">to:</span>
+    <input class="date-input" type="date" id="migDispDateTo">
+    <button class="today-btn" id="migDispToday">Today</button>
+    <div class="filter-spacer"></div>
+    <div class="teams-badge">TEAMS <span id="migDispTeamCount">0</span></div>
+    <button class="view-btn active" id="migDispTableBtn">⊞ Table</button>
+    <button class="view-btn" style="background:#16a34a;border-color:#16a34a;color:white;">🗺 Map</button>
+  </div>
+  <div class="mig-kpi-strip">
+    <button class="mig-header-btn">⊕ MIGRATION</button>
+    <div class="mig-kpi pending"><div class="mig-kpi-label">Pending</div><div class="mig-kpi-count" id="migDispPending">0</div><div class="mig-kpi-sub"><span id="migDispWT">0 w/ Team</span> | <span id="migDispWOT">0 w/o Team</span></div></div>
+    <div class="mig-kpi completed"><div class="mig-kpi-label">Completed</div><div class="mig-kpi-count" id="migDispCompleted">0</div><div class="mig-kpi-sub" id="migDispCompSub">—</div></div>
+    <div class="mig-kpi rescheduled"><div class="mig-kpi-label">Rescheduled</div><div class="mig-kpi-count" id="migDispResched">0</div><div class="mig-kpi-sub" id="migDispReschedSub">—</div></div>
+    <div class="mig-kpi cancelled"><div class="mig-kpi-label">Cancelled</div><div class="mig-kpi-count" id="migDispCancelled">0</div><div class="mig-kpi-sub" id="migDispCancelSub">—</div></div>
+  </div>
+  <div class="mig-head-wrap" id="migDispHeadWrap">
+    <table class="mig-head-table" id="migDispHeadTable">
+      <tbody><tr id="migDispHeadRow">
+        <td>#</td><td>Old Acct No</td><td>Name</td><td>Municipality</td><td>Barangay</td>
+        <td>Contact</td><td>Bundle Type</td><td>Team</td><td>Personnel</td>
+        <td>JO Status</td><td>Remarks</td><td>Date Completed</td>
+      </tr></tbody>
+    </table>
+  </div>
+  <div class="mig-body-wrap" id="migDispBodyWrap">
+    <table class="mig-body-table"><tbody id="migDispBody">
+      <tr class="loading-row"><td colspan="12"><span class="spinner"></span>Loading...</td></tr>
+    </tbody></table>
+  </div>
+  <div class="mig-footer"><span id="migDispCount">0</span> records</div>
+</div>
+
+<!-- 2. UPLOADED FOR MIGRATION -->
+<div class="page-view" id="page-mig-uploaded">
+  <div class="filterbar sticky-top">
+    <input class="search-input" id="migUpSearch" type="text" placeholder="Search account, name, barangay...">
+    <div class="filter-spacer"></div>
+  </div>
+  <div class="mig-kpi-strip">
+    <button class="mig-header-btn">📤 UPLOADED FOR MIGRATION</button>
+    <div class="mig-kpi pending"><div class="mig-kpi-label">Total Uploaded</div><div class="mig-kpi-count" id="migUpTotal">0</div></div>
+    <div class="mig-kpi completed"><div class="mig-kpi-label">Completed</div><div class="mig-kpi-count" id="migUpCompleted">0</div></div>
+    <div class="mig-kpi rescheduled"><div class="mig-kpi-label">Pending</div><div class="mig-kpi-count" id="migUpPending">0</div></div>
+    <div class="mig-kpi cancelled"><div class="mig-kpi-label">Cancelled</div><div class="mig-kpi-count" id="migUpCancelled">0</div></div>
+  </div>
+  <div class="mig-head-wrap" id="migUpHeadWrap">
+    <table class="mig-head-table"><tbody><tr id="migUpHeadRow">
+      <td>#</td><td>Old Acct No</td><td>Name</td><td>Municipality</td><td>Barangay</td>
+      <td>Bundle Type</td><td>Play Type</td><td>Network Type</td><td>Node No</td>
+      <td>Decomm</td><td>JO Status</td><td>Remarks</td>
+    </tr></tbody></table>
+  </div>
+  <div class="mig-body-wrap" id="migUpBodyWrap">
+    <table class="mig-body-table"><tbody id="migUpBody">
+      <tr class="loading-row"><td colspan="12"><span class="spinner"></span>Loading...</td></tr>
+    </tbody></table>
+  </div>
+  <div class="mig-footer"><span id="migUpCount">0</span> records</div>
+</div>
+
+<!-- 3. FOR CALLING/SCHEDULING -->
+<div class="page-view" id="page-mig-calling">
+  <div class="filterbar sticky-top">
+    <input class="search-input" id="migCallSearch" type="text" placeholder="Search account, name, contact...">
+    <div class="filter-spacer"></div>
+  </div>
+  <div class="mig-kpi-strip">
+    <button class="mig-header-btn">📞 FOR CALLING/SCHEDULING</button>
+    <div class="mig-kpi pending"><div class="mig-kpi-label">For Calling</div><div class="mig-kpi-count" id="migCallTotal">0</div></div>
+    <div class="mig-kpi completed"><div class="mig-kpi-label">Confirmed</div><div class="mig-kpi-count" id="migCallConfirmed">0</div></div>
+    <div class="mig-kpi rescheduled"><div class="mig-kpi-label">Rescheduled</div><div class="mig-kpi-count" id="migCallResched">0</div></div>
+    <div class="mig-kpi cancelled"><div class="mig-kpi-label">No Answer</div><div class="mig-kpi-count" id="migCallNoAns">0</div></div>
+  </div>
+  <div class="mig-head-wrap" id="migCallHeadWrap">
+    <table class="mig-head-table"><tbody><tr id="migCallHeadRow">
+      <td>#</td><td>Old Acct No</td><td>Name</td><td>Municipality</td><td>Barangay</td>
+      <td>Contact</td><td>Bundle Type</td><td>Date Visited</td>
+      <td>JO Status</td><td>Remarks</td>
+    </tr></tbody></table>
+  </div>
+  <div class="mig-body-wrap" id="migCallBodyWrap">
+    <table class="mig-body-table"><tbody id="migCallBody">
+      <tr class="loading-row"><td colspan="10"><span class="spinner"></span>Loading...</td></tr>
+    </tbody></table>
+  </div>
+  <div class="mig-footer"><span id="migCallCount">0</span> records</div>
+</div>
+
+<!-- 4. FOR DISPATCH -->
+<div class="page-view" id="page-mig-fordispatch">
+  <div class="filterbar sticky-top">
+    <input class="search-input" id="migFDSearch" type="text" placeholder="Search account, name, team...">
+    <button class="date-nav" id="migFDPrev">‹</button>
+    <button class="date-nav" id="migFDNext">›</button>
+    <span class="date-label">Date from:</span>
+    <input class="date-input" type="date" id="migFDDateFrom">
+    <span class="date-label">to:</span>
+    <input class="date-input" type="date" id="migFDDateTo">
+    <button class="today-btn" id="migFDToday">Today</button>
+    <div class="filter-spacer"></div>
+  </div>
+  <div class="mig-kpi-strip">
+    <button class="mig-header-btn">🚀 FOR DISPATCH</button>
+    <div class="mig-kpi pending"><div class="mig-kpi-label">Pending</div><div class="mig-kpi-count" id="migFDPending">0</div><div class="mig-kpi-sub"><span id="migFDWT">0 w/ Team</span> | <span id="migFDWOT">0 w/o Team</span></div></div>
+    <div class="mig-kpi completed"><div class="mig-kpi-label">Completed</div><div class="mig-kpi-count" id="migFDCompleted">0</div></div>
+    <div class="mig-kpi rescheduled"><div class="mig-kpi-label">Rescheduled</div><div class="mig-kpi-count" id="migFDResched">0</div></div>
+    <div class="mig-kpi cancelled"><div class="mig-kpi-label">Cancelled</div><div class="mig-kpi-count" id="migFDCancelled">0</div></div>
+  </div>
+  <div class="mig-head-wrap" id="migFDHeadWrap">
+    <table class="mig-head-table"><tbody><tr id="migFDHeadRow">
+      <td>#</td><td>Old Acct No</td><td>Name</td><td>Municipality</td><td>Barangay</td>
+      <td>Contact</td><td>Bundle Type</td><td>Team</td><td>Personnel</td>
+      <td>JO Status</td><td>Remarks</td><td>Decom Date</td>
+    </tr></tbody></table>
+  </div>
+  <div class="mig-body-wrap" id="migFDBodyWrap">
+    <table class="mig-body-table"><tbody id="migFDBody">
+      <tr class="loading-row"><td colspan="12"><span class="spinner"></span>Loading...</td></tr>
+    </tbody></table>
+  </div>
+  <div class="mig-footer"><span id="migFDCount">0</span> records</div>
+</div>
+
+<!-- 5. COMPLETED/VISITED/CALLED -->
+<div class="page-view" id="page-mig-completed">
+  <div class="filterbar sticky-top">
+    <input class="search-input" id="migCompSearch" type="text" placeholder="Search account, name, barangay...">
+    <button class="date-nav" id="migCompPrev">‹</button>
+    <button class="date-nav" id="migCompNext">›</button>
+    <span class="date-label">Date from:</span>
+    <input class="date-input" type="date" id="migCompDateFrom">
+    <span class="date-label">to:</span>
+    <input class="date-input" type="date" id="migCompDateTo">
+    <button class="today-btn" id="migCompToday">Today</button>
+    <div class="filter-spacer"></div>
+  </div>
+  <div class="mig-kpi-strip">
+    <button class="mig-header-btn">✅ COMPLETED / VISITED / CALLED</button>
+    <div class="mig-kpi completed"><div class="mig-kpi-label">Completed</div><div class="mig-kpi-count" id="migCompCompleted">0</div></div>
+    <div class="mig-kpi rescheduled"><div class="mig-kpi-label">Visited</div><div class="mig-kpi-count" id="migCompVisited">0</div></div>
+    <div class="mig-kpi pending"><div class="mig-kpi-label">Called</div><div class="mig-kpi-count" id="migCompCalled">0</div></div>
+    <div class="mig-kpi cancelled"><div class="mig-kpi-label">Cancelled</div><div class="mig-kpi-count" id="migCompCancelled">0</div></div>
+  </div>
+  <div class="mig-head-wrap" id="migCompHeadWrap">
+    <table class="mig-head-table"><tbody><tr id="migCompHeadRow">
+      <td>#</td><td>Old Acct No</td><td>Name</td><td>Municipality</td><td>Barangay</td>
+      <td>Contact</td><td>Bundle Type</td><td>Team</td><td>Personnel</td>
+      <td>JO Status</td><td>Date Completed</td><td>Remarks</td>
+    </tr></tbody></table>
+  </div>
+  <div class="mig-body-wrap" id="migCompBodyWrap">
+    <table class="mig-body-table"><tbody id="migCompBody">
+      <tr class="loading-row"><td colspan="12"><span class="spinner"></span>Loading...</td></tr>
+    </tbody></table>
+  </div>
+  <div class="mig-footer"><span id="migCompCount">0</span> records</div>
+</div>
+
+<!-- 6. OVERALL MIGRATION PROGRESS -->
+<div class="page-view" id="page-mig-overall">
+  <div class="filterbar sticky-top">
+    <div class="filter-spacer"></div>
+    <button class="today-btn" id="migOverallRefresh">🔄 Refresh</button>
+  </div>
+  <div class="mig-kpi-strip">
+    <button class="mig-header-btn">📊 OVERALL MIGRATION PROGRESS</button>
+    <div class="mig-kpi pending"><div class="mig-kpi-label">Total Records</div><div class="mig-kpi-count" id="migOvTotal">0</div></div>
+    <div class="mig-kpi completed"><div class="mig-kpi-label">Completed</div><div class="mig-kpi-count" id="migOvCompleted">0</div></div>
+    <div class="mig-kpi rescheduled"><div class="mig-kpi-label">Pending</div><div class="mig-kpi-count" id="migOvPending">0</div></div>
+    <div class="mig-kpi cancelled"><div class="mig-kpi-label">Cancelled</div><div class="mig-kpi-count" id="migOvCancelled">0</div></div>
+  </div>
+  <div class="mig-progress-grid" id="migOverallGrid">
+    <div class="mig-progress-card">
+      <div class="mig-progress-title">Overall Completion Rate</div>
+      <div style="font-size:36px;font-weight:800;color:#7c3aed;" id="migOvRate">0%</div>
+      <div class="mig-progress-bar-wrap"><div class="mig-progress-bar" id="migOvBar" style="width:0%"></div></div>
+      <div class="mig-progress-label"><span>0 Completed</span><span id="migOvRateLabel">of 0 total</span></div>
+    </div>
+    <div class="mig-progress-card">
+      <div class="mig-progress-title">By Status</div>
+      <div id="migOvStatusBreakdown" style="font-size:12px;color:#64748b;">Loading...</div>
+    </div>
+    <div class="mig-progress-card">
+      <div class="mig-progress-title">Top Municipalities</div>
+      <div id="migOvMunicipality" style="font-size:12px;color:#64748b;">Loading...</div>
+    </div>
+    <div class="mig-progress-card" style="grid-column:1/-1;">
+      <div class="mig-progress-title">Progress by Municipality</div>
+      <div id="migOvMunTable"></div>
+    </div>
   </div>
 </div>
 
@@ -2627,6 +2883,345 @@
     var remaining = window.innerHeight - rect.top - footerH;
     if (remaining > 100) bodyWrap.style.height = remaining + 'px';
   }
+
+  /* ════════════ MIGRATION ════════════ */
+  var migData = [];
+  var MIG_TABLE = 'migration_orders';
+
+  /* ── Dropdown ── */
+  document.getElementById('migBtn').addEventListener('click', function(e){
+    e.stopPropagation();
+    document.getElementById('migMenu').classList.toggle('open');
+    document.getElementById('niMenu').classList.remove('open');
+  });
+  document.querySelectorAll('#migMenu .nav-menu-item').forEach(function(item){
+    item.addEventListener('click', function(e){
+      e.stopPropagation();
+      document.querySelectorAll('#migMenu .nav-menu-item').forEach(function(x){x.classList.remove('active');});
+      this.classList.add('active');
+      var pg = this.dataset.migpage;
+      switchMigPage(pg);
+      document.getElementById('migMenu').classList.remove('open');
+    });
+  });
+
+  /* ── Page switcher ── */
+  function switchMigPage(pg) {
+    document.querySelectorAll('.page-view').forEach(function(p){ p.classList.remove('active'); });
+    var pageMap = {
+      'dispatch':    'page-mig-dispatch',
+      'uploaded':    'page-mig-uploaded',
+      'calling':     'page-mig-calling',
+      'fordispatch': 'page-mig-fordispatch',
+      'completed':   'page-mig-completed',
+      'overall':     'page-mig-overall'
+    };
+    var pageId = pageMap[pg];
+    if (!pageId) return;
+    document.getElementById(pageId).classList.add('active');
+    setTimeout(refreshLayout, 60);
+    loadMigData(pg);
+  }
+
+  /* ── Load data ── */
+  async function loadMigData(pg) {
+    if (!db) return;
+    try {
+      var query = db.from(MIG_TABLE).select('*').limit(1000);
+
+      /* Filter by page type */
+      if (pg === 'calling') {
+        query = query.or('jo_status.is.null,jo_status.eq.Pending');
+      } else if (pg === 'fordispatch') {
+        query = query.not('team_number', 'is', null);
+      } else if (pg === 'completed') {
+        query = query.in('jo_status', ['Done','Completed','Visited','Called']);
+      }
+
+      var r = await query.order('name', { ascending: true });
+      if (r.error) throw r.error;
+      migData = r.data || [];
+      renderMigPage(pg);
+    } catch(err) {
+      console.log('Migration load error:', err);
+      /* Show empty state - table might not exist yet */
+      migData = [];
+      renderMigPage(pg);
+    }
+  }
+
+  /* ── Render helpers ── */
+  function migStatusBadge(status) {
+    if (!status) return '<span class="mig-status pending">Pending</span>';
+    var s = status.toLowerCase();
+    if (s==='done'||s==='completed') return '<span class="mig-status done">'+status+'</span>';
+    if (s==='rescheduled') return '<span class="mig-status rescheduled">'+status+'</span>';
+    if (s==='cancelled') return '<span class="mig-status cancelled">'+status+'</span>';
+    if (s==='visited') return '<span class="mig-status visited">'+status+'</span>';
+    if (s==='called') return '<span class="mig-status called">'+status+'</span>';
+    return '<span class="mig-status pending">'+status+'</span>';
+  }
+
+  function mv(val) { return val || '—'; }
+
+  /* ── Sync migration split header ── */
+  function syncMigHeader(bodyWrapId, headWrapId, headRowId) {
+    var bodyWrap = document.getElementById(bodyWrapId);
+    var headWrap = document.getElementById(headWrapId);
+    if (!bodyWrap || !headWrap) return;
+    var bodyTable = bodyWrap.querySelector('table');
+    if (!bodyTable) return;
+    var firstRow = bodyTable.querySelector('tbody tr:not(.loading-row)');
+    if (!firstRow) return;
+    var tds = firstRow.querySelectorAll('td');
+    var headerCells = document.querySelectorAll('#'+headRowId+' td');
+    for (var i = 0; i < headerCells.length; i++) {
+      if (tds[i]) {
+        var w = tds[i].getBoundingClientRect().width;
+        headerCells[i].style.width = w + 'px';
+        headerCells[i].style.minWidth = w + 'px';
+      }
+    }
+    var headTable = headWrap.querySelector('table');
+    if (headTable) headTable.style.width = bodyTable.offsetWidth + 'px';
+    bodyWrap.onscroll = function() { headWrap.scrollLeft = bodyWrap.scrollLeft; };
+    /* Set height */
+    var rect = bodyWrap.getBoundingClientRect();
+    var remaining = window.innerHeight - rect.top - 40;
+    if (remaining > 100) bodyWrap.style.height = remaining + 'px';
+  }
+
+  /* ── Render per page ── */
+  function renderMigPage(pg) {
+    var emptyRow = '<tr class="loading-row"><td colspan="12" style="text-align:center;padding:40px;color:#94a3b8;">No migration records found. Import data to populate this page.</td></tr>';
+
+    if (pg === 'dispatch' || pg === 'fordispatch') {
+      var bodyId   = pg==='dispatch' ? 'migDispBody'   : 'migFDBody';
+      var countId  = pg==='dispatch' ? 'migDispCount'  : 'migFDCount';
+      var pendId   = pg==='dispatch' ? 'migDispPending': 'migFDPending';
+      var compId   = pg==='dispatch' ? 'migDispCompleted':'migFDCompleted';
+      var rescId   = pg==='dispatch' ? 'migDispResched' : 'migFDResched';
+      var canId    = pg==='dispatch' ? 'migDispCancelled':'migFDCancelled';
+      var wtId     = pg==='dispatch' ? 'migDispWT'     : 'migFDWT';
+      var wotId    = pg==='dispatch' ? 'migDispWOT'    : 'migFDWOT';
+      var hwId     = pg==='dispatch' ? 'migDispHeadWrap':'migFDHeadWrap';
+      var bwId     = pg==='dispatch' ? 'migDispBodyWrap':'migFDBodyWrap';
+      var hrId     = pg==='dispatch' ? 'migDispHeadRow' :'migFDHeadRow';
+
+      var pending   = migData.filter(function(r){return !r.jo_status||r.jo_status==='Pending';});
+      var completed = migData.filter(function(r){var s=r.jo_status||''; return s==='Done'||s==='Completed';});
+      var resched   = migData.filter(function(r){return r.jo_status==='Rescheduled';});
+      var cancel    = migData.filter(function(r){return r.jo_status==='Cancelled';});
+      var withTeam  = migData.filter(function(r){return r.team_number;});
+      var noTeam    = migData.filter(function(r){return !r.team_number;});
+
+      function setME(id,v){ var el=document.getElementById(id); if(el) el.textContent=v; }
+      setME(countId, migData.length);
+      setME(pendId,  pending.length);
+      setME(compId,  completed.length);
+      setME(rescId,  resched.length);
+      setME(canId,   cancel.length);
+      setME(wtId,    withTeam.length+' w/ Team');
+      setME(wotId,   noTeam.length+' w/o Team');
+
+      var tbody = document.getElementById(bodyId);
+      if (!tbody) return;
+      if (!migData.length) { tbody.innerHTML = emptyRow; return; }
+      tbody.innerHTML = migData.map(function(r,i){
+        return '<tr>'
+          +'<td class="count-cell">'+(i+1)+'</td>'
+          +'<td>'+mv(r.old_acct_no)+'</td>'
+          +'<td style="min-width:160px;font-weight:600;color:#1e293b;">'+mv(r.name)+'</td>'
+          +'<td>'+mv(r.municipality)+'</td>'
+          +'<td>'+mv(r.barangay)+'</td>'
+          +'<td>'+mv(r.contact_info)+'</td>'
+          +'<td>'+mv(r.bundle_type)+'</td>'
+          +'<td>'+(r.team_number?'<span class="team-badge ats">'+r.team_number+'</span>':'—')+'</td>'
+          +'<td>'+mv(r.personnel)+'</td>'
+          +migStatusBadge(r.jo_status)+'</td>'
+          +'<td style="max-width:200px;overflow:hidden;text-overflow:ellipsis;">'+mv(r.remarks)+'</td>'
+          +'<td>'+mv(r.date_completed)+'</td>'
+          +'</tr>';
+      }).join('');
+      setTimeout(function(){ syncMigHeader(bwId, hwId, hrId); }, 80);
+
+    } else if (pg === 'uploaded') {
+      var tbody = document.getElementById('migUpBody');
+      if (!tbody) return;
+      function setME(id,v){ var el=document.getElementById(id); if(el) el.textContent=v; }
+      setME('migUpTotal', migData.length);
+      setME('migUpCompleted', migData.filter(function(r){var s=r.jo_status||''; return s==='Done'||s==='Completed';}).length);
+      setME('migUpPending', migData.filter(function(r){return !r.jo_status||r.jo_status==='Pending';}).length);
+      setME('migUpCancelled', migData.filter(function(r){return r.jo_status==='Cancelled';}).length);
+      setME('migUpCount', migData.length);
+      if (!migData.length) { tbody.innerHTML = emptyRow; return; }
+      tbody.innerHTML = migData.map(function(r,i){
+        return '<tr>'
+          +'<td class="count-cell">'+(i+1)+'</td>'
+          +'<td>'+mv(r.old_acct_no)+'</td>'
+          +'<td style="min-width:160px;font-weight:600;color:#1e293b;">'+mv(r.name)+'</td>'
+          +'<td>'+mv(r.municipality)+'</td>'
+          +'<td>'+mv(r.barangay)+'</td>'
+          +'<td>'+mv(r.bundle_type)+'</td>'
+          +'<td>'+mv(r.play_type)+'</td>'
+          +'<td>'+mv(r.network_type)+'</td>'
+          +'<td>'+mv(r.node_no_sky)+'</td>'
+          +'<td>'+(r.decomm||'N')+'</td>'
+          +'<td>'+migStatusBadge(r.jo_status)+'</td>'
+          +'<td>'+mv(r.remarks)+'</td>'
+          +'</tr>';
+      }).join('');
+      setTimeout(function(){ syncMigHeader('migUpBodyWrap','migUpHeadWrap','migUpHeadRow'); }, 80);
+
+    } else if (pg === 'calling') {
+      var tbody = document.getElementById('migCallBody');
+      if (!tbody) return;
+      function setME(id,v){ var el=document.getElementById(id); if(el) el.textContent=v; }
+      setME('migCallTotal', migData.length);
+      setME('migCallConfirmed', migData.filter(function(r){return r.jo_status==='Confirmed';}).length);
+      setME('migCallResched', migData.filter(function(r){return r.jo_status==='Rescheduled';}).length);
+      setME('migCallNoAns', migData.filter(function(r){return r.jo_status==='No Answer';}).length);
+      setME('migCallCount', migData.length);
+      if (!migData.length) { tbody.innerHTML = emptyRow; return; }
+      tbody.innerHTML = migData.map(function(r,i){
+        return '<tr>'
+          +'<td class="count-cell">'+(i+1)+'</td>'
+          +'<td>'+mv(r.old_acct_no)+'</td>'
+          +'<td style="min-width:160px;font-weight:600;color:#1e293b;">'+mv(r.name)+'</td>'
+          +'<td>'+mv(r.municipality)+'</td>'
+          +'<td>'+mv(r.barangay)+'</td>'
+          +'<td style="color:#1d4ed8;font-weight:600;">'+mv(r.contact_info)+'</td>'
+          +'<td>'+mv(r.bundle_type)+'</td>'
+          +'<td>'+mv(r.date_visited)+'</td>'
+          +'<td>'+migStatusBadge(r.jo_status)+'</td>'
+          +'<td>'+mv(r.remarks)+'</td>'
+          +'</tr>';
+      }).join('');
+      setTimeout(function(){ syncMigHeader('migCallBodyWrap','migCallHeadWrap','migCallHeadRow'); }, 80);
+
+    } else if (pg === 'completed') {
+      var tbody = document.getElementById('migCompBody');
+      if (!tbody) return;
+      function setME(id,v){ var el=document.getElementById(id); if(el) el.textContent=v; }
+      setME('migCompCompleted', migData.filter(function(r){var s=r.jo_status||''; return s==='Done'||s==='Completed';}).length);
+      setME('migCompVisited', migData.filter(function(r){return r.jo_status==='Visited';}).length);
+      setME('migCompCalled', migData.filter(function(r){return r.jo_status==='Called';}).length);
+      setME('migCompCancelled', migData.filter(function(r){return r.jo_status==='Cancelled';}).length);
+      setME('migCompCount', migData.length);
+      if (!migData.length) { tbody.innerHTML = emptyRow; return; }
+      tbody.innerHTML = migData.map(function(r,i){
+        return '<tr>'
+          +'<td class="count-cell">'+(i+1)+'</td>'
+          +'<td>'+mv(r.old_acct_no)+'</td>'
+          +'<td style="min-width:160px;font-weight:600;color:#1e293b;">'+mv(r.name)+'</td>'
+          +'<td>'+mv(r.municipality)+'</td>'
+          +'<td>'+mv(r.barangay)+'</td>'
+          +'<td style="color:#1d4ed8;">'+mv(r.contact_info)+'</td>'
+          +'<td>'+mv(r.bundle_type)+'</td>'
+          +'<td>'+(r.team_number?'<span class="team-badge ats">'+r.team_number+'</span>':'—')+'</td>'
+          +'<td>'+mv(r.personnel)+'</td>'
+          +'<td>'+migStatusBadge(r.jo_status)+'</td>'
+          +'<td>'+mv(r.date_completed)+'</td>'
+          +'<td>'+mv(r.remarks)+'</td>'
+          +'</tr>';
+      }).join('');
+      setTimeout(function(){ syncMigHeader('migCompBodyWrap','migCompHeadWrap','migCompHeadRow'); }, 80);
+
+    } else if (pg === 'overall') {
+      var total     = migData.length;
+      var completed = migData.filter(function(r){var s=r.jo_status||''; return s==='Done'||s==='Completed';}).length;
+      var pending   = migData.filter(function(r){return !r.jo_status||r.jo_status==='Pending';}).length;
+      var cancelled = migData.filter(function(r){return r.jo_status==='Cancelled';}).length;
+      var rate      = total ? Math.round(completed/total*100) : 0;
+
+      function setME(id,v){ var el=document.getElementById(id); if(el) el.textContent=v; }
+      setME('migOvTotal',     total);
+      setME('migOvCompleted', completed);
+      setME('migOvPending',   pending);
+      setME('migOvCancelled', cancelled);
+      setME('migOvRate',      rate+'%');
+      setME('migOvRateLabel', 'of '+total+' total');
+      var bar = document.getElementById('migOvBar');
+      if (bar) bar.style.width = rate+'%';
+
+      /* Status breakdown */
+      var statuses = {};
+      migData.forEach(function(r){ var s = r.jo_status||'Pending'; statuses[s]=(statuses[s]||0)+1; });
+      var breakdownEl = document.getElementById('migOvStatusBreakdown');
+      if (breakdownEl) {
+        breakdownEl.innerHTML = Object.keys(statuses).map(function(s){
+          var pct = total ? Math.round(statuses[s]/total*100) : 0;
+          return '<div style="margin-bottom:8px;">'
+            +'<div style="display:flex;justify-content:space-between;margin-bottom:3px;">'
+            +'<span>'+s+'</span><span style="font-weight:700;">'+statuses[s]+' ('+pct+'%)</span></div>'
+            +'<div style="background:#f1f5f9;border-radius:99px;height:6px;">'
+            +'<div style="width:'+pct+'%;height:6px;border-radius:99px;background:#7c3aed;"></div></div></div>';
+        }).join('') || '<span style="color:#94a3b8;">No data yet</span>';
+      }
+
+      /* Top municipalities */
+      var munCounts = {};
+      migData.forEach(function(r){ var m=r.municipality||'Unknown'; munCounts[m]=(munCounts[m]||0)+1; });
+      var munEl = document.getElementById('migOvMunicipality');
+      if (munEl) {
+        var sorted = Object.keys(munCounts).sort(function(a,b){return munCounts[b]-munCounts[a];}).slice(0,8);
+        munEl.innerHTML = sorted.map(function(m,i){
+          return '<div style="display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px solid #f1f5f9;">'
+            +'<span>'+(i+1)+'. '+m+'</span>'
+            +'<span style="font-weight:700;color:#7c3aed;">'+munCounts[m]+'</span></div>';
+        }).join('') || '<span style="color:#94a3b8;">No data yet</span>';
+      }
+
+      /* Municipality progress table */
+      var munTableEl = document.getElementById('migOvMunTable');
+      if (munTableEl && total > 0) {
+        var munData = {};
+        migData.forEach(function(r){
+          var m = r.municipality||'Unknown';
+          if (!munData[m]) munData[m] = { total:0, done:0 };
+          munData[m].total++;
+          var s = r.jo_status||'';
+          if (s==='Done'||s==='Completed') munData[m].done++;
+        });
+        munTableEl.innerHTML = '<table style="width:100%;font-size:11px;border-collapse:collapse;">'
+          +'<thead><tr style="background:#f8f5ff;">'
+          +'<th style="padding:8px;text-align:left;">Municipality</th>'
+          +'<th style="padding:8px;text-align:center;">Total</th>'
+          +'<th style="padding:8px;text-align:center;">Done</th>'
+          +'<th style="padding:8px;text-align:center;">Pending</th>'
+          +'<th style="padding:8px;text-align:center;">Progress</th>'
+          +'</tr></thead><tbody>'
+          + Object.keys(munData).sort(function(a,b){return munData[b].total-munData[a].total;}).map(function(m){
+            var d = munData[m];
+            var pct = Math.round(d.done/d.total*100);
+            return '<tr style="border-bottom:1px solid #f1f5f9;">'
+              +'<td style="padding:8px;">'+m+'</td>'
+              +'<td style="padding:8px;text-align:center;">'+d.total+'</td>'
+              +'<td style="padding:8px;text-align:center;color:#15803d;font-weight:700;">'+d.done+'</td>'
+              +'<td style="padding:8px;text-align:center;color:#92400e;">'+(d.total-d.done)+'</td>'
+              +'<td style="padding:8px;"><div style="background:#f1f5f9;border-radius:99px;height:6px;">'
+              +'<div style="width:'+pct+'%;height:6px;border-radius:99px;background:#7c3aed;"></div></div>'
+              +'<span style="font-size:10px;color:#64748b;">'+pct+'%</span></td>'
+              +'</tr>';
+          }).join('')
+          +'</tbody></table>';
+      } else if (munTableEl) {
+        munTableEl.innerHTML = '<div style="text-align:center;padding:20px;color:#94a3b8;">No migration data yet. Import your migration records to see progress.</div>';
+      }
+    }
+  }
+
+  /* ── Overall refresh button ── */
+  var migOverallRefreshBtn = document.getElementById('migOverallRefresh');
+  if (migOverallRefreshBtn) {
+    migOverallRefreshBtn.addEventListener('click', function(){ loadMigData('overall'); });
+  }
+
+  /* ── Close migMenu on outside click ── */
+  document.addEventListener('click', function(){
+    var mm = document.getElementById('migMenu');
+    if (mm) mm.classList.remove('open');
+  });
 
   load();
   setTimeout(refreshLayout, 200);
