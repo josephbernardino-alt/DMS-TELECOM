@@ -14,7 +14,8 @@
   .sticky-top.pinned { position: fixed; left: 0; right: 0; z-index: 2000; background: white; }
   .sticky-placeholder { display: none; }
   .sticky-placeholder.active { display: block; }
-  .table-section { display: block; }
+  .table-section { display: block; overflow: auto; height: calc(100vh - 290px); }
+  .table-section thead th { position: sticky; top: 0; z-index: 5; background: #f1f5f9; }
   thead th { background: #f1f5f9; }
 
   /* NAVBAR */
@@ -106,6 +107,9 @@
   body.density-dense th { padding: 5px 8px; font-size: 9px; }
 
   tbody tr { border-bottom: 1px solid #f1f5f9; cursor: pointer; transition: background 0.1s; }
+  tbody tr:nth-child(even) { background: #f8fafc; }
+  tbody tr:nth-child(odd) { background: #ffffff; }
+  tbody tr:hover { background: #eff6ff !important; }
   tbody tr:hover { background: #eef2ff; }
   tbody tr:last-child { border-bottom: none; }
   td { vertical-align: middle; }
@@ -1066,115 +1070,19 @@
   }
 
   // Full refresh: rebuild clone if needed, recompute position/size/widths
-  function refreshFrozenHeaders() {
-    document.querySelectorAll('.page-view').forEach(function(page) {
-      var table = page.querySelector('.table-section table');
-      var isActive = page.classList.contains('active');
 
-      if (!table) {
-        if (page._frozenClone) page._frozenClone.style.display = 'none';
-        return;
-      }
-      var thead = table.querySelector('thead');
-      if (!thead) return;
-
-      // Rebuild clone whenever content signature changes
-      var sig = thead.innerHTML.length + ':' + thead.children.length;
-      if (!page._frozenClone || page._frozenSig !== sig) {
-        if (page._frozenClone) page._frozenClone.remove();
-        var cloneTable = document.createElement('table');
-        cloneTable.className = 'frozen-thead-clone';
-        var cloneHead = thead.cloneNode(true);
-        Array.prototype.forEach.call(cloneHead.querySelectorAll('th'), function(th){
-          th.style.position = 'static';
-          th.style.top = '';
-        });
-        cloneTable.appendChild(cloneHead);
-        document.body.appendChild(cloneTable);
-        page._frozenClone = cloneTable;
-        page._frozenSig = sig;
-      }
-
-      var clone = page._frozenClone;
-      if (!isActive) { clone.style.display = 'none'; clone.dataset.shown = '0'; return; }
-
-      var threshold = getStickyThreshold(page);
-      page._frozenThreshold = threshold;
-
-      var theadRect = thead.getBoundingClientRect();
-      var tableRect = table.getBoundingClientRect();
-
-      // Measure ACTUAL column widths from first tbody row tds (more accurate than th)
-      var firstRow = table.querySelector('tbody tr');
-      var widthSources = firstRow
-        ? firstRow.querySelectorAll('td')
-        : thead.querySelectorAll('th');
-
-      var shouldShow = theadRect.top < threshold;
-      clone.dataset.shown = shouldShow ? '1' : '0';
-
-      // Always keep clone positioned correctly even when hidden, so it's ready instantly
-      clone.style.position = 'fixed';
-      clone.style.top = threshold + 'px';
-      clone.style.left = tableRect.left + 'px';
-      clone.style.width = tableRect.width + 'px';
-      clone.style.tableLayout = 'fixed';
-      clone.style.borderCollapse = 'separate';
-      clone.style.borderSpacing = '0';
-      clone.style.zIndex = '15';
-      clone.style.margin = '0';
-      clone.style.background = '#f1f5f9';
-      clone.style.boxShadow = '0 2px 4px rgba(0,0,0,0.10)';
-      clone.style.fontSize = table.style.fontSize || '';
-      clone.style.display = shouldShow ? 'table' : 'none';
-
-      // Sync column widths from actual td cells
-      var cloneThs = clone.querySelectorAll('th');
-      for (var i = 0; i < cloneThs.length; i++) {
-        var src = widthSources[i];
-        if (src) {
-          cloneThs[i].style.width = src.getBoundingClientRect().width + 'px';
-          cloneThs[i].style.minWidth = src.getBoundingClientRect().width + 'px';
-          cloneThs[i].style.maxWidth = src.getBoundingClientRect().width + 'px';
-          cloneThs[i].style.boxSizing = 'border-box';
-        }
-      }
-    });
-  }
-
-  // Cheap scroll handler: just toggle visibility, no layout recalculation
-  function onScrollToggleFrozenHeaders() {
-    document.querySelectorAll('.page-view.active').forEach(function(page) {
-      var clone = page._frozenClone;
-      if (!clone) return;
-      var table = page.querySelector('.table-section table');
-      if (!table) return;
-      var thead = table.querySelector('thead');
-      if (!thead) return;
-      var threshold = page._frozenThreshold;
-      if (threshold === undefined) return;
-      var shouldShow = thead.getBoundingClientRect().top < threshold;
-      var isShown = clone.dataset.shown === '1';
-      if (shouldShow !== isShown) {
-        clone.style.display = shouldShow ? 'table' : 'none';
-        clone.dataset.shown = shouldShow ? '1' : '0';
-      }
-    });
-  }
-
-  var scrollRafPending = false;
-  window.addEventListener('scroll', function() {
-    if (scrollRafPending) return;
-    scrollRafPending = true;
-    requestAnimationFrame(function() {
-      scrollRafPending = false;
-      onScrollToggleFrozenHeaders();
-    });
-  });
 
   function refreshLayout() {
     updateStickyOffsets();
-    refreshFrozenHeaders();
+
+    // Resize table-section to fill remaining viewport
+    document.querySelectorAll('.page-view.active .table-section').forEach(function(ts) {
+      var rect = ts.getBoundingClientRect();
+      var footer = ts.parentElement.querySelector('.footer-bar');
+      var footerH = footer ? footer.offsetHeight : 0;
+      var remaining = window.innerHeight - rect.top - footerH;
+      if (remaining > 100) ts.style.height = remaining + 'px';
+    });
 
     // Map page: fill exact remaining viewport (no page scroll)
     var mapPage = document.getElementById('page-map');
