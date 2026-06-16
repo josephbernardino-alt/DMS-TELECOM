@@ -513,6 +513,18 @@
   .btn-make-active { background: #16a34a; color: white; border: none; padding: 9px 18px; border-radius: 7px; font-size: 12px; font-weight: 700; cursor: pointer; }
   .btn-cancel-jo2 { background: white; color: #ef4444; border: 1px solid #ef4444; padding: 9px 18px; border-radius: 7px; font-size: 12px; font-weight: 700; cursor: pointer; }
 
+
+  /* REPORTS PAGE */
+  .reports-page-title { font-size: 22px; font-weight: 700; color: #1e293b; padding: 20px 24px 16px; }
+  .reports-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; padding: 0 24px 24px; }
+  .report-card { background: white; border: 1px solid #e5eaf2; border-radius: 10px; padding: 18px; cursor: pointer; transition: box-shadow 0.15s, transform 0.1s; }
+  .report-card:hover { box-shadow: 0 4px 16px rgba(0,0,0,0.08); transform: translateY(-2px); }
+  .report-card-icon { width: 34px; height: 34px; margin-bottom: 10px; }
+  .report-card-title { font-size: 14px; font-weight: 700; color: #1e293b; margin-bottom: 6px; }
+  .report-card-desc { font-size: 12px; color: #64748b; line-height: 1.5; }
+  @media (max-width: 1100px) { .reports-grid { grid-template-columns: repeat(2, 1fr); } }
+  @media (max-width: 700px) { .reports-grid { grid-template-columns: 1fr; } }
+
 </style>
 </head>
 <body class="density-normal">
@@ -601,7 +613,7 @@
     </div>
   </div>
   <button class="nav-btn">Migration ▾</button>
-  <button class="nav-btn">Reports</button>
+  <button class="nav-btn" id="reportsBtn">Reports</button>
   <button class="nav-btn">NAP Locator</button>
   <div style="position:relative;">
     <button class="nav-btn" id="notifBtn" style="position:relative;">🔔 <span class="notif-badge" id="notifBadge">0</span></button>
@@ -636,9 +648,12 @@
   </div>
   <div class="nav-dropdown">
     <div class="nav-avatar" id="userAvatarBtn">FB</div>
-    <div class="nav-menu" id="userMenu" style="right:0;left:auto;min-width:160px;">
-      <div style="padding:10px 18px;font-size:12px;color:#94a3b8;border-bottom:1px solid #f1f5f9;">Signed in as <b id="userMenuName" style="color:#1e293b;">—</b></div>
-      <div class="nav-menu-item" id="logoutBtn" style="color:#ef4444;">Log Out</div>
+    <div class="nav-menu" id="userMenu" style="right:0;left:auto;min-width:170px;">
+      <div class="nav-menu-item" id="teamsBtn">Teams</div>
+      <div class="nav-menu-item" id="changePwBtn">Change Password</div>
+      <div style="border-top:1px solid #f1f5f9;margin:4px 0;"></div>
+      <div class="nav-menu-item" id="logoutBtn" style="color:#ef4444;">Logout</div>
+      <div style="padding:8px 18px;font-size:10px;color:#cbd5e1;text-align:center;border-top:1px solid #f1f5f9;margin-top:4px;">v1.0.0</div>
     </div>
   </div>
 </div>
@@ -890,6 +905,56 @@
   </div>
 </div>
 
+<!-- ============ REPORTS PAGE ============ -->
+<div class="page-view" id="page-reports">
+  <div class="reports-page-title">Reports</div>
+  <div class="reports-grid">
+
+    <div class="report-card" data-report="contractor">
+      <svg class="report-card-icon" viewBox="0 0 24 24" fill="none" stroke="#2563eb" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M7 15v-3M12 15V8M17 15v-6"/></svg>
+      <div class="report-card-title">Daily Contractor Output</div>
+      <div class="report-card-desc">Daily count of Active records grouped by Agency, with date columns and totals.</div>
+    </div>
+
+    <div class="report-card" data-report="ni-teams">
+      <svg class="report-card-icon" viewBox="0 0 24 24" fill="none" stroke="#f97316" stroke-width="2"><path d="M3 7l4-4h10l4 4v3H3z"/><path d="M3 10h18v8a2 2 0 01-2 2H5a2 2 0 01-2-2z"/></svg>
+      <div class="report-card-title">Daily NI Teams Output</div>
+      <div class="report-card-desc">Daily completed New Installation job orders per dispatched Team.</div>
+    </div>
+
+    <div class="report-card" data-report="ni-personnel">
+      <svg class="report-card-icon" viewBox="0 0 24 24" fill="none" stroke="#16a34a" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M4 21v-2a6 6 0 0112 0v2"/></svg>
+      <div class="report-card-title">Daily NI Personnel Output</div>
+      <div class="report-card-desc">Daily completed New Installation job orders per individual Personnel member.</div>
+    </div>
+
+    <div class="report-card" data-report="migration-teams">
+      <svg class="report-card-icon" viewBox="0 0 24 24" fill="none" stroke="#6366f1" stroke-width="2"><rect x="3" y="4" width="18" height="14" rx="1"/><path d="M3 9h18M8 4v14"/></svg>
+      <div class="report-card-title">Daily Migration Teams Output</div>
+      <div class="report-card-desc">Daily completed Migration job orders per dispatched Team.</div>
+    </div>
+
+    <div class="report-card" data-report="migration-personnel">
+      <svg class="report-card-icon" viewBox="0 0 24 24" fill="none" stroke="#0d9488" stroke-width="2"><circle cx="9" cy="8" r="3"/><path d="M2 20v-1a5 5 0 015-5h2a5 5 0 015 5v1"/><path d="M17 8a3 3 0 110-6"/><path d="M21 20v-1a4 4 0 00-3-3.87"/></svg>
+      <div class="report-card-title">Daily Migration Personnel Output</div>
+      <div class="report-card-desc">Daily completed Migration job orders per individual Personnel member.</div>
+    </div>
+
+    <div class="report-card" data-report="output-per-city">
+      <svg class="report-card-icon" viewBox="0 0 24 24" fill="none" stroke="#22c55e" stroke-width="2"><path d="M12 21s7-6.5 7-11a7 7 0 10-14 0c0 4.5 7 11 7 11z"/><circle cx="12" cy="10" r="2.5"/></svg>
+      <div class="report-card-title">Output Per City</div>
+      <div class="report-card-desc">Daily count of Active records grouped by City, filterable by Agency and City.</div>
+    </div>
+
+    <div class="report-card" data-report="scorecard">
+      <svg class="report-card-icon" viewBox="0 0 24 24" fill="none" stroke="#ec4899" stroke-width="2"><path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/></svg>
+      <div class="report-card-title">Scorecard</div>
+      <div class="report-card-desc">Weekly scorecard of individual FST/Team performance based on Done, Cancelled, Rescheduled, and Attachment Compliance.</div>
+    </div>
+
+  </div>
+</div>
+
 <!-- MODAL -->
 <div class="modal-overlay" id="modalOverlay">
   <div class="modal">
@@ -1013,6 +1078,7 @@
       var thead = table.querySelector('thead');
       if (!thead) return;
 
+      // Rebuild clone whenever content signature changes
       var sig = thead.innerHTML.length + ':' + thead.children.length;
       if (!page._frozenClone || page._frozenSig !== sig) {
         if (page._frozenClone) page._frozenClone.remove();
@@ -1021,6 +1087,7 @@
         var cloneHead = thead.cloneNode(true);
         Array.prototype.forEach.call(cloneHead.querySelectorAll('th'), function(th){
           th.style.position = 'static';
+          th.style.top = '';
         });
         cloneTable.appendChild(cloneHead);
         document.body.appendChild(cloneTable);
@@ -1036,12 +1103,17 @@
 
       var theadRect = thead.getBoundingClientRect();
       var tableRect = table.getBoundingClientRect();
-      page._frozenTableRect = { left: tableRect.left, width: tableRect.width };
+
+      // Measure ACTUAL column widths from first tbody row tds (more accurate than th)
+      var firstRow = table.querySelector('tbody tr');
+      var widthSources = firstRow
+        ? firstRow.querySelectorAll('td')
+        : thead.querySelectorAll('th');
 
       var shouldShow = theadRect.top < threshold;
-      clone.style.display = shouldShow ? 'table' : 'none';
       clone.dataset.shown = shouldShow ? '1' : '0';
 
+      // Always keep clone positioned correctly even when hidden, so it's ready instantly
       clone.style.position = 'fixed';
       clone.style.top = threshold + 'px';
       clone.style.left = tableRect.left + 'px';
@@ -1052,12 +1124,20 @@
       clone.style.zIndex = '15';
       clone.style.margin = '0';
       clone.style.background = '#f1f5f9';
-      clone.style.boxShadow = '0 1px 3px rgba(0,0,0,0.08)';
+      clone.style.boxShadow = '0 2px 4px rgba(0,0,0,0.10)';
+      clone.style.fontSize = table.style.fontSize || '';
+      clone.style.display = shouldShow ? 'table' : 'none';
 
-      var origThs = thead.querySelectorAll('th');
+      // Sync column widths from actual td cells
       var cloneThs = clone.querySelectorAll('th');
-      for (var i = 0; i < origThs.length; i++) {
-        if (cloneThs[i]) cloneThs[i].style.width = origThs[i].getBoundingClientRect().width + 'px';
+      for (var i = 0; i < cloneThs.length; i++) {
+        var src = widthSources[i];
+        if (src) {
+          cloneThs[i].style.width = src.getBoundingClientRect().width + 'px';
+          cloneThs[i].style.minWidth = src.getBoundingClientRect().width + 'px';
+          cloneThs[i].style.maxWidth = src.getBoundingClientRect().width + 'px';
+          cloneThs[i].style.boxSizing = 'border-box';
+        }
       }
     });
   }
@@ -1639,8 +1719,6 @@
   function showApp(user) {
     document.getElementById('loginOverlay').style.display = 'none';
     document.querySelector('.nav-avatar').textContent = user.initials;
-    var nameEl = document.getElementById('userMenuName');
-    if (nameEl) nameEl.textContent = user.name;
   }
 
   var savedUser = sessionStorage.getItem('bestdms_user');
@@ -1875,6 +1953,8 @@
       var mb = document.getElementById('btnMapView');
       if(tb) { tb.classList.remove('active'); }
       if(mb) { mb.classList.remove('active'); }
+    } else if (page === 'reports') {
+      document.getElementById('page-reports').classList.add('active');
     } else if (page === 'dashboard' && view === 'map') {
       document.getElementById('page-map').classList.add('active');
       setTimeout(initMap, 100);
@@ -1904,10 +1984,30 @@
     document.getElementById('niMenu').classList.toggle('open');
   });
 
+  /* ── REPORTS ── */
+  document.getElementById('reportsBtn').addEventListener('click', function(){
+    switchPage('reports');
+  });
+  document.querySelectorAll('.report-card').forEach(function(card){
+    card.addEventListener('click', function(){
+      showToast(this.querySelector('.report-card-title').textContent + ' — coming soon', 'warning');
+    });
+  });
+
   /* ── USER MENU / LOGOUT ── */
   document.getElementById('userAvatarBtn').addEventListener('click', function(e){
     e.stopPropagation();
     document.getElementById('userMenu').classList.toggle('open');
+  });
+  document.getElementById('teamsBtn').addEventListener('click', function(e){
+    e.stopPropagation();
+    document.getElementById('userMenu').classList.remove('open');
+    showToast('Teams management coming soon', 'warning');
+  });
+  document.getElementById('changePwBtn').addEventListener('click', function(e){
+    e.stopPropagation();
+    document.getElementById('userMenu').classList.remove('open');
+    showToast('Change Password coming soon', 'warning');
   });
   document.getElementById('logoutBtn').addEventListener('click', function(e){
     e.stopPropagation();
