@@ -14,9 +14,15 @@
   .sticky-top.pinned { position: fixed; left: 0; right: 0; z-index: 2000; background: white; }
   .sticky-placeholder { display: none; }
   .sticky-placeholder.active { display: block; }
-  .table-section { display: block; overflow: auto; height: calc(100vh - 290px); }
-  .table-section thead th { position: sticky; top: 0; z-index: 5; background: #f1f5f9; }
-  thead th { background: #f1f5f9; }
+  .table-section { display: block; overflow: hidden; }
+  /* Fixed header */
+  .table-head-wrap { overflow: hidden; background: #f1f5f9; border-bottom: 2px solid #e2e8f0; width: 100%; }
+  .table-head-table { border-collapse: separate; border-spacing: 0; table-layout: fixed; font-size: 12px; }
+  #tableHeadRow td { background: #f1f5f9; padding: 10px 12px; text-align: left; font-size: 10px; font-weight: 700; color: #475569; text-transform: uppercase; white-space: nowrap; border-bottom: 2px solid #e2e8f0; box-sizing: border-box; }
+  /* Scrollable body */
+  .table-body-wrap { overflow: auto; }
+  .table-body-table { border-collapse: separate; border-spacing: 0; table-layout: auto; font-size: 12px; width: 100%; }
+  thead th { background: #f1f5f9; white-space: nowrap; }
 
   /* NAVBAR */
   .topnav { background: linear-gradient(135deg, #0f3460 0%, #1d4ed8 100%); height: 52px; display: flex; align-items: center; padding: 0 20px; gap: 14px; position: fixed; top: 0; left: 0; right: 0; z-index: 9000; box-shadow: 0 2px 8px rgba(0,0,0,0.12); }
@@ -94,7 +100,7 @@
 
   /* TABLE */
   .table-wrap { padding: 0 20px 10px; background: white; }
-  table { width: 100%; border-collapse: separate; border-spacing: 0; font-size: 12px; border: 1px solid #e5eaf2; }
+  table { width: 100%; border-collapse: separate; border-spacing: 0; font-size: 12px; }
   thead tr { background: #f1f5f9; border-bottom: 2px solid #e2e8f0; }
   th { padding: 10px 12px; text-align: left; font-size: 10px; font-weight: 700; color: #475569; text-transform: uppercase; white-space: nowrap; }
 
@@ -743,25 +749,30 @@
 </div>
 
 <div class="table-section"><!-- TABLE -->
-<div class="table-wrap">
-  <table>
-    <thead>
-      <tr>
-        <th>Count</th><th>Chat</th><th>Dispatch Date</th><th>GoFiber Status</th>
-        <th>JO Number</th><th>Team Number</th><th>Personnel</th><th>TL</th>
-        <th>Account No.</th><th>Barangay</th><th>Customer Name</th><th>Status</th>
-        <th>Status Remarks</th><th>NAP ID</th><th>Call Status</th>
-        <th>Call Remarks</th><th>Mobile No.</th><th>Updated By</th>
-      </tr>
-    </thead>
-    <tbody id="tableBody">
-      <tr class="loading-row"><td colspan="18"><span class="spinner"></span>Loading today's job orders...</td></tr>
-    </tbody>
-  </table>
+  <!-- FIXED HEADER -->
+  <div class="table-head-wrap" id="tableHeadWrap">
+    <table class="table-head-table" id="tableHeadTable">
+      <tbody><tr id="tableHeadRow">
+        <td id="hth0">Count</td><td id="hth1">Chat</td><td id="hth2">Dispatch Date</td><td id="hth3">GoFiber Status</td>
+        <td id="hth4">JO Number</td><td id="hth5">Team Number</td><td id="hth6">Personnel</td><td id="hth7">TL</td>
+        <td id="hth8">Account No.</td><td id="hth9">Barangay</td><td id="hth10">Customer Name</td><td id="hth11">Status</td>
+        <td id="hth12">Status Remarks</td><td id="hth13">NAP ID</td><td id="hth14">Call Status</td>
+        <td id="hth15">Call Remarks</td><td id="hth16">Mobile No.</td><td id="hth17">Updated By</td>
+      </tr></tbody>
+    </table>
+  </div>
+  <!-- SCROLLABLE BODY -->
+  <div class="table-body-wrap" id="tableBodyWrap">
+    <table class="table-body-table" id="tableBodyTable">
+      <tbody id="tableBody">
+        <tr class="loading-row"><td colspan="18"><span class="spinner"></span>Loading today's job orders...</td></tr>
+      </tbody>
+    </table>
+  </div>
 </div>
 
 <!-- FOOTER -->
-</div><div class="footer-bar">
+<div class="footer-bar">
   <span><span id="rowCount">0</span> Job Orders</span>
   <span id="dateLabel" style="color:#94a3b8;font-size:11px;"></span>
 </div>
@@ -1099,7 +1110,7 @@
     }
   }
 
-  window.addEventListener('resize', function(){ refreshLayout(); });
+  window.addEventListener('resize', function(){ refreshLayout(); setTimeout(syncTableHeader, 100); });
 
 
   /* ── INIT DATES ── */
@@ -1381,6 +1392,7 @@
     document.getElementById('rowCount').textContent = data.length;
   applyColumnVisibility();
   setTimeout(refreshLayout, 50);
+  setTimeout(syncTableHeader, 100);
   }
 
   /* ── ACTIVE FILTER STATE ── */
@@ -2576,6 +2588,45 @@
   document.getElementById('stagingOverlay').addEventListener('click', function(e){
     if (e.target === this) closeStagingModal();
   });
+
+  /* ── SPLIT TABLE HEADER SYNC ── */
+  function syncTableHeader() {
+    var bodyTable = document.getElementById('tableBodyTable');
+    var headWrap  = document.getElementById('tableHeadWrap');
+    var bodyWrap  = document.getElementById('tableBodyWrap');
+    if (!bodyTable || !headWrap || !bodyWrap) return;
+
+    var firstRow = bodyTable.querySelector('tbody tr:not(.loading-row)');
+    if (!firstRow) return;
+
+    var tds = firstRow.querySelectorAll('td');
+    var headerCells = document.querySelectorAll('#tableHeadRow td');
+
+    // Set each header cell width to match actual body cell width
+    for (var i = 0; i < headerCells.length; i++) {
+      if (tds[i]) {
+        var w = tds[i].getBoundingClientRect().width;
+        headerCells[i].style.width = w + 'px';
+        headerCells[i].style.minWidth = w + 'px';
+      }
+    }
+
+    // Match header table total width to body table
+    var headTable = document.getElementById('tableHeadTable');
+    if (headTable) headTable.style.width = bodyTable.offsetWidth + 'px';
+
+    // Sync horizontal scroll
+    bodyWrap.onscroll = function() {
+      headWrap.scrollLeft = bodyWrap.scrollLeft;
+    };
+
+    // Set body wrap height dynamically
+    var rect = bodyWrap.getBoundingClientRect();
+    var footer = document.querySelector('#page-dashboard .footer-bar');
+    var footerH = footer ? footer.offsetHeight : 30;
+    var remaining = window.innerHeight - rect.top - footerH;
+    if (remaining > 100) bodyWrap.style.height = remaining + 'px';
+  }
 
   load();
   setTimeout(refreshLayout, 200);
