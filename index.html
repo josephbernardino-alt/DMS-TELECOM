@@ -2158,6 +2158,26 @@
   document.getElementById('niBtn').addEventListener('click', function(e){
     e.stopPropagation();
     document.getElementById('niMenu').classList.toggle('open');
+    document.getElementById('migMenu').classList.remove('open');
+  });
+
+  /* ── MIGRATION DROPDOWN ── */
+  document.getElementById('migBtn').addEventListener('click', function(e){
+    e.stopPropagation();
+    document.getElementById('migMenu').classList.toggle('open');
+    document.getElementById('niMenu').classList.remove('open');
+    var um = document.getElementById('userMenu');
+    if(um) um.classList.remove('open');
+  });
+  document.querySelectorAll('#migMenu .nav-menu-item').forEach(function(item){
+    item.addEventListener('click', function(e){
+      e.stopPropagation();
+      document.querySelectorAll('#migMenu .nav-menu-item').forEach(function(x){x.classList.remove('active');});
+      this.classList.add('active');
+      var pg = this.dataset.migpage;
+      switchMigPage(pg);
+      document.getElementById('migMenu').classList.remove('open');
+    });
   });
 
   /* ── REPORTS ── */
@@ -2206,6 +2226,7 @@
   });
   document.addEventListener('click', function(){
     document.getElementById('niMenu').classList.remove('open');
+    document.getElementById('migMenu').classList.remove('open');
     var um = document.getElementById('userMenu');
     if (um) um.classList.remove('open');
   });
@@ -2888,22 +2909,7 @@
   var migData = [];
   var MIG_TABLE = 'migration_orders';
 
-  /* ── Dropdown ── */
-  document.getElementById('migBtn').addEventListener('click', function(e){
-    e.stopPropagation();
-    document.getElementById('migMenu').classList.toggle('open');
-    document.getElementById('niMenu').classList.remove('open');
-  });
-  document.querySelectorAll('#migMenu .nav-menu-item').forEach(function(item){
-    item.addEventListener('click', function(e){
-      e.stopPropagation();
-      document.querySelectorAll('#migMenu .nav-menu-item').forEach(function(x){x.classList.remove('active');});
-      this.classList.add('active');
-      var pg = this.dataset.migpage;
-      switchMigPage(pg);
-      document.getElementById('migMenu').classList.remove('open');
-    });
-  });
+  /* Migration dropdown wired below near niBtn */
 
   /* ── Page switcher ── */
   function switchMigPage(pg) {
