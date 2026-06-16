@@ -569,6 +569,27 @@
   .mig-status.visited { background: #e0e7ff; color: #4338ca; }
   .mig-status.called { background: #ccfbf1; color: #0f766e; }
   .mig-footer { padding: 10px 20px; font-size: 12px; color: #64748b; border-top: 1px solid #e5eaf2; background: white; }
+
+  /* MIGRATION BREADCRUMB + PAGE TITLE */
+  .mig-crumb { padding: 8px 20px 0; font-size: 11px; font-weight: 600; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.4px; background: white; }
+  .mig-crumb .crumb-sep { margin: 0 5px; color: #cbd5e1; }
+  .mig-page-title { padding: 2px 20px 10px; font-size: 18px; font-weight: 700; color: #1e293b; background: white; border-bottom: 1px solid #e5eaf2; }
+
+  /* FILTER SELECT (bundle / updated-by dropdowns) */
+  .filter-select { border: 1px solid #dce3ed; border-radius: 7px; padding: 6px 28px 6px 10px; font-size: 12px; outline: none; background: white url("data:image/svg+xml;charset=US-ASCII,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath fill='%2364748b' d='M0 0l5 6 5-6z'/%3E%3C/svg%3E") no-repeat right 10px center; -webkit-appearance: none; appearance: none; cursor: pointer; color: #475569; max-width: 170px; }
+  .filter-select:focus { border-color: #1d4ed8; }
+
+  /* CALL STATUS PILL — "Other - *" variants (pink) */
+  .s-other { background: #fce7f3; color: #a21caf; }
+
+  /* COLUMNS DROPDOWN (calling page) */
+  .callcols-menu { display: none; position: absolute; top: 38px; right: 0; background: white; border: 1px solid #e2e8f0; border-radius: 8px; box-shadow: 0 8px 24px rgba(0,0,0,0.12); z-index: 300; min-width: 200px; padding: 6px; max-height: 360px; overflow-y: auto; }
+  .callcols-menu.open { display: block; }
+  .callcols-item { padding: 7px 10px; font-size: 12px; color: #334155; display: flex; align-items: center; gap: 8px; border-radius: 6px; cursor: pointer; }
+  .callcols-item:hover { background: #f1f5f9; }
+  .callcols-item input { cursor: pointer; }
+  .mig-name-link { color: #1d4ed8; font-weight: 600; cursor: pointer; }
+  .mig-name-link:hover { text-decoration: underline; }
   /* Overall progress */
   .mig-progress-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 16px; padding: 20px; }
   .mig-progress-card { background: white; border: 1px solid #e5eaf2; border-radius: 10px; padding: 16px; }
@@ -618,6 +639,26 @@
   .team-assign-label .req { color: #ef4444; }
   .team-assign-select { width: 100%; border: 1px solid #e2e8f0; border-radius: 8px; padding: 10px 12px; font-size: 13px; color: #1e293b; background: white; font-family: inherit; margin-bottom: 16px; }
   .team-assign-select:focus { outline: none; border-color: #1d4ed8; }
+
+
+  /* MIGRATION RECORD DETAIL MODAL */
+  .mig-record-tab { padding: 10px 20px; font-size: 13px; font-weight: 600; color: #64748b; cursor: pointer; border-left: 3px solid transparent; }
+  .mig-record-tab.active { background: #1d4ed8; color: white; }
+  .mig-form-row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 12px; }
+  .mig-form-row3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 14px; margin-bottom: 16px; }
+  .mig-form-row4 { display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 14px; }
+  .mig-form-label { font-size: 11px; font-weight: 700; color: #475569; margin-bottom: 5px; display: block; }
+  .mig-form-label .req { color: #ef4444; }
+  .mig-form-input { width: 100%; border: 1px solid #e2e8f0; border-radius: 7px; padding: 8px 11px; font-size: 12px; color: #1e293b; background: white; font-family: inherit; box-sizing: border-box; }
+  .mig-form-input:disabled { background: #f8fafc; color: #94a3b8; }
+  .mig-form-input:focus { outline: none; border-color: #1d4ed8; }
+  .mig-section-label { font-size: 12px; font-weight: 700; color: #1e293b; margin-bottom: 8px; }
+  .mig-collapse-card { border: 1px solid #e5eaf2; border-radius: 8px; margin-bottom: 16px; overflow: hidden; }
+  .mig-collapse-head { background: #f8fafc; padding: 10px 14px; font-size: 12px; font-weight: 700; color: #1e293b; display: flex; justify-content: space-between; align-items: center; cursor: pointer; }
+  .mig-collapse-body { padding: 14px; display: none; }
+  .mig-edit-btn { background: #1d4ed8; color: white; border: none; border-radius: 6px; padding: 4px 10px; font-size: 11px; font-weight: 600; cursor: pointer; }
+  .mig-chevron { font-size: 11px; color: #94a3b8; transition: transform 0.15s; }
+  .mig-collapse-head.open .mig-chevron { transform: rotate(180deg); }
 
 </style>
 </head>
@@ -1136,6 +1177,182 @@
   </div>
 </div>
 
+<!-- MIGRATION RECORD DETAIL MODAL -->
+<div class="staging-overlay" id="migRecordOverlay">
+  <div class="staging-modal" style="width:920px;max-width:95vw;">
+    <div class="staging-header">
+      <span class="staging-title" id="migRecordTitle">Migration Record Details</span>
+      <button class="modal-close" onclick="closeMigRecordModal()">✕</button>
+    </div>
+    <div class="staging-body" style="display:flex;gap:0;padding:0;max-height:75vh;">
+      <!-- LEFT TAB NAV -->
+      <div style="width:170px;flex-shrink:0;border-right:1px solid #f1f5f9;padding:16px 0;">
+        <div class="mig-record-tab active" id="migRecTabDetail" onclick="switchMigRecordTab('detail')">Migration Record Detail</div>
+        <div class="mig-record-tab" id="migRecTabHistory" onclick="switchMigRecordTab('history')">Movement History</div>
+      </div>
+      <!-- RIGHT CONTENT -->
+      <div style="flex:1;overflow-y:auto;padding:20px;">
+
+        <!-- DETAIL TAB -->
+        <div id="migRecDetailPane">
+          <div class="mig-form-row3">
+            <div><label class="mig-form-label">Dispatch Date</label><input type="date" class="mig-form-input" id="mrDispatchDate"></div>
+            <div><label class="mig-form-label">JO Status</label><input type="text" class="mig-form-input" id="mrJOStatus" disabled></div>
+            <div><label class="mig-form-label">Decomm (Y/N)</label>
+              <select class="mig-form-input" id="mrDecomm">
+                <option value="Y">Y</option><option value="N">N</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="mig-section-label">Team Number &amp; Personnel</div>
+          <label class="mig-form-label">Team Number <span class="req">*</span></label>
+          <select class="mig-form-input" id="mrTeamNumber" style="margin-bottom:14px;">
+            <option value="">— Select Team —</option>
+          </select>
+          <label class="mig-form-label">Personnel 1 <span class="req">*</span></label>
+          <select class="mig-form-input" id="mrPersonnel1" style="margin-bottom:14px;">
+            <option value="">— Select Personnel 1 —</option>
+          </select>
+          <label class="mig-form-label">Personnel 2</label>
+          <select class="mig-form-input" id="mrPersonnel2" style="margin-bottom:16px;">
+            <option value="">None</option>
+          </select>
+
+          <div class="mig-collapse-card">
+            <div class="mig-collapse-head" onclick="toggleMigCollapse('mrNapCard')">
+              <span>📦 NAP / Completion Details</span>
+              <button class="mig-edit-btn" onclick="event.stopPropagation();toggleMigCollapse('mrNapCard')">✎ Edit</button>
+            </div>
+            <div class="mig-collapse-body" id="mrNapCard">
+              <div class="mig-form-row4">
+                <div><label class="mig-form-label">NAP Code</label><input type="text" class="mig-form-input" id="mrNapCode" placeholder="—"></div>
+                <div><label class="mig-form-label">NAP ID</label><input type="text" class="mig-form-input" id="mrNapId" placeholder="—"></div>
+                <div><label class="mig-form-label">NAP Port</label><input type="text" class="mig-form-input" id="mrNapPort" placeholder="—"></div>
+                <div><label class="mig-form-label">Number of Vacant Ports</label><input type="text" class="mig-form-input" id="mrVacantPorts" placeholder="—"></div>
+              </div>
+              <div class="mig-form-row3" style="margin-top:10px;">
+                <div><label class="mig-form-label">Modem Serial Number</label><input type="text" class="mig-form-input" id="mrModemSerial" placeholder="—"></div>
+                <div><label class="mig-form-label">IPTV Serial Number</label><input type="text" class="mig-form-input" id="mrIptvSerial" placeholder="—"></div>
+                <div><label class="mig-form-label">Completion Photo</label><input type="text" class="mig-form-input" id="mrCompletionPhoto" placeholder="—" disabled></div>
+              </div>
+            </div>
+          </div>
+
+          <label class="mig-form-label">JO Remarks</label>
+          <textarea class="mig-form-input" id="mrJORemarks" rows="2" placeholder="Job order status remarks" style="margin-bottom:16px;resize:vertical;"></textarea>
+
+          <div class="mig-collapse-card">
+            <div class="mig-collapse-head" onclick="toggleMigCollapse('mrSubCard')">
+              <span>👤 Subscriber Information</span>
+              <button class="mig-edit-btn" onclick="event.stopPropagation();toggleMigCollapse('mrSubCard')">Edit</button>
+            </div>
+            <div class="mig-collapse-body" id="mrSubCard" style="display:block;">
+              <div class="mig-form-row2">
+                <div><label class="mig-form-label">Old Account No.</label><input type="text" class="mig-form-input" id="mrOldAcctNo"></div>
+                <div><label class="mig-form-label">Name</label><input type="text" class="mig-form-input" id="mrName"></div>
+              </div>
+              <div class="mig-form-row2">
+                <div><label class="mig-form-label">Play Type</label><input type="text" class="mig-form-input" id="mrPlayType"></div>
+                <div><label class="mig-form-label">Bundle Type</label><input type="text" class="mig-form-input" id="mrBundleType"></div>
+              </div>
+              <div class="mig-form-row2">
+                <div><label class="mig-form-label">Municipality</label><input type="text" class="mig-form-input" id="mrMunicipality"></div>
+                <div><label class="mig-form-label">Barangay</label><input type="text" class="mig-form-input" id="mrBarangay"></div>
+              </div>
+              <div class="mig-form-row2">
+                <div><label class="mig-form-label">SDU/MDU</label><input type="text" class="mig-form-input" id="mrSduMdu"></div>
+                <div><label class="mig-form-label">Old Node</label><input type="text" class="mig-form-input" id="mrOldNode"></div>
+              </div>
+              <label class="mig-form-label">Address</label>
+              <input type="text" class="mig-form-input" id="mrAddress" style="margin-bottom:10px;">
+              <div class="mig-form-row2">
+                <div><label class="mig-form-label">Village</label><input type="text" class="mig-form-input" id="mrVillage"></div>
+                <div><label class="mig-form-label">Contact Info</label><input type="text" class="mig-form-input" id="mrContactInfo"></div>
+              </div>
+            </div>
+          </div>
+
+          <div class="mig-collapse-card">
+            <div class="mig-collapse-head" onclick="toggleMigCollapse('mrNetworkCard')"><span>🌐 Network / Service Information</span><span class="mig-chevron">▾</span></div>
+            <div class="mig-collapse-body" id="mrNetworkCard">
+              <div class="mig-form-row2">
+                <div><label class="mig-form-label">Network Type</label><input type="text" class="mig-form-input" id="mrNetworkType"></div>
+                <div><label class="mig-form-label">Type of Customer</label><input type="text" class="mig-form-input" id="mrTypeOfCustomer"></div>
+              </div>
+              <div class="mig-form-row2">
+                <div><label class="mig-form-label">Subscriber Status</label><input type="text" class="mig-form-input" id="mrSubStatus"></div>
+                <div><label class="mig-form-label">Service Type</label><input type="text" class="mig-form-input" id="mrServiceType"></div>
+              </div>
+              <div class="mig-form-row2">
+                <div><label class="mig-form-label">Deployment Type</label><input type="text" class="mig-form-input" id="mrDeployType"></div>
+                <div><label class="mig-form-label">Node No (Sky)</label><input type="text" class="mig-form-input" id="mrNodeNoSky"></div>
+              </div>
+            </div>
+          </div>
+
+          <div class="mig-collapse-card">
+            <div class="mig-collapse-head" onclick="toggleMigCollapse('mrCompletionCard')"><span>✅ Migration / Completion</span><span class="mig-chevron">▾</span></div>
+            <div class="mig-collapse-body" id="mrCompletionCard">
+              <div class="mig-form-row2">
+                <div><label class="mig-form-label">Migration</label><input type="text" class="mig-form-input" id="mrMigration"></div>
+                <div><label class="mig-form-label">Date Completed</label><input type="date" class="mig-form-input" id="mrDateCompleted"></div>
+              </div>
+              <div class="mig-form-row2">
+                <div><label class="mig-form-label">Month Completed</label><input type="text" class="mig-form-input" id="mrMonthCompleted"></div>
+                <div><label class="mig-form-label">Week Completed</label><input type="text" class="mig-form-input" id="mrWeekCompleted"></div>
+              </div>
+            </div>
+          </div>
+
+          <div class="mig-collapse-card">
+            <div class="mig-collapse-head" onclick="toggleMigCollapse('mrDecommCard')"><span>📡 Decommission</span><span class="mig-chevron">▾</span></div>
+            <div class="mig-collapse-body" id="mrDecommCard">
+              <div class="mig-form-row2">
+                <div><label class="mig-form-label">Old Hub</label><input type="text" class="mig-form-input" id="mrOldHub"></div>
+                <div><label class="mig-form-label">Decomm Date</label><input type="date" class="mig-form-input" id="mrDecommDate"></div>
+              </div>
+              <div class="mig-form-row2">
+                <div><label class="mig-form-label">Decomm Schedule</label><input type="text" class="mig-form-input" id="mrDecommSched"></div>
+                <div><label class="mig-form-label">Decomm Week</label><input type="text" class="mig-form-input" id="mrDecommWeek"></div>
+              </div>
+            </div>
+          </div>
+
+          <div class="mig-collapse-card" style="margin-bottom:0;">
+            <div class="mig-collapse-head" onclick="toggleMigCollapse('mrLocationCard')"><span>📍 Location / Area</span><span class="mig-chevron">▾</span></div>
+            <div class="mig-collapse-body" id="mrLocationCard">
+              <div class="mig-form-row2">
+                <div><label class="mig-form-label">Quadrant</label><input type="text" class="mig-form-input" id="mrQuadrant"></div>
+                <div><label class="mig-form-label">New Quad</label><input type="text" class="mig-form-input" id="mrNewQuad"></div>
+              </div>
+              <div class="mig-form-row2">
+                <div><label class="mig-form-label">MSP</label><input type="text" class="mig-form-input" id="mrMsp"></div>
+                <div><label class="mig-form-label">MSP Cluster</label><input type="text" class="mig-form-input" id="mrMspCluster"></div>
+              </div>
+              <div class="mig-form-row2">
+                <div><label class="mig-form-label">Sector</label><input type="text" class="mig-form-input" id="mrSector"></div>
+                <div><label class="mig-form-label">Area</label><input type="text" class="mig-form-input" id="mrArea"></div>
+              </div>
+              <div><label class="mig-form-label">FMA</label><input type="text" class="mig-form-input" id="mrFma"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- HISTORY TAB -->
+        <div id="migRecHistoryPane" style="display:none;">
+          <div id="migRecHistoryList" style="font-size:12px;color:#94a3b8;text-align:center;padding:40px 0;">No movement history recorded yet.</div>
+        </div>
+
+      </div>
+    </div>
+    <div class="staging-footer">
+      <button class="btn btn-close" onclick="closeMigRecordModal()">Close</button>
+      <button class="btn btn-save" onclick="saveMigRecordModal()">Save Changes</button>
+    </div>
+  </div>
+</div>
+
 <!-- ASSIGN TEAM MODAL -->
 <div class="staging-overlay" id="assignTeamOverlay">
   <div class="staging-modal" style="width:420px;">
@@ -1173,6 +1390,9 @@
   <div class="filterbar sticky-top">
     <input class="search-input" id="migUpSearch" type="text" placeholder="Search account, name, barangay...">
     <div class="filter-spacer"></div>
+    <button class="today-btn" id="migUpDownloadTemplate" style="background:white;color:#1e293b;border:1px solid #e2e8f0;">⬇ Download Template</button>
+    <button class="today-btn" id="migUpImportBtn">⬆ Import Migration</button>
+    <input type="file" id="migUpImportFile" accept=".csv,.xlsx,.xls" style="display:none;">
   </div>
   <div class="mig-kpi-strip sticky-top">
     <button class="mig-header-btn">📤 UPLOADED FOR MIGRATION</button>
@@ -1199,26 +1419,45 @@
 <!-- 3. FOR CALLING/SCHEDULING -->
 <div class="page-view" id="page-mig-calling">
   <div class="filterbar sticky-top">
-    <input class="search-input" id="migCallSearch" type="text" placeholder="Search account, name, contact...">
+    <input class="search-input" id="migCallSearch" type="text" placeholder="Search account, name, address...">
+    <button class="date-nav" id="migCallPrev" title="Previous day">‹</button>
+    <button class="date-nav" id="migCallNext" title="Next day">›</button>
+    <span class="date-label">Date from:</span>
+    <input class="date-input" type="date" id="migCallDateFrom">
+    <span class="date-label">to:</span>
+    <input class="date-input" type="date" id="migCallDateTo">
+    <button class="today-btn" id="migCallToday">Today</button>
+    <select class="filter-select" id="migCallBundle"><option value="">All Bundle Types</option></select>
+    <select class="filter-select" id="migCallUpdatedBy"><option value="">All Updated By</option></select>
     <div class="filter-spacer"></div>
+    <div style="position:relative;">
+      <button class="columns-btn" id="migCallColsBtn">▦ Columns</button>
+      <div class="callcols-menu" id="migCallColsMenu"></div>
+    </div>
   </div>
-  <div class="mig-kpi-strip sticky-top">
-    <button class="mig-header-btn">📞 FOR CALLING/SCHEDULING</button>
-    <div class="mig-kpi pending"><div class="mig-kpi-label">For Calling</div><div class="mig-kpi-count" id="migCallTotal">0</div></div>
-    <div class="mig-kpi completed"><div class="mig-kpi-label">Confirmed</div><div class="mig-kpi-count" id="migCallConfirmed">0</div></div>
-    <div class="mig-kpi rescheduled"><div class="mig-kpi-label">Rescheduled</div><div class="mig-kpi-count" id="migCallResched">0</div></div>
-    <div class="mig-kpi cancelled"><div class="mig-kpi-label">No Answer</div><div class="mig-kpi-count" id="migCallNoAns">0</div></div>
-  </div>
+  <div class="mig-crumb">OVERALL <span class="crumb-sep">›</span> GENERAL</div>
+  <div class="mig-page-title">For Calling/Scheduling</div>
   <div class="mig-head-wrap" id="migCallHeadWrap">
     <table class="mig-head-table"><tbody><tr id="migCallHeadRow">
-      <td>#</td><td>Old Acct No</td><td>Name</td><td>Municipality</td><td>Barangay</td>
-      <td>Contact</td><td>Bundle Type</td><td>Date Visited</td>
-      <td>JO Status</td><td>Remarks</td>
+      <td data-col="num">#</td>
+      <td data-col="chat">Chat</td>
+      <td data-col="endorsed">Date Endorsed</td>
+      <td data-col="callstatus">Call Status</td>
+      <td data-col="callremarks">Call Remarks</td>
+      <td data-col="attempts">Call Attempts</td>
+      <td data-col="acct">Old Account No.</td>
+      <td data-col="bundle">Bundle Type</td>
+      <td data-col="name">Name</td>
+      <td data-col="decomm">Decomm</td>
+      <td data-col="muni">Municipality</td>
+      <td data-col="brgy">Barangay</td>
+      <td data-col="address">Address</td>
+      <td data-col="updatedby">Updated By</td>
     </tr></tbody></table>
   </div>
   <div class="mig-body-wrap" id="migCallBodyWrap">
     <table class="mig-body-table"><tbody id="migCallBody">
-      <tr class="loading-row"><td colspan="10"><span class="spinner"></span>Loading...</td></tr>
+      <tr class="loading-row"><td colspan="14"><span class="spinner"></span>Loading...</td></tr>
     </tbody></table>
   </div>
   <div class="mig-footer"><span id="migCallCount">0</span> records</div>
@@ -3105,6 +3344,155 @@
 
   function mv(val) { return val || '—'; }
 
+  /* ── Call status pill (For Calling page) ── */
+  function callStatusBadge(status) {
+    if (!status) return '—';
+    var s = String(status).trim();
+    var ls = s.toLowerCase();
+    var cls;
+    if (ls.indexOf('other') === 0) cls = 's-other';
+    else if (ls.indexOf('kor') === 0) cls = 's-kor';
+    else if (ls.indexOf('cbr') === 0) cls = 's-cbr';
+    else if (ls === 'unattended') cls = 's-unattended';
+    else if (ls === 'confirmed') cls = 's-confirmed';
+    else if (ls.indexOf('callback') !== -1) cls = 's-for-callback';
+    else if (ls.indexOf('no answer') !== -1) cls = 's-no-answer';
+    else cls = 's-other';
+    return '<span class="status-badge '+cls+'">'+s+'</span>';
+  }
+
+  /* ── For Calling page filter state ── */
+  var migCallFilters = { search:'', bundle:'', updatedBy:'', dateFrom:'', dateTo:'' };
+  var migCallDropdownsBuilt = false;
+  var migCallColsBuilt = false;
+  /* column key -> visible */
+  var migCallColVis = {
+    num:true, chat:true, endorsed:true, callstatus:true, callremarks:true,
+    attempts:true, acct:true, bundle:true, name:true, decomm:true,
+    muni:true, brgy:true, address:true, updatedby:true
+  };
+  var migCallColLabels = {
+    num:'#', chat:'Chat', endorsed:'Date Endorsed', callstatus:'Call Status',
+    callremarks:'Call Remarks', attempts:'Call Attempts', acct:'Old Account No.',
+    bundle:'Bundle Type', name:'Name', decomm:'Decomm', muni:'Municipality',
+    brgy:'Barangay', address:'Address', updatedby:'Updated By'
+  };
+
+  /* Populate Bundle Type + Updated By dropdowns from current data (once per load) */
+  function buildMigCallDropdowns() {
+    var bundleSel = document.getElementById('migCallBundle');
+    var updSel    = document.getElementById('migCallUpdatedBy');
+    if (!bundleSel || !updSel) return;
+    var bundles = {}, updaters = {};
+    migData.forEach(function(r){
+      if (r.bundle_type) bundles[r.bundle_type] = true;
+      var u = r.updated_by || r.updatedBy;
+      if (u) updaters[u] = true;
+    });
+    var bKeys = Object.keys(bundles).sort();
+    var uKeys = Object.keys(updaters).sort();
+    bundleSel.innerHTML = '<option value="">All Bundle Types</option>' +
+      bKeys.map(function(b){ return '<option value="'+b.replace(/"/g,'&quot;')+'">'+b+'</option>'; }).join('');
+    updSel.innerHTML = '<option value="">All Updated By</option>' +
+      uKeys.map(function(u){ return '<option value="'+u.replace(/"/g,'&quot;')+'">'+u+'</option>'; }).join('');
+    /* restore current selections */
+    bundleSel.value = migCallFilters.bundle;
+    updSel.value = migCallFilters.updatedBy;
+    migCallDropdownsBuilt = true;
+  }
+
+  /* Build the Columns toggle menu (once) */
+  function buildMigCallColsMenu() {
+    var menu = document.getElementById('migCallColsMenu');
+    if (!menu || migCallColsBuilt) return;
+    var order = ['chat','endorsed','callstatus','callremarks','attempts','acct','bundle','name','decomm','muni','brgy','address','updatedby'];
+    menu.innerHTML = order.map(function(k){
+      return '<label class="callcols-item"><input type="checkbox" data-colkey="'+k+'" '+(migCallColVis[k]?'checked':'')+'> '+migCallColLabels[k]+'</label>';
+    }).join('');
+    menu.querySelectorAll('input[data-colkey]').forEach(function(cb){
+      cb.addEventListener('change', function(){
+        migCallColVis[this.getAttribute('data-colkey')] = this.checked;
+        applyMigCallColVis();
+      });
+    });
+    migCallColsBuilt = true;
+  }
+
+  /* Show/hide columns per migCallColVis */
+  function applyMigCallColVis() {
+    var keys = ['num','chat','endorsed','callstatus','callremarks','attempts','acct','bundle','name','decomm','muni','brgy','address','updatedby'];
+    keys.forEach(function(k){
+      var vis = migCallColVis[k];
+      var head = document.querySelector('#migCallHeadRow td[data-col="'+k+'"]');
+      if (head) head.style.display = vis ? '' : 'none';
+      document.querySelectorAll('#migCallBody td[data-col="'+k+'"]').forEach(function(td){
+        td.style.display = vis ? '' : 'none';
+      });
+    });
+    setTimeout(function(){ syncMigHeader('migCallBodyWrap','migCallHeadWrap','migCallHeadRow'); }, 30);
+  }
+
+  /* Apply filters + render rows */
+  function renderMigCallRows() {
+    var tbody = document.getElementById('migCallBody');
+    if (!tbody) return;
+    var q  = migCallFilters.search.toLowerCase().trim();
+    var bf = migCallFilters.bundle;
+    var uf = migCallFilters.updatedBy;
+    var df = migCallFilters.dateFrom;
+    var dt = migCallFilters.dateTo;
+
+    var rows = migData.filter(function(r){
+      if (bf && r.bundle_type !== bf) return false;
+      if (uf && (r.updated_by||r.updatedBy) !== uf) return false;
+      if (df || dt) {
+        var d = r.date_endorsed || '';
+        if (df && d && d < df) return false;
+        if (dt && d && d > dt) return false;
+        if ((df || dt) && !d) return false; /* hide undated only when filtering by date */
+      }
+      if (q) {
+        var hay = [r.old_acct_no, r.name, r.address, r.barangay, r.municipality, r.contact_info]
+          .map(function(x){return (x||'').toLowerCase();}).join(' ');
+        if (hay.indexOf(q) === -1) return false;
+      }
+      return true;
+    });
+
+    document.getElementById('migCallCount').textContent = rows.length;
+
+    if (!rows.length) {
+      tbody.innerHTML = '<tr class="loading-row"><td colspan="14" style="text-align:center;padding:40px;color:#94a3b8;">No records match the current filters.</td></tr>';
+      return;
+    }
+
+    tbody.innerHTML = rows.map(function(r,i){
+      var chatCell = (r.chat_count>0)
+        ? '<div class="chat-badge">'+r.chat_count+'</div>'
+        : '<span style="color:#e2e8f0;">0</span>';
+      var decomm = (r.decomm===true||r.decomm==='Y'||r.decomm==='Yes') ? 'Y' : 'N';
+      return '<tr>'
+        +'<td class="count-cell" data-col="num">'+(i+1)+'</td>'
+        +'<td style="text-align:center;min-width:46px;" data-col="chat">'+chatCell+'</td>'
+        +'<td style="white-space:nowrap;min-width:104px;" data-col="endorsed">'+mv(r.date_endorsed)+'</td>'
+        +'<td style="min-width:120px;" data-col="callstatus">'+callStatusBadge(r.call_status)+'</td>'
+        +'<td style="font-size:11px;min-width:120px;max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" data-col="callremarks" title="'+(r.call_remarks||'').replace(/"/g,'&quot;')+'">'+mv(r.call_remarks)+'</td>'
+        +'<td class="count-cell" style="min-width:96px;" data-col="attempts">'+(r.call_attempts!=null?r.call_attempts:'—')+'</td>'
+        +'<td style="white-space:nowrap;min-width:120px;" data-col="acct">'+mv(r.old_acct_no)+'</td>'
+        +'<td style="min-width:104px;" data-col="bundle">'+mv(r.bundle_type)+'</td>'
+        +'<td style="min-width:150px;" data-col="name"><span class="mig-name-link" onclick="openMigRecordModal(\''+r.id+'\')">'+mv(r.name)+'</span></td>'
+        +'<td style="text-align:center;min-width:72px;" data-col="decomm">'+decomm+'</td>'
+        +'<td style="white-space:nowrap;min-width:108px;" data-col="muni">'+mv(r.municipality)+'</td>'
+        +'<td style="white-space:nowrap;min-width:100px;" data-col="brgy">'+mv(r.barangay)+'</td>'
+        +'<td style="min-width:160px;max-width:240px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" data-col="address" title="'+(r.address||'').replace(/"/g,'&quot;')+'">'+mv(r.address)+'</td>'
+        +'<td style="white-space:nowrap;min-width:92px;" data-col="updatedby">'+mv(r.updated_by||r.updatedBy)+'</td>'
+        +'</tr>';
+    }).join('');
+    applyMigCallColVis();
+    setTimeout(function(){ syncMigHeader('migCallBodyWrap','migCallHeadWrap','migCallHeadRow'); }, 80);
+  }
+
+
   /* ── Sync migration split header ── */
   function syncMigHeader(bodyWrapId, headWrapId, headRowId) {
     var bodyWrap = document.getElementById(bodyWrapId);
@@ -3205,7 +3593,7 @@
       setME('migUpCount', migData.length);
       if (!migData.length) { tbody.innerHTML = emptyRow; return; }
       tbody.innerHTML = migData.map(function(r,i){
-        return '<tr>'
+        return '<tr onclick="openMigRecordModal(\''+r.id+'\')" style="cursor:pointer;">'
           +'<td class="count-cell">'+(i+1)+'</td>'
           +'<td>'+mv(r.old_acct_no)+'</td>'
           +'<td style="min-width:160px;font-weight:600;color:#1e293b;">'+mv(r.name)+'</td>'
@@ -3223,30 +3611,9 @@
       setTimeout(function(){ syncMigHeader('migUpBodyWrap','migUpHeadWrap','migUpHeadRow'); }, 80);
 
     } else if (pg === 'calling') {
-      var tbody = document.getElementById('migCallBody');
-      if (!tbody) return;
-      function setME(id,v){ var el=document.getElementById(id); if(el) el.textContent=v; }
-      setME('migCallTotal', migData.length);
-      setME('migCallConfirmed', migData.filter(function(r){return r.jo_status==='Confirmed';}).length);
-      setME('migCallResched', migData.filter(function(r){return r.jo_status==='Rescheduled';}).length);
-      setME('migCallNoAns', migData.filter(function(r){return r.jo_status==='No Answer';}).length);
-      setME('migCallCount', migData.length);
-      if (!migData.length) { tbody.innerHTML = emptyRow; return; }
-      tbody.innerHTML = migData.map(function(r,i){
-        return '<tr>'
-          +'<td class="count-cell">'+(i+1)+'</td>'
-          +'<td>'+mv(r.old_acct_no)+'</td>'
-          +'<td style="min-width:160px;font-weight:600;color:#1e293b;">'+mv(r.name)+'</td>'
-          +'<td>'+mv(r.municipality)+'</td>'
-          +'<td>'+mv(r.barangay)+'</td>'
-          +'<td style="color:#1d4ed8;font-weight:600;">'+mv(r.contact_info)+'</td>'
-          +'<td>'+mv(r.bundle_type)+'</td>'
-          +'<td>'+mv(r.date_visited)+'</td>'
-          +'<td>'+migStatusBadge(r.jo_status)+'</td>'
-          +'<td>'+mv(r.remarks)+'</td>'
-          +'</tr>';
-      }).join('');
-      setTimeout(function(){ syncMigHeader('migCallBodyWrap','migCallHeadWrap','migCallHeadRow'); }, 80);
+      buildMigCallDropdowns();
+      buildMigCallColsMenu();
+      renderMigCallRows();
 
     } else if (pg === 'completed') {
       var tbody = document.getElementById('migCompBody');
@@ -3646,6 +4013,200 @@
     return p.name || p.full_name || (p.first_name ? (p.first_name+' '+(p.last_name||'')) : null) || p.username || ('Personnel '+p.id);
   }
 
+  /* ════════════ MIGRATION RECORD DETAIL MODAL ════════════ */
+  var currentMigRecord = null;
+
+  window.openMigRecordModal = function(recordId) {
+    var r = migData.find(function(rec){ return String(rec.id) === String(recordId); });
+    if (!r) return;
+    currentMigRecord = r;
+
+    document.getElementById('migRecordTitle').textContent = 'Migration Record Details — ' + (r.name || r.old_acct_no || '');
+
+    function setVal(id, val) { var el = document.getElementById(id); if (el) el.value = val || ''; }
+
+    setVal('mrDispatchDate', r.date_visited);
+    setVal('mrJOStatus', r.jo_status || 'Pending');
+    setVal('mrDecomm', r.decomm || 'N');
+
+    /* Team / Personnel dropdowns */
+    var teamSel = document.getElementById('mrTeamNumber');
+    teamSel.innerHTML = '<option value="">— Select Team —</option>' +
+      allTeams.map(function(t){ return '<option value="'+t.team_number+'"'+(t.team_number===r.team_number?' selected':'')+'>'+t.team_number+'</option>'; }).join('');
+
+    var p1Sel = document.getElementById('mrPersonnel1');
+    var p2Sel = document.getElementById('mrPersonnel2');
+    var personnelOptions = allPersonnel.map(function(p){
+      var lbl = personnelLabel(p);
+      return '<option value="'+lbl+'">'+lbl+'</option>';
+    }).join('');
+    var existingPersonnel = (r.personnel || '').split(',').map(function(s){return s.trim();});
+    p1Sel.innerHTML = '<option value="">— Select Personnel 1 —</option>' + personnelOptions;
+    p2Sel.innerHTML = '<option value="">None</option>' + personnelOptions;
+    if (existingPersonnel[0]) p1Sel.value = existingPersonnel[0];
+    if (existingPersonnel[1]) p2Sel.value = existingPersonnel[1];
+
+    /* NAP / completion fields - not yet in schema, show blank/placeholder */
+    setVal('mrNapCode', '');
+    setVal('mrNapId', '');
+    setVal('mrNapPort', '');
+    setVal('mrVacantPorts', '');
+    setVal('mrModemSerial', '');
+    setVal('mrIptvSerial', '');
+
+    setVal('mrJORemarks', r.remarks);
+
+    /* Subscriber info */
+    setVal('mrOldAcctNo', r.old_acct_no);
+    setVal('mrName', r.name);
+    setVal('mrPlayType', r.play_type);
+    setVal('mrBundleType', r.bundle_type);
+    setVal('mrMunicipality', r.municipality);
+    setVal('mrBarangay', r.barangay);
+    setVal('mrSduMdu', r.sdu_mdu);
+    setVal('mrOldNode', r.old_node);
+    setVal('mrAddress', r.address);
+    setVal('mrVillage', r.village);
+    setVal('mrContactInfo', r.contact_info);
+
+    /* Network / Service */
+    setVal('mrNetworkType', r.network_type);
+    setVal('mrTypeOfCustomer', r.type_of_customer);
+    setVal('mrSubStatus', r.subscriber_status);
+    setVal('mrServiceType', r.service_type);
+    setVal('mrDeployType', r.deployment_type);
+    setVal('mrNodeNoSky', r.node_no_sky);
+
+    /* Migration / Completion */
+    setVal('mrMigration', r.migration);
+    setVal('mrDateCompleted', r.date_completed);
+    setVal('mrMonthCompleted', r.month_completed);
+    setVal('mrWeekCompleted', r.week_completed);
+
+    /* Decommission */
+    setVal('mrOldHub', r.old_hub);
+    setVal('mrDecommDate', r.decomm_date);
+    setVal('mrDecommSched', r.decomm_sched);
+    setVal('mrDecommWeek', r.decomm_week);
+
+    /* Location / Area */
+    setVal('mrQuadrant', r.quadrant);
+    setVal('mrNewQuad', r.new_quad);
+    setVal('mrMsp', r.msp);
+    setVal('mrMspCluster', r.msp_cluster);
+    setVal('mrSector', r.sector);
+    setVal('mrArea', r.area);
+    setVal('mrFma', r.fma);
+
+    switchMigRecordTab('detail');
+    document.getElementById('migRecordOverlay').style.display = 'flex';
+  };
+
+  window.closeMigRecordModal = function() {
+    document.getElementById('migRecordOverlay').style.display = 'none';
+    currentMigRecord = null;
+  };
+
+  window.switchMigRecordTab = function(tab) {
+    document.getElementById('migRecTabDetail').classList.toggle('active', tab === 'detail');
+    document.getElementById('migRecTabHistory').classList.toggle('active', tab === 'history');
+    document.getElementById('migRecDetailPane').style.display = tab === 'detail' ? 'block' : 'none';
+    document.getElementById('migRecHistoryPane').style.display = tab === 'history' ? 'block' : 'none';
+  };
+
+  window.toggleMigCollapse = function(id) {
+    var el = document.getElementById(id);
+    if (!el) return;
+    var isOpen = el.style.display === 'block';
+    el.style.display = isOpen ? 'none' : 'block';
+    if (el.previousElementSibling) el.previousElementSibling.classList.toggle('open', !isOpen);
+  };
+
+  window.saveMigRecordModal = async function() {
+    if (!currentMigRecord) return;
+    function val(id) { var el = document.getElementById(id); return el ? el.value : null; }
+
+    var p1 = val('mrPersonnel1');
+    var p2 = val('mrPersonnel2');
+    var personnelStr = p1 ? (p1 + (p2 ? ', '+p2 : '')) : null;
+
+    var updates = {
+      date_visited:      val('mrDispatchDate') || null,
+      decomm:             val('mrDecomm'),
+      team_number:        val('mrTeamNumber') || null,
+      personnel:          personnelStr,
+      remarks:            val('mrJORemarks'),
+      old_acct_no:        val('mrOldAcctNo'),
+      name:               val('mrName'),
+      play_type:          val('mrPlayType'),
+      bundle_type:        val('mrBundleType'),
+      municipality:       val('mrMunicipality'),
+      barangay:           val('mrBarangay'),
+      sdu_mdu:            val('mrSduMdu'),
+      old_node:           val('mrOldNode'),
+      address:            val('mrAddress'),
+      village:            val('mrVillage'),
+      contact_info:       val('mrContactInfo'),
+      network_type:       val('mrNetworkType'),
+      type_of_customer:   val('mrTypeOfCustomer'),
+      subscriber_status:  val('mrSubStatus'),
+      service_type:       val('mrServiceType'),
+      deployment_type:    val('mrDeployType'),
+      node_no_sky:        val('mrNodeNoSky'),
+      migration:          val('mrMigration'),
+      date_completed:     val('mrDateCompleted') || null,
+      month_completed:    val('mrMonthCompleted'),
+      week_completed:     val('mrWeekCompleted'),
+      old_hub:            val('mrOldHub'),
+      decomm_date:        val('mrDecommDate') || null,
+      decomm_sched:       val('mrDecommSched'),
+      decomm_week:        val('mrDecommWeek'),
+      quadrant:           val('mrQuadrant'),
+      new_quad:           val('mrNewQuad'),
+      msp:                val('mrMsp'),
+      msp_cluster:        val('mrMspCluster'),
+      sector:             val('mrSector'),
+      area:               val('mrArea'),
+      fma:                val('mrFma')
+    };
+
+    try {
+      var { error } = await db.from(MIG_TABLE).update(updates).eq('id', currentMigRecord.id);
+      if (error) throw error;
+      showToast('✓ Record updated!', 'success');
+      closeMigRecordModal();
+      loadMigData('uploaded');
+    } catch(err) { showToast('Error: '+err.message, 'error'); }
+  };
+
+  safeOn('migRecordOverlay', 'click', function(e){
+    if (e.target === this) closeMigRecordModal();
+  });
+
+  /* ── Download Template / Import buttons ── */
+  safeOn('migUpDownloadTemplate', 'click', function(){
+    var headers = ['OLDACCTNO','Name','Address','MunicipalityName','Brgy','ContactInfo','BundleType','PlayType','NetworkType','NodeNo_Sky','Decomm (Y/N)','Team Number','Personnel','JO Status','Remarks'];
+    var csv = headers.join(',') + '\n';
+    var blob = new Blob([csv], { type: 'text/csv' });
+    var url = URL.createObjectURL(blob);
+    var a = document.createElement('a');
+    a.href = url; a.download = 'migration_template.csv';
+    document.body.appendChild(a); a.click(); document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    showToast('Template downloaded', 'success');
+  });
+
+  safeOn('migUpImportBtn', 'click', function(){
+    document.getElementById('migUpImportFile').click();
+  });
+
+  safeOn('migUpImportFile', 'change', function(e){
+    var file = e.target.files[0];
+    if (!file) return;
+    showToast('Import received: '+file.name+' — processing not yet implemented', 'warning');
+    e.target.value = '';
+  });
+
   window.openAssignTeamModal = function(recordId) {
     pendingAssignRecord = migData.find(function(r){ return String(r.id) === String(recordId); });
     if (!pendingAssignRecord) return;
@@ -3696,6 +4257,57 @@
     if (e.target === this) closeAssignTeamModal();
   });
 
+  /* ── For Calling/Scheduling page filter wiring ── */
+  safeOn('migCallSearch', 'input', function(){
+    migCallFilters.search = this.value;
+    renderMigCallRows();
+  });
+  safeOn('migCallBundle', 'change', function(){
+    migCallFilters.bundle = this.value;
+    renderMigCallRows();
+  });
+  safeOn('migCallUpdatedBy', 'change', function(){
+    migCallFilters.updatedBy = this.value;
+    renderMigCallRows();
+  });
+  safeOn('migCallDateFrom', 'change', function(){
+    migCallFilters.dateFrom = this.value;
+    renderMigCallRows();
+  });
+  safeOn('migCallDateTo', 'change', function(){
+    migCallFilters.dateTo = this.value;
+    renderMigCallRows();
+  });
+  safeOn('migCallPrev', 'click', function(){
+    var base = migCallFilters.dateFrom || today();
+    var d = shift(base, -1);
+    migCallFilters.dateFrom = d; migCallFilters.dateTo = d;
+    var f=document.getElementById('migCallDateFrom'), t=document.getElementById('migCallDateTo');
+    if(f) f.value=d; if(t) t.value=d;
+    renderMigCallRows();
+  });
+  safeOn('migCallNext', 'click', function(){
+    var base = migCallFilters.dateFrom || today();
+    var d = shift(base, 1);
+    migCallFilters.dateFrom = d; migCallFilters.dateTo = d;
+    var f=document.getElementById('migCallDateFrom'), t=document.getElementById('migCallDateTo');
+    if(f) f.value=d; if(t) t.value=d;
+    renderMigCallRows();
+  });
+  safeOn('migCallToday', 'click', function(){
+    var d = today();
+    migCallFilters.dateFrom = d; migCallFilters.dateTo = d;
+    var f=document.getElementById('migCallDateFrom'), t=document.getElementById('migCallDateTo');
+    if(f) f.value=d; if(t) t.value=d;
+    renderMigCallRows();
+  });
+  safeOn('migCallColsBtn', 'click', function(e){
+    e.stopPropagation();
+    var m = document.getElementById('migCallColsMenu');
+    if (m) m.classList.toggle('open');
+  });
+  safeOnSel('#migCallColsMenu', 'click', function(e){ e.stopPropagation(); });
+
   /* ── Overall refresh button ── */
   var migOverallRefreshBtn = document.getElementById('migOverallRefresh');
   if (migOverallRefreshBtn) {
@@ -3706,6 +4318,8 @@
   document.addEventListener('click', function(){
     var mm = document.getElementById('migMenu');
     if (mm) mm.classList.remove('open');
+    var cm = document.getElementById('migCallColsMenu');
+    if (cm) cm.classList.remove('open');
   });
 
   load();
