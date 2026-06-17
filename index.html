@@ -1708,6 +1708,146 @@
 
   try { db = window.supabase.createClient(SURL, SKEY); } catch(e) { console.error(e); }
 
+  /* ════════════════════════════════════════════════════════════════════
+     ===== DEMO DATA — DELETE BEFORE PRODUCTION =====
+     Pure in-memory fallback. Never writes to Supabase. Shows only when a
+     query returns 0 rows or the DB is unreachable. Set DEMO_MODE = false
+     (or delete this whole block) once real data is migrated in.
+     ════════════════════════════════════════════════════════════════════ */
+  var DEMO_MODE = true;
+  var DEMO = (function(){
+    function lcg(seed){ var s=seed>>>0; return function(){ s=(s*1664525+1013904223)>>>0; return s/4294967296; }; }
+    function pick(rand,arr){ return arr[Math.floor(rand()*arr.length)]; }
+    function pad2(n){ return String(n).padStart(2,'0'); }
+
+    var FIRST=['LOURDES','EARL','ALYSSA','DUVINCENT','EMEE JOY','MARY GRACE','AYESSA','SHIELA','GLORIA','NORA','ELMER','JOEL','JOANNA MAE','MANUEL','BERNADETTE','BILLY JOE','HARIETH','ROCKY','SHERYL','DELFIN','MARK','EMMANUEL','FRANCIS','MYLENE','JENNIFER','CINDERELLA','MARVIN','AVELINO','FRED','MARILOU','JANET','RACHIN','ROLLY','REY MARK','ELOISA','DEREK'];
+    var LAST=['ARAZA','MALINTAD','BRANZUELA','YONSON','GONZAGA','NONOY','BARDAJE','CISNEROS','UMAPAS','JUANILLO','RANO','CABANBAN','BALDESCO','ANDRADA','NAGERA','FERRER','BACALLA','BOBIS','MACASPAC','PULUSAN','GONZA','BEDANA','ESTRADA','PANALIGAN','NATIVIDAD','SIBAYAN','DIANO','SUNIGA','JUAREZ','PANGALANGAN','BADIAO','TURNOS','LALISAN','GERAGA','BUNTUA','SABLAS'];
+    var SUFF=['S','D','T','E','R','M','C','Y','A','G','P'];
+    var BRGYS=[['PINAGBUHATAN','PASIG'],['TUMANA','MARIKINA'],['ROSARIO','PASIG'],['MALANDAY','MARIKINA'],['NANGKA','MARIKINA'],['MAYBUNGA','PASIG'],['SANTOLAN','PASIG'],['SANTO NIÑO','MARIKINA'],['WACK-WACK GREENHILLS','MANDALUYONG'],['HULO','MANDALUYONG'],['HIGHWAY HILLS','MANDALUYONG'],['MANGGAHAN','PASIG'],['SANTA LUCIA','PASIG'],['CONCEPCION DOS','MARIKINA'],['DELA PAZ','PASIG'],['SAN MIGUEL','PASIG'],['KALAWAAN','PASIG'],['BAMBANG','PASIG'],['CANIOGAN','PASIG'],['ADDITION HILLS','MANDALUYONG'],['SAN JOSE','SAN JUAN'],['KAPITOLYO','PASIG'],['UGONG','PASIG'],['PLAINVIEW','MANDALUYONG'],['LITTLE BAGUIO','SAN JUAN'],['GREENHILLS','SAN JUAN']];
+    var BUNDLES=['1P Broadband','2 Play','3 Play','1PBB'];
+    var TLS=['TL Cesar','TL Flor','TL Cris','TL Joyce','TL Mika','TL Editha'];
+    var PERS=['MReyes, YOmar','Larios, Toribio','JBonaga, JBeltran','AHumpa, VDumalanta','RCaparas, Salih','JOcson, JDuyuhin','NRoxas, JMacaranas','FdelosReyes, MFernandez','Balangue, Niepes'];
+    var UPDBY=['Charion','Kamila','FBorja','Jhun'];
+    var GOFIB=['Active','Active','Active','FSOI'];
+    var CALLST=['','','Confirmed','KOR','CBR','Unattended','No Answer'];
+    var CALLREM={'Confirmed':'avail today','KOR':'sent sms asked for ocn','CBR':'sent SMS','Unattended':'left message','No Answer':'no response'};
+
+    var TEAMS=[{id:'demo-t1',team_number:'ATS-0001'},{id:'demo-t2',team_number:'ATS-0007'},{id:'demo-t3',team_number:'BEST-0034'},{id:'demo-t4',team_number:'ATS-0005'},{id:'demo-t5',team_number:'BEST-0001'},{id:'demo-t6',team_number:'ATS-0006'}];
+
+    function name(rand){ return pick(rand,LAST)+', '+pick(rand,FIRST)+' '+pick(rand,SUFF); }
+    function mobile(rand){ return '09'+Math.floor(100000000+rand()*899999999); }
+    function napCode(rand){ var p=['MRK002','MAN033','PSG003','SJC001','MAN002']; return pick(rand,p)+' LP'+Math.floor(50+rand()*600)+' NP'+Math.floor(1+rand()*8); }
+
+    /* ----- JOB ORDERS: spread across June 1 → June 25, 2026 ----- */
+    function genJobs(){
+      var rand=lcg(20260601);
+      var out=[]; var jo=3530000; var acct=1878702275300;
+      for (var day=1; day<=25; day++){
+        var dateStr='2026-06-'+pad2(day);
+        var perDay=10+Math.floor(rand()*12);
+        for (var k=0;k<perDay;k++){
+          var roll=rand();
+          var status, remarks;
+          if (roll<0.42){ status='Pending'; remarks=pick(rand,['','ONGOING','Sent SMS','For scheduling']); }
+          else if (roll<0.68){ status='Completed'; remarks=pick(rand,['INSTALLED BY A2','DONE INSTALLATION','INSTALLED BY APEX','INSTALLED BY BALANGUE']); }
+          else if (roll<0.82){ status='Rescheduled'; remarks=pick(rand,['Needs permit from HOA','Requested by customer','Other reason - no access']); }
+          else { status='Cancelled'; remarks=pick(rand,['Full NAP - no port','Cancelled as per Call','Cancelled by Subs','Other reason']); }
+          var hasTeam = status!=='Pending' ? true : rand()<0.35;
+          var team = hasTeam ? pick(rand,TEAMS) : null;
+          var cs = (status==='Pending'||status==='Rescheduled') ? pick(rand,CALLST) : '';
+          var brgy=pick(rand,BRGYS);
+          out.push({
+            id:'demo-jo-'+day+'-'+k,
+            dispatch_date:dateStr,
+            jo_number:'R'+(jo++),
+            account_number:String(acct++),
+            customer_name:name(rand),
+            barangay:brgy[0], municipality:brgy[1],
+            personnel: team ? pick(rand,PERS) : '',
+            tl_name: pick(rand,TLS),
+            team_id: team?team.id:null,
+            team_number: team?team.team_number:null,
+            gofib_status: pick(rand,GOFIB),
+            status:status,
+            status_remarks:remarks,
+            nap_id: status==='Completed' ? napCode(rand) : '',
+            call_status:cs,
+            call_remarks: cs?CALLREM[cs]||'':'',
+            mobile_number:mobile(rand),
+            updated_by:pick(rand,UPDBY),
+            chat_count: rand()<0.12?Math.floor(1+rand()*3):0,
+            reschedule_count: status==='Rescheduled'?Math.floor(1+rand()*2):0,
+            updated_at:dateStr+'T0'+Math.floor(1+rand()*8)+':30:00Z'
+          });
+        }
+      }
+      return out;
+    }
+
+    /* ----- MIGRATION ORDERS: date_endorsed spread June 1 → June 25 ----- */
+    function genMig(){
+      var rand=lcg(99887766);
+      var out=[]; var acct=688000000;
+      var STAT=[null,null,null,'Pending','Pending','Completed','Completed','Visited','Called','Rescheduled','Cancelled','Done'];
+      for (var i=0;i<260;i++){
+        var brgy=pick(rand,BRGYS);
+        var st=pick(rand,STAT);
+        var day=1+Math.floor(rand()*25);
+        var endorsed='2026-06-'+pad2(day);
+        var hasTeam = (st==='Pending'||st==='Visited'||st==='Done'||st==='Completed') && rand()<0.5;
+        var team = hasTeam?pick(rand,TEAMS):null;
+        var done = (st==='Done'||st==='Completed'||st==='Visited'||st==='Called');
+        var cs = (!st||st==='Pending') ? pick(rand,CALLST) : '';
+        out.push({
+          id:'demo-mig-'+i,
+          old_acct_no:String(acct++ + Math.floor(rand()*900)),
+          name:name(rand),
+          municipality:brgy[1], barangay:brgy[0],
+          address:Math.floor(1+rand()*400)+' '+pick(rand,['MAIS','PERAS','ACACIA','MULAWIN','PILAPIL','SIXTO ANTONIO'])+' ST, '+brgy[0],
+          bundle_type:pick(rand,BUNDLES),
+          play_type:pick(rand,['1P','2P','3P']),
+          network_type:pick(rand,['GPON','HFC','FTTH']),
+          node_no_sky:pick(rand,['SKY-12','SKY-08','SKY-21','—']),
+          jo_status:st,
+          decomm: rand()<0.12?'Y':'N',
+          call_status:cs,
+          call_remarks: cs?(CALLREM[cs]||''):'',
+          call_attempts: (!st||st==='Pending')?Math.floor(1+rand()*3):null,
+          date_endorsed:endorsed,
+          team_number: team?team.team_number:null,
+          personnel: team?pick(rand,PERS):'',
+          contact_info:mobile(rand),
+          mobile_number:mobile(rand),
+          date_visited: (hasTeam||done)?'2026-06-'+pad2(Math.min(25,day+Math.floor(rand()*4))):'',
+          date_completed: done?'2026-06-'+pad2(Math.min(25,day+Math.floor(rand()*4))):'',
+          remarks: done?'Migration done':(st==='Cancelled'?'Cancelled':''),
+          chat_count: rand()<0.1?Math.floor(1+rand()*3):0,
+          updated_by:pick(rand,UPDBY)
+        });
+      }
+      return out;
+    }
+
+    return { teams:TEAMS, jobs:genJobs(), mig:genMig() };
+  })();
+
+  function demoJobsForRange(from,to){
+    return DEMO.jobs.filter(function(o){ return o.dispatch_date>=from && o.dispatch_date<=to; });
+  }
+  function demoMigForPage(pg){
+    var rows=DEMO.mig.slice();
+    if (pg==='calling') return rows.filter(function(r){ return !r.jo_status||r.jo_status==='Pending'; });
+    if (pg==='fordispatch') return rows.filter(function(r){ return r.team_number; });
+    if (pg==='completed') return rows.filter(function(r){ return ['Done','Completed','Visited','Called'].indexOf(r.jo_status)>=0; });
+    return rows;
+  }
+  function seedDemoTeams(){
+    DEMO.teams.forEach(function(t){ if(!allTeams.find(function(x){return x.id===t.id;})) allTeams.push(t); });
+    var tc=document.getElementById('teamCount'); if(tc) tc.textContent=allTeams.length;
+  }
+  /* ===== END DEMO DATA ===== */
+
+
   /* ── CLOCK ── */
   function pad(v) { return String(v).padStart(2,'0'); }
   function today() {
@@ -2036,7 +2176,10 @@
     });
     document.getElementById('tableBody').innerHTML =
       '<tr class="loading-row"><td colspan="18"><span class="spinner"></span>Loading job orders for '+fmtDate(dateFrom)+'...</td></tr>';
-    if (!db) return;
+    if (!db) {
+      if (DEMO_MODE) { seedDemoTeams(); allOrders = demoJobsForRange(dateFrom,dateTo); shown = allOrders; render(shown); summary(shown); updateDateLabel(); }
+      return;
+    }
     try {
       if (!allTeams.length) {
         var r2 = await db.from('teams').select('*');
@@ -2056,13 +2199,19 @@
         .limit(1000);
       if (r1.error) throw r1.error;
       allOrders = r1.data||[];
+      if (DEMO_MODE && !allOrders.length) { seedDemoTeams(); allOrders = demoJobsForRange(dateFrom,dateTo); }
       shown = allOrders;
       render(shown); summary(shown); updateDateLabel();
       if (mapInitialized && document.getElementById('page-map').classList.contains('active')) updateMapData();
       document.getElementById('notifBadge').textContent = allOrders.filter(function(o){return o.status==='Pending';}).length;
     } catch(err) {
-      document.getElementById('tableBody').innerHTML =
-        '<tr class="loading-row"><td colspan="18" style="color:#ef4444;">⚠ Error: '+err.message+'</td></tr>';
+      if (DEMO_MODE) {
+        seedDemoTeams(); allOrders = demoJobsForRange(dateFrom,dateTo); shown = allOrders;
+        render(shown); summary(shown); updateDateLabel();
+      } else {
+        document.getElementById('tableBody').innerHTML =
+          '<tr class="loading-row"><td colspan="18" style="color:#ef4444;">⚠ Error: '+err.message+'</td></tr>';
+      }
     }
   }
 
@@ -3414,7 +3563,10 @@
 
   /* ── Load data ── */
   async function loadMigData(pg) {
-    if (!db) return;
+    if (!db) {
+      if (DEMO_MODE) { migData = demoMigForPage(pg); renderMigPage(pg); }
+      return;
+    }
     try {
       var query = db.from(MIG_TABLE).select('*').limit(1000);
 
@@ -3430,11 +3582,11 @@
       var r = await query.order('name', { ascending: true });
       if (r.error) throw r.error;
       migData = r.data || [];
+      if (DEMO_MODE && !migData.length) migData = demoMigForPage(pg);
       renderMigPage(pg);
     } catch(err) {
       console.log('Migration load error:', err);
-      /* Show empty state - table might not exist yet */
-      migData = [];
+      migData = DEMO_MODE ? demoMigForPage(pg) : [];
       renderMigPage(pg);
     }
   }
