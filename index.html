@@ -1479,9 +1479,9 @@
     <button class="date-nav" id="migCallPrev" title="Previous day">‹</button>
     <button class="date-nav" id="migCallNext" title="Next day">›</button>
     <span class="date-label">Date from:</span>
-    <input class="date-input" type="date" id="migCallDateFrom">
+    <input class="date-input" type="date" id="migCallDateFrom" autocomplete="off">
     <span class="date-label">to:</span>
-    <input class="date-input" type="date" id="migCallDateTo">
+    <input class="date-input" type="date" id="migCallDateTo" autocomplete="off">
     <button class="today-btn" id="migCallToday">Today</button>
     <select class="filter-select" id="migCallBundle"><option value="">All Bundle Types</option></select>
     <select class="filter-select" id="migCallUpdatedBy"><option value="">All Updated By</option></select>
@@ -3718,6 +3718,29 @@
     return parts[1]+'/'+parts[2]+'/'+parts[0];
   }
 
+  /* Ensure the date inputs and migCallFilters always agree. The very first
+     time this page is shown in a session, force both to today — this
+     overrides any stale value the browser may have auto-restored into the
+     date inputs (browsers can repopulate <input type="date"> from history
+     even before our JS runs). On later visits within the same session,
+     trust whatever the user actually left in the inputs. */
+  var migCallDateInitDone = false;
+  function syncMigCallDateInputs() {
+    var f = document.getElementById('migCallDateFrom');
+    var t = document.getElementById('migCallDateTo');
+    if (!f || !t) return;
+    if (!migCallDateInitDone) {
+      var d = today();
+      f.value = d; t.value = d;
+      migCallFilters.dateFrom = d; migCallFilters.dateTo = d;
+      migCallDateInitDone = true;
+    } else {
+      /* Trust whatever is actually visible in the inputs over stale JS state */
+      migCallFilters.dateFrom = f.value || '';
+      migCallFilters.dateTo = t.value || '';
+    }
+  }
+
   /* Apply filters + render rows */
   function renderMigCallRows() {
     var tbody = document.getElementById('migCallBody');
@@ -3902,6 +3925,7 @@
     } else if (pg === 'calling') {
       buildMigCallDropdowns();
       buildMigCallColsMenu();
+      syncMigCallDateInputs();
       renderMigCallRows();
 
     } else if (pg === 'completed') {
@@ -4728,14 +4752,16 @@
     migCallFilters.updatedBy = this.value;
     renderMigCallRows();
   });
-  safeOn('migCallDateFrom', 'change', function(){
-    migCallFilters.dateFrom = this.value;
-    renderMigCallRows();
-  });
-  safeOn('migCallDateTo', 'change', function(){
-    migCallFilters.dateTo = this.value;
-    renderMigCallRows();
-  });
+  function migCallDateHandler(key) {
+    return function(){
+      migCallFilters[key] = this.value;
+      renderMigCallRows();
+    };
+  }
+  safeOn('migCallDateFrom', 'change', migCallDateHandler('dateFrom'));
+  safeOn('migCallDateFrom', 'input', migCallDateHandler('dateFrom'));
+  safeOn('migCallDateTo', 'change', migCallDateHandler('dateTo'));
+  safeOn('migCallDateTo', 'input', migCallDateHandler('dateTo'));
   safeOn('migCallPrev', 'click', function(){
     var base = migCallFilters.dateFrom || today();
     var d = shift(base, -1);
