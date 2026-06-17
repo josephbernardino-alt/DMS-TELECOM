@@ -1250,7 +1250,8 @@
 
         <!-- DETAIL TAB -->
         <div id="migRecDetailPane">
-          <div class="mig-form-row3">
+          <div class="mig-form-row3" style="grid-template-columns:repeat(4,1fr);">
+            <div><label class="mig-form-label">Date Endorsed</label><input type="date" class="mig-form-input" id="mrDateEndorsed"></div>
             <div><label class="mig-form-label">Dispatch Date</label><input type="date" class="mig-form-input" id="mrDispatchDate"></div>
             <div><label class="mig-form-label">JO Status</label><input type="text" class="mig-form-input" id="mrJOStatus" disabled></div>
             <div><label class="mig-form-label">Decomm (Y/N)</label>
@@ -3542,6 +3543,7 @@
   /* Migration dropdown wired below near niBtn */
 
   /* ── Page switcher ── */
+  var currentMigPage = 'dispatch';
   function switchMigPage(pg) {
     document.querySelectorAll('.page-view').forEach(function(p){ p.classList.remove('active'); });
     var pageMap = {
@@ -3554,6 +3556,7 @@
     };
     var pageId = pageMap[pg];
     if (!pageId) return;
+    currentMigPage = pg;
     document.getElementById(pageId).classList.add('active');
     setTimeout(refreshLayout, 60);
     if (pg === 'dispatch') setTimeout(initMigMap, 100);
@@ -3693,9 +3696,9 @@
     setTimeout(function(){ syncMigHeader('migCallBodyWrap','migCallHeadWrap','migCallHeadRow'); }, 30);
   }
 
-  /* Resolve the "date endorsed" value across possible column names */
+  /* "Date endorsed" — bound directly to the real date_endorsed column */
   function migCallDate(r) {
-    return r.date_endorsed || r.endorsed_date || r.date_uploaded || r.date_created || r.created_at || r.dispatch_date || '';
+    return r.date_endorsed || '';
   }
   /* Normalize a date string to YYYY-MM-DD for safe comparison (handles ISO, YYYY-MM-DD, MM-DD-YYYY, MM/DD/YYYY) */
   function normDate(s) {
@@ -3706,6 +3709,13 @@
     m = s.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})/);
     if (m) return m[3]+'-'+String(m[1]).padStart(2,'0')+'-'+String(m[2]).padStart(2,'0');
     return '';
+  }
+  /* Display format: YYYY-MM-DD -> MM/DD/YYYY for the table */
+  function fmtCallDate(s) {
+    var n = normDate(s);
+    if (!n) return '—';
+    var parts = n.split('-');
+    return parts[1]+'/'+parts[2]+'/'+parts[0];
   }
 
   /* Apply filters + render rows */
@@ -3721,10 +3731,15 @@
     var rows = migData.filter(function(r){
       if (bf && r.bundle_type !== bf) return false;
       if (uf && (r.updated_by||r.updatedBy) !== uf) return false;
-      /* NOTE: the date range is intentionally NOT used to hide rows here. In the
-         reference design this list shows every endorsed-for-calling account
-         regardless of the date range shown in the filter bar. Keeping the date
-         inputs for visual parity only. */
+      /* Filter by date_endorsed. Records with no endorsed date yet are never
+         hidden by the date range — only ones with a date outside the range. */
+      if (df || dt) {
+        var d = normDate(migCallDate(r));
+        if (d) {
+          if (df && d < df) return false;
+          if (dt && d > dt) return false;
+        }
+      }
       if (q) {
         var hay = [r.old_acct_no, r.name, r.address, r.barangay, r.municipality, r.contact_info]
           .map(function(x){return (x||'').toLowerCase();}).join(' ');
@@ -3748,7 +3763,7 @@
       return '<tr>'
         +'<td class="count-cell" data-col="num">'+(i+1)+'</td>'
         +'<td style="text-align:center;min-width:46px;" data-col="chat">'+chatCell+'</td>'
-        +'<td style="white-space:nowrap;min-width:104px;" data-col="endorsed">'+mv(migCallDate(r))+'</td>'
+        +'<td style="white-space:nowrap;min-width:104px;" data-col="endorsed">'+fmtCallDate(migCallDate(r))+'</td>'
         +'<td style="min-width:120px;" data-col="callstatus">'+callStatusBadge(r.call_status)+'</td>'
         +'<td style="font-size:11px;min-width:120px;max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" data-col="callremarks" title="'+(r.call_remarks||'').replace(/"/g,'&quot;')+'">'+mv(r.call_remarks)+'</td>'
         +'<td class="count-cell" style="min-width:96px;" data-col="attempts">'+(r.call_attempts!=null?r.call_attempts:'—')+'</td>'
@@ -4466,6 +4481,7 @@
 
     function setVal(id, val) { var el = document.getElementById(id); if (el) el.value = val || ''; }
 
+    setVal('mrDateEndorsed', normDate(r.date_endorsed));
     setVal('mrDispatchDate', r.date_visited);
     setVal('mrJOStatus', r.jo_status || 'Pending');
     setVal('mrDecomm', r.decomm || 'N');
@@ -4572,6 +4588,7 @@
     var personnelStr = p1 ? (p1 + (p2 ? ', '+p2 : '')) : null;
 
     var updates = {
+      date_endorsed:      val('mrDateEndorsed') || null,
       date_visited:      val('mrDispatchDate') || null,
       decomm:             val('mrDecomm'),
       team_number:        val('mrTeamNumber') || null,
@@ -4616,7 +4633,7 @@
       if (error) throw error;
       showToast('✓ Record updated!', 'success');
       closeMigRecordModal();
-      loadMigData('uploaded');
+      loadMigData(currentMigPage);
     } catch(err) { showToast('Error: '+err.message, 'error'); }
   };
 
