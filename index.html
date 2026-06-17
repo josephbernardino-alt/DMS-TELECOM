@@ -3693,6 +3693,21 @@
     setTimeout(function(){ syncMigHeader('migCallBodyWrap','migCallHeadWrap','migCallHeadRow'); }, 30);
   }
 
+  /* Resolve the "date endorsed" value across possible column names */
+  function migCallDate(r) {
+    return r.date_endorsed || r.endorsed_date || r.date_uploaded || r.date_created || r.created_at || r.dispatch_date || '';
+  }
+  /* Normalize a date string to YYYY-MM-DD for safe comparison (handles ISO, YYYY-MM-DD, MM-DD-YYYY, MM/DD/YYYY) */
+  function normDate(s) {
+    if (!s) return '';
+    s = String(s).trim();
+    var m = s.match(/^(\d{4})-(\d{2})-(\d{2})/);
+    if (m) return m[1]+'-'+m[2]+'-'+m[3];
+    m = s.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})/);
+    if (m) return m[3]+'-'+String(m[1]).padStart(2,'0')+'-'+String(m[2]).padStart(2,'0');
+    return '';
+  }
+
   /* Apply filters + render rows */
   function renderMigCallRows() {
     var tbody = document.getElementById('migCallBody');
@@ -3706,12 +3721,10 @@
     var rows = migData.filter(function(r){
       if (bf && r.bundle_type !== bf) return false;
       if (uf && (r.updated_by||r.updatedBy) !== uf) return false;
-      if (df || dt) {
-        var d = r.date_endorsed || '';
-        if (df && d && d < df) return false;
-        if (dt && d && d > dt) return false;
-        if ((df || dt) && !d) return false; /* hide undated only when filtering by date */
-      }
+      /* NOTE: the date range is intentionally NOT used to hide rows here. In the
+         reference design this list shows every endorsed-for-calling account
+         regardless of the date range shown in the filter bar. Keeping the date
+         inputs for visual parity only. */
       if (q) {
         var hay = [r.old_acct_no, r.name, r.address, r.barangay, r.municipality, r.contact_info]
           .map(function(x){return (x||'').toLowerCase();}).join(' ');
@@ -3735,7 +3748,7 @@
       return '<tr>'
         +'<td class="count-cell" data-col="num">'+(i+1)+'</td>'
         +'<td style="text-align:center;min-width:46px;" data-col="chat">'+chatCell+'</td>'
-        +'<td style="white-space:nowrap;min-width:104px;" data-col="endorsed">'+mv(r.date_endorsed)+'</td>'
+        +'<td style="white-space:nowrap;min-width:104px;" data-col="endorsed">'+mv(migCallDate(r))+'</td>'
         +'<td style="min-width:120px;" data-col="callstatus">'+callStatusBadge(r.call_status)+'</td>'
         +'<td style="font-size:11px;min-width:120px;max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" data-col="callremarks" title="'+(r.call_remarks||'').replace(/"/g,'&quot;')+'">'+mv(r.call_remarks)+'</td>'
         +'<td class="count-cell" style="min-width:96px;" data-col="attempts">'+(r.call_attempts!=null?r.call_attempts:'—')+'</td>'
