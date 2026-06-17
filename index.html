@@ -610,6 +610,41 @@
   .callcols-item input { cursor: pointer; }
   .mig-name-link { color: #1d4ed8; font-weight: 600; cursor: pointer; }
   .mig-name-link:hover { text-decoration: underline; }
+  /* ===== MIGRATION PROGRESS DASHBOARD (map) ===== */
+  .mig-dash-head { padding: 12px 20px 8px; background: white; display: flex; align-items: center; gap: 12px; }
+  .mig-dash-badge { background: #ede9fe; color: #6d28d9; font-size: 11px; font-weight: 800; letter-spacing: 0.5px; padding: 4px 12px; border-radius: 7px; display: inline-flex; align-items: center; gap: 5px; }
+  .mig-dash-title { font-size: 18px; font-weight: 700; color: #1e293b; }
+  .mig-dash-kpis { display: flex; gap: 14px; padding: 4px 20px 14px; background: white; }
+  .mig-dash-kpi { flex: 1; border-radius: 12px; padding: 14px 18px; color: white; min-width: 0; box-shadow: 0 1px 3px rgba(0,0,0,0.08); }
+  .mig-dash-kpi .num { font-size: 26px; font-weight: 800; line-height: 1.1; }
+  .mig-dash-kpi .lbl { font-size: 12px; font-weight: 600; opacity: 0.95; margin-top: 2px; }
+  .mig-dash-kpi.blue   { background: #3b82f6; }
+  .mig-dash-kpi.purple { background: #6366f1; }
+  .mig-dash-kpi.orange { background: #f59e0b; }
+  .mig-dash-kpi.green  { background: #10b981; }
+  .mig-dash-kpi.slate  { background: #475569; }
+
+  #migOvMapContainer { display: flex; position: fixed; left: 0; right: 0; bottom: 0; z-index: 1; }
+  #migOvMap { flex: 1; position: relative; z-index: 1; }
+
+  .top-brgy-row { display: flex; align-items: center; gap: 8px; padding: 7px 12px; border-bottom: 1px solid #f1f5f9; font-size: 12px; }
+  .top-brgy-rank { color: #94a3b8; font-weight: 700; width: 18px; text-align: right; }
+  .top-brgy-name { flex: 1; font-weight: 600; color: #1e293b; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .top-brgy-muni { color: #94a3b8; font-size: 10px; text-transform: uppercase; }
+  .top-brgy-count { font-weight: 800; color: #b45309; min-width: 30px; text-align: right; }
+
+  .map-legend { position: absolute; left: 12px; bottom: 18px; z-index: 500; background: rgba(255,255,255,0.96); border: 1px solid #e2e8f0; border-radius: 8px; padding: 10px 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.15); font-size: 11px; }
+  .map-legend-row { display: flex; align-items: center; gap: 8px; padding: 2px 0; }
+  .map-legend-dot { width: 11px; height: 11px; border-radius: 50%; flex-shrink: 0; }
+  .map-legend-name { flex: 1; color: #334155; }
+  .map-legend-count { font-weight: 700; color: #1e293b; min-width: 34px; text-align: right; }
+
+  .mun-row { display: flex; align-items: center; gap: 8px; padding: 6px 0; border-bottom: 1px solid #f1f5f9; font-size: 11px; }
+  .mun-name { flex: 1; font-weight: 600; color: #1e293b; }
+  .mun-bar-wrap { width: 60px; height: 6px; background: #f1f5f9; border-radius: 99px; overflow: hidden; }
+  .mun-bar { height: 6px; background: #10b981; border-radius: 99px; }
+  .mun-pct { width: 30px; text-align: right; color: #64748b; font-size: 10px; }
+
   /* Overall progress */
   .mig-progress-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 16px; padding: 20px; }
   .mig-progress-card { background: white; border: 1px solid #e5eaf2; border-radius: 10px; padding: 16px; }
@@ -1555,35 +1590,73 @@
 
 <!-- 6. OVERALL MIGRATION PROGRESS -->
 <div class="page-view" id="page-mig-overall">
-  <div class="filterbar sticky-top">
+  <div class="mig-dash-head">
+    <span class="mig-dash-badge">⇄ MIGRATION</span>
+    <span class="mig-dash-title">Migration Progress Dashboard</span>
+  </div>
+  <div class="filterbar">
+    <input class="search-input" id="migOvSearch" type="text" placeholder="Search Old Acct No. or Name..." style="max-width:340px;">
+    <select class="filter-select" id="migOvMuni"><option value="">All Municipalities</option></select>
+    <select class="filter-select" id="migOvBrgy"><option value="">All Barangays</option></select>
+    <select class="filter-select" id="migOvStatus"><option value="">All Statuses</option></select>
+    <select class="filter-select" id="migOvBundle"><option value="">All Bundle Types</option></select>
+    <select class="filter-select" id="migOvDecomm"><option value="">Decomm?</option><option value="Y">Decomm: Yes</option><option value="N">Decomm: No</option></select>
     <div class="filter-spacer"></div>
-    <button class="today-btn" id="migOverallRefresh">🔄 Refresh</button>
   </div>
-  <div class="mig-kpi-strip sticky-top">
-    <button class="mig-header-btn">📊 OVERALL MIGRATION PROGRESS</button>
-    <div class="mig-kpi pending"><div class="mig-kpi-label">Total Records</div><div class="mig-kpi-count" id="migOvTotal">0</div></div>
-    <div class="mig-kpi completed"><div class="mig-kpi-label">Completed</div><div class="mig-kpi-count" id="migOvCompleted">0</div></div>
-    <div class="mig-kpi rescheduled"><div class="mig-kpi-label">Pending</div><div class="mig-kpi-count" id="migOvPending">0</div></div>
-    <div class="mig-kpi cancelled"><div class="mig-kpi-label">Cancelled</div><div class="mig-kpi-count" id="migOvCancelled">0</div></div>
+  <div class="mig-dash-kpis">
+    <div class="mig-dash-kpi blue"><div class="num" id="migOvKpiUploaded">0</div><div class="lbl">Uploaded for Migration</div></div>
+    <div class="mig-dash-kpi purple"><div class="num" id="migOvKpiCalling">0</div><div class="lbl">For Calling/Scheduling</div></div>
+    <div class="mig-dash-kpi orange"><div class="num" id="migOvKpiDispatch">0</div><div class="lbl">For Dispatch Today</div></div>
+    <div class="mig-dash-kpi green"><div class="num" id="migOvKpiCompleted">0</div><div class="lbl">Completed/Visited/Called</div></div>
+    <div class="mig-dash-kpi slate"><div class="num" id="migOvKpiSubs">0</div><div class="lbl">Total Unique Subscribers</div></div>
   </div>
-  <div class="mig-progress-grid" id="migOverallGrid">
-    <div class="mig-progress-card">
-      <div class="mig-progress-title">Overall Completion Rate</div>
-      <div style="font-size:36px;font-weight:800;color:#7c3aed;" id="migOvRate">0%</div>
-      <div class="mig-progress-bar-wrap"><div class="mig-progress-bar" id="migOvBar" style="width:0%"></div></div>
-      <div class="mig-progress-label"><span>0 Completed</span><span id="migOvRateLabel">of 0 total</span></div>
+  <div id="migOvMapContainer">
+    <!-- LEFT: TOP BARANGAYS -->
+    <div class="map-sidebar-left">
+      <div class="map-panel-head" style="cursor:default;">
+        <span>Top Barangays (Pending / Not Visited)</span>
+      </div>
+      <div id="migOvTopBrgy"></div>
     </div>
-    <div class="mig-progress-card">
-      <div class="mig-progress-title">By Status</div>
-      <div id="migOvStatusBreakdown" style="font-size:12px;color:#64748b;">Loading...</div>
+    <!-- MAP -->
+    <div id="migOvMap">
+      <div class="map-legend" id="migOvLegend">
+        <div class="map-legend-row"><span class="map-legend-dot" style="background:#16a34a;"></span><span class="map-legend-name">Completed</span><span class="map-legend-count" id="migOvLegCompleted">0</span></div>
+        <div class="map-legend-row"><span class="map-legend-dot" style="background:#ef4444;"></span><span class="map-legend-name">Cancelled</span><span class="map-legend-count" id="migOvLegCancelled">0</span></div>
+        <div class="map-legend-row"><span class="map-legend-dot" style="background:#f97316;"></span><span class="map-legend-name">Rescheduled</span><span class="map-legend-count" id="migOvLegResched">0</span></div>
+        <div class="map-legend-row"><span class="map-legend-dot" style="background:#f59e0b;"></span><span class="map-legend-name">Pending</span><span class="map-legend-count" id="migOvLegPending">0</span></div>
+        <div class="map-legend-row"><span class="map-legend-dot" style="background:#9ca3af;"></span><span class="map-legend-name">Not Yet Visited</span><span class="map-legend-count" id="migOvLegNotVisited">0</span></div>
+      </div>
     </div>
-    <div class="mig-progress-card">
-      <div class="mig-progress-title">Top Municipalities</div>
-      <div id="migOvMunicipality" style="font-size:12px;color:#64748b;">Loading...</div>
-    </div>
-    <div class="mig-progress-card" style="grid-column:1/-1;">
-      <div class="mig-progress-title">Progress by Municipality</div>
-      <div id="migOvMunTable"></div>
+    <!-- RIGHT: LAYERS / SUBSCRIBER / MUNICIPALITY -->
+    <div class="map-sidebar-right">
+      <div class="map-tabs">
+        <button class="map-tab active" id="migOvTabLayers">Layers</button>
+        <button class="map-tab" id="migOvTabSubscriber">Subscriber</button>
+        <button class="map-tab" id="migOvTabMuni">Municipality</button>
+      </div>
+      <div id="migOvLayersPanel">
+        <div class="layer-section-title">Map Layers</div>
+        <label class="layer-item"><input type="checkbox" id="migOvLayerStreet" checked> Street Map</label>
+        <label class="layer-item"><input type="checkbox" id="migOvLayerSatellite"> Satellite</label>
+        <label class="layer-item"><input type="checkbox" id="migOvLayerStreetNames" checked> Street/Road Names</label>
+        <label class="layer-item"><input type="checkbox" id="migOvLayerLandmarks"> Landmarks</label>
+        <label class="layer-item"><input type="checkbox" id="migOvLayerCityBound" checked> City Boundaries</label>
+        <label class="layer-item"><input type="checkbox" id="migOvLayerBrgyBound"> Barangay Boundaries</label>
+        <label class="layer-item"><input type="checkbox" id="migOvLayerBrgyNames" checked> Barangay Names</label>
+      </div>
+      <div id="migOvSubscriberPanel" style="display:none;">
+        <div id="migOvSubscriberContent" class="subscriber-empty">
+          <div class="subscriber-empty-icon">
+            <svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="#94a3b8" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M4 21v-1a8 8 0 0116 0v1"/></svg>
+          </div>
+          <div class="subscriber-empty-text">Click a map marker to view<br>subscriber details.</div>
+        </div>
+      </div>
+      <div id="migOvMuniPanel" style="display:none;">
+        <div class="layer-section-title">Progress by Municipality</div>
+        <div id="migOvMuniList"></div>
+      </div>
     </div>
   </div>
 </div>
@@ -1750,6 +1823,21 @@
       });
       migMapContainer.style.top = threshold2 + 'px';
       if (migLeafletMap) setTimeout(function(){ migLeafletMap.invalidateSize(); }, 50);
+    }
+
+    // Migration Progress Dashboard map page: fill remaining viewport below header/filter/KPIs
+    var migOvPage = document.getElementById('page-mig-overall');
+    var migOvContainer = document.getElementById('migOvMapContainer');
+    if (migOvPage && migOvContainer && migOvPage.classList.contains('active')) {
+      var nav3 = document.querySelector('.topnav');
+      var navH3 = nav3 ? nav3.offsetHeight : 0;
+      var threshold3 = navH3;
+      Array.prototype.forEach.call(migOvPage.children, function(el){
+        if (el.id === 'migOvMapContainer') return;
+        threshold3 += el.offsetHeight;
+      });
+      migOvContainer.style.top = threshold3 + 'px';
+      if (migOvMap) setTimeout(function(){ migOvMap.invalidateSize(); }, 50);
     }
   }
 
@@ -3320,6 +3408,7 @@
     document.getElementById(pageId).classList.add('active');
     setTimeout(refreshLayout, 60);
     if (pg === 'dispatch') setTimeout(initMigMap, 100);
+    if (pg === 'overall') setTimeout(initMigOvMap, 100);
     loadMigData(pg);
   }
 
@@ -3664,87 +3753,254 @@
       setTimeout(function(){ syncMigHeader('migCompBodyWrap','migCompHeadWrap','migCompHeadRow'); }, 80);
 
     } else if (pg === 'overall') {
-      var total     = migData.length;
-      var completed = migData.filter(function(r){var s=r.jo_status||''; return s==='Done'||s==='Completed';}).length;
-      var pending   = migData.filter(function(r){return !r.jo_status||r.jo_status==='Pending';}).length;
-      var cancelled = migData.filter(function(r){return r.jo_status==='Cancelled';}).length;
-      var rate      = total ? Math.round(completed/total*100) : 0;
-
-      function setME(id,v){ var el=document.getElementById(id); if(el) el.textContent=v; }
-      setME('migOvTotal',     total);
-      setME('migOvCompleted', completed);
-      setME('migOvPending',   pending);
-      setME('migOvCancelled', cancelled);
-      setME('migOvRate',      rate+'%');
-      setME('migOvRateLabel', 'of '+total+' total');
-      var bar = document.getElementById('migOvBar');
-      if (bar) bar.style.width = rate+'%';
-
-      /* Status breakdown */
-      var statuses = {};
-      migData.forEach(function(r){ var s = r.jo_status||'Pending'; statuses[s]=(statuses[s]||0)+1; });
-      var breakdownEl = document.getElementById('migOvStatusBreakdown');
-      if (breakdownEl) {
-        breakdownEl.innerHTML = Object.keys(statuses).map(function(s){
-          var pct = total ? Math.round(statuses[s]/total*100) : 0;
-          return '<div style="margin-bottom:8px;">'
-            +'<div style="display:flex;justify-content:space-between;margin-bottom:3px;">'
-            +'<span>'+s+'</span><span style="font-weight:700;">'+statuses[s]+' ('+pct+'%)</span></div>'
-            +'<div style="background:#f1f5f9;border-radius:99px;height:6px;">'
-            +'<div style="width:'+pct+'%;height:6px;border-radius:99px;background:#7c3aed;"></div></div></div>';
-        }).join('') || '<span style="color:#94a3b8;">No data yet</span>';
-      }
-
-      /* Top municipalities */
-      var munCounts = {};
-      migData.forEach(function(r){ var m=r.municipality||'Unknown'; munCounts[m]=(munCounts[m]||0)+1; });
-      var munEl = document.getElementById('migOvMunicipality');
-      if (munEl) {
-        var sorted = Object.keys(munCounts).sort(function(a,b){return munCounts[b]-munCounts[a];}).slice(0,8);
-        munEl.innerHTML = sorted.map(function(m,i){
-          return '<div style="display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px solid #f1f5f9;">'
-            +'<span>'+(i+1)+'. '+m+'</span>'
-            +'<span style="font-weight:700;color:#7c3aed;">'+munCounts[m]+'</span></div>';
-        }).join('') || '<span style="color:#94a3b8;">No data yet</span>';
-      }
-
-      /* Municipality progress table */
-      var munTableEl = document.getElementById('migOvMunTable');
-      if (munTableEl && total > 0) {
-        var munData = {};
-        migData.forEach(function(r){
-          var m = r.municipality||'Unknown';
-          if (!munData[m]) munData[m] = { total:0, done:0 };
-          munData[m].total++;
-          var s = r.jo_status||'';
-          if (s==='Done'||s==='Completed') munData[m].done++;
-        });
-        munTableEl.innerHTML = '<table style="width:100%;font-size:11px;border-collapse:collapse;">'
-          +'<thead><tr style="background:#f8f5ff;">'
-          +'<th style="padding:8px;text-align:left;">Municipality</th>'
-          +'<th style="padding:8px;text-align:center;">Total</th>'
-          +'<th style="padding:8px;text-align:center;">Done</th>'
-          +'<th style="padding:8px;text-align:center;">Pending</th>'
-          +'<th style="padding:8px;text-align:center;">Progress</th>'
-          +'</tr></thead><tbody>'
-          + Object.keys(munData).sort(function(a,b){return munData[b].total-munData[a].total;}).map(function(m){
-            var d = munData[m];
-            var pct = Math.round(d.done/d.total*100);
-            return '<tr style="border-bottom:1px solid #f1f5f9;">'
-              +'<td style="padding:8px;">'+m+'</td>'
-              +'<td style="padding:8px;text-align:center;">'+d.total+'</td>'
-              +'<td style="padding:8px;text-align:center;color:#15803d;font-weight:700;">'+d.done+'</td>'
-              +'<td style="padding:8px;text-align:center;color:#92400e;">'+(d.total-d.done)+'</td>'
-              +'<td style="padding:8px;"><div style="background:#f1f5f9;border-radius:99px;height:6px;">'
-              +'<div style="width:'+pct+'%;height:6px;border-radius:99px;background:#7c3aed;"></div></div>'
-              +'<span style="font-size:10px;color:#64748b;">'+pct+'%</span></td>'
-              +'</tr>';
-          }).join('')
-          +'</tbody></table>';
-      } else if (munTableEl) {
-        munTableEl.innerHTML = '<div style="text-align:center;padding:20px;color:#94a3b8;">No migration data yet. Import your migration records to see progress.</div>';
-      }
+      buildMigOvFilters();
+      renderMigOverall();
     }
+  }
+
+  /* ════════════ MIGRATION PROGRESS DASHBOARD ════════════ */
+  var OV_COLORS = { completed:'#16a34a', cancelled:'#ef4444', rescheduled:'#f97316', pending:'#f59e0b', notvisited:'#9ca3af' };
+  var migOvMap = null, migOvMapInit = false, migOvLayers = {}, migOvMarkers = [];
+  var migOvFilters = { search:'', muni:'', brgy:'', status:'', bundle:'', decomm:'' };
+
+  function ovStatusClass(r) {
+    var s = (r.jo_status||'').trim();
+    if (s==='Done'||s==='Completed'||s==='Visited'||s==='Called') return 'completed';
+    if (s==='Cancelled') return 'cancelled';
+    if (s==='Rescheduled') return 'rescheduled';
+    if (s==='Pending') return 'pending';
+    return 'notvisited';
+  }
+
+  /* SVG pie divIcon sized by total record count in a barangay */
+  function ovPieIcon(counts) {
+    var order = ['completed','cancelled','rescheduled','pending','notvisited'];
+    var total = order.reduce(function(a,k){ return a+(counts[k]||0); }, 0);
+    if (!total) return null;
+    var r = total<5?11 : total<20?15 : total<60?20 : 26;
+    var cx=r, cy=r, ang=-Math.PI/2, paths='';
+    order.forEach(function(k){
+      var val = counts[k]||0; if (!val) return;
+      if (val===total) { paths += '<circle cx="'+cx+'" cy="'+cy+'" r="'+r+'" fill="'+OV_COLORS[k]+'"/>'; return; }
+      var frac = val/total, a2 = ang+frac*2*Math.PI;
+      var x1=cx+r*Math.cos(ang), y1=cy+r*Math.sin(ang);
+      var x2=cx+r*Math.cos(a2),  y2=cy+r*Math.sin(a2);
+      var large = frac>0.5?1:0;
+      paths += '<path d="M'+cx+','+cy+' L'+x1.toFixed(2)+','+y1.toFixed(2)+' A'+r+','+r+' 0 '+large+' 1 '+x2.toFixed(2)+','+y2.toFixed(2)+' Z" fill="'+OV_COLORS[k]+'"/>';
+      ang = a2;
+    });
+    var size = 2*r+4;
+    var svg = '<svg xmlns="http://www.w3.org/2000/svg" width="'+size+'" height="'+size+'" viewBox="-2 -2 '+size+' '+size+'">'
+      + paths
+      + '<circle cx="'+cx+'" cy="'+cy+'" r="'+r+'" fill="none" stroke="white" stroke-width="2"/></svg>';
+    return L.divIcon({ html:svg, className:'', iconSize:[size,size], iconAnchor:[size/2,size/2] });
+  }
+
+  /* Populate filter dropdowns from data */
+  function buildMigOvFilters() {
+    function fill(id, obj, allLabel, cur) {
+      var el = document.getElementById(id); if (!el) return;
+      var keys = Object.keys(obj).sort();
+      el.innerHTML = '<option value="">'+allLabel+'</option>' +
+        keys.map(function(k){ return '<option value="'+k.replace(/"/g,'&quot;')+'">'+k+'</option>'; }).join('');
+      el.value = cur;
+    }
+    var muni={}, brgy={}, bundle={};
+    migData.forEach(function(r){
+      if (r.municipality) muni[r.municipality]=1;
+      if (r.barangay) brgy[r.barangay]=1;
+      if (r.bundle_type) bundle[r.bundle_type]=1;
+    });
+    fill('migOvMuni', muni, 'All Municipalities', migOvFilters.muni);
+    fill('migOvBrgy', brgy, 'All Barangays', migOvFilters.brgy);
+    fill('migOvBundle', bundle, 'All Bundle Types', migOvFilters.bundle);
+    var stEl = document.getElementById('migOvStatus');
+    if (stEl && stEl.options.length <= 1) {
+      ['Completed','Cancelled','Rescheduled','Pending','Not Yet Visited'].forEach(function(s){
+        var o=document.createElement('option'); o.value=s; o.textContent=s; stEl.appendChild(o);
+      });
+      stEl.value = migOvFilters.status;
+    }
+  }
+
+  function getMigOvFiltered() {
+    var q = migOvFilters.search.toLowerCase().trim();
+    var statusMap = { 'Completed':'completed','Cancelled':'cancelled','Rescheduled':'rescheduled','Pending':'pending','Not Yet Visited':'notvisited' };
+    return migData.filter(function(r){
+      if (migOvFilters.muni   && r.municipality !== migOvFilters.muni) return false;
+      if (migOvFilters.brgy   && r.barangay !== migOvFilters.brgy) return false;
+      if (migOvFilters.bundle && r.bundle_type !== migOvFilters.bundle) return false;
+      if (migOvFilters.decomm) { var d=(r.decomm==='Y'||r.decomm===true||r.decomm==='Yes')?'Y':'N'; if (d!==migOvFilters.decomm) return false; }
+      if (migOvFilters.status && ovStatusClass(r) !== statusMap[migOvFilters.status]) return false;
+      if (q) { var hay=((r.old_acct_no||'')+' '+(r.name||'')).toLowerCase(); if (hay.indexOf(q)===-1) return false; }
+      return true;
+    });
+  }
+
+  function renderMigOverall() {
+    var rows = getMigOvFiltered();
+    function setN(id,v){ var el=document.getElementById(id); if (el) el.textContent=Number(v).toLocaleString(); }
+
+    /* KPI cards */
+    var calling = rows.filter(function(r){ return !r.jo_status||r.jo_status==='Pending'; }).length;
+    var dispatch = rows.filter(function(r){ return r.team_number && (ovStatusClass(r)==='pending'||ovStatusClass(r)==='notvisited'); }).length;
+    var completed = rows.filter(function(r){ return ovStatusClass(r)==='completed'; }).length;
+    var subsSet={}; rows.forEach(function(r){ if (r.old_acct_no) subsSet[r.old_acct_no]=1; });
+    setN('migOvKpiUploaded', rows.length);
+    setN('migOvKpiCalling', calling);
+    setN('migOvKpiDispatch', dispatch);
+    setN('migOvKpiCompleted', completed);
+    setN('migOvKpiSubs', Object.keys(subsSet).length);
+
+    /* Legend counts */
+    var leg = { completed:0, cancelled:0, rescheduled:0, pending:0, notvisited:0 };
+    rows.forEach(function(r){ leg[ovStatusClass(r)]++; });
+    setN('migOvLegCompleted', leg.completed);
+    setN('migOvLegCancelled', leg.cancelled);
+    setN('migOvLegResched', leg.rescheduled);
+    setN('migOvLegPending', leg.pending);
+    setN('migOvLegNotVisited', leg.notvisited);
+
+    /* Top barangays (pending + not visited) */
+    var brgyAgg={};
+    rows.forEach(function(r){
+      var b=r.barangay; if (!b) return;
+      if (!brgyAgg[b]) brgyAgg[b]={ muni:r.municipality||'', n:0 };
+      var sc=ovStatusClass(r);
+      if (sc==='pending'||sc==='notvisited') brgyAgg[b].n++;
+    });
+    var topEl=document.getElementById('migOvTopBrgy');
+    if (topEl) {
+      var sorted=Object.keys(brgyAgg).filter(function(b){return brgyAgg[b].n>0;})
+        .sort(function(a,b){return brgyAgg[b].n-brgyAgg[a].n;}).slice(0,10);
+      topEl.innerHTML = sorted.length ? sorted.map(function(b,i){
+        return '<div class="top-brgy-row"><span class="top-brgy-rank">'+(i+1)+'</span>'
+          +'<span class="top-brgy-name">'+b+'</span>'
+          +'<span class="top-brgy-muni">'+brgyAgg[b].muni+'</span>'
+          +'<span class="top-brgy-count">'+brgyAgg[b].n+'</span></div>';
+      }).join('') : '<div style="padding:16px;color:#94a3b8;font-size:12px;">No pending records</div>';
+    }
+
+    /* Municipality panel */
+    var munAgg={};
+    rows.forEach(function(r){ var m=r.municipality||'Unknown'; if(!munAgg[m]) munAgg[m]={total:0,done:0}; munAgg[m].total++; if(ovStatusClass(r)==='completed') munAgg[m].done++; });
+    var munEl=document.getElementById('migOvMuniList');
+    if (munEl) {
+      var mk=Object.keys(munAgg).sort(function(a,b){return munAgg[b].total-munAgg[a].total;});
+      munEl.innerHTML = mk.length ? mk.map(function(m){ var d=munAgg[m]; var pct=d.total?Math.round(d.done/d.total*100):0;
+        return '<div class="mun-row"><span class="mun-name">'+m+'</span><span style="color:#64748b;">'+d.done+'/'+d.total+'</span>'
+          +'<span class="mun-bar-wrap"><span class="mun-bar" style="width:'+pct+'%"></span></span><span class="mun-pct">'+pct+'%</span></div>';
+      }).join('') : '<div style="padding:8px;color:#94a3b8;font-size:11px;">No data</div>';
+    }
+
+    renderMigOvPins(rows);
+  }
+
+  function renderMigOvPins(rows) {
+    if (!migOvMap) return;
+    migOvMarkers.forEach(function(m){ migOvMap.removeLayer(m); });
+    migOvMarkers = [];
+    var byBrgy={};
+    rows.forEach(function(r){
+      var b=r.barangay; if (!b||!BRGY_COORDS[b]) return;
+      if (!byBrgy[b]) byBrgy[b]={ completed:0,cancelled:0,rescheduled:0,pending:0,notvisited:0 };
+      byBrgy[b][ovStatusClass(r)]++;
+    });
+    Object.keys(byBrgy).forEach(function(b){
+      var c=byBrgy[b], coords=BRGY_COORDS[b];
+      var icon=ovPieIcon(c); if (!icon) return;
+      var total=c.completed+c.cancelled+c.rescheduled+c.pending+c.notvisited;
+      var m=L.marker(coords,{icon:icon}).addTo(migOvMap);
+      m.bindPopup('<div style="font-size:12px;min-width:170px;"><b style="font-size:13px;">'+b+'</b><br>'
+        +'<div style="margin-top:4px;line-height:1.5;">'
+        +'<span style="color:#16a34a;">● Completed: <b>'+c.completed+'</b></span><br>'
+        +'<span style="color:#ef4444;">● Cancelled: <b>'+c.cancelled+'</b></span><br>'
+        +'<span style="color:#f97316;">● Rescheduled: <b>'+c.rescheduled+'</b></span><br>'
+        +'<span style="color:#d97706;">● Pending: <b>'+c.pending+'</b></span><br>'
+        +'<span style="color:#6b7280;">● Not Yet Visited: <b>'+c.notvisited+'</b></span>'
+        +'</div><div style="border-top:1px solid #e2e8f0;margin-top:5px;padding-top:4px;"><b>Total: '+total+'</b></div></div>');
+      migOvMarkers.push(m);
+    });
+  }
+
+  function ovSwitchTab(which) {
+    [['migOvTabLayers','migOvLayersPanel','layers'],['migOvTabSubscriber','migOvSubscriberPanel','subscriber'],['migOvTabMuni','migOvMuniPanel','muni']]
+      .forEach(function(t){
+        var tab=document.getElementById(t[0]), panel=document.getElementById(t[1]);
+        if (tab) tab.classList.toggle('active', t[2]===which);
+        if (panel) panel.style.display = (t[2]===which)?'':'none';
+      });
+  }
+
+  function initMigOvMap() {
+    var nav=document.querySelector('.topnav'); var navH=nav?nav.offsetHeight:0;
+    var page=document.getElementById('page-mig-overall');
+    var threshold=navH;
+    Array.prototype.forEach.call(page.children, function(el){
+      if (el.id==='migOvMapContainer') return;
+      threshold += el.offsetHeight;
+    });
+    var container=document.getElementById('migOvMapContainer');
+    if (container) container.style.top=threshold+'px';
+
+    if (!migOvMapInit) {
+      migOvMap = L.map('migOvMap', { zoomControl:false }).setView(MAP_CENTER, 12);
+      L.control.zoom({ position:'bottomleft' }).addTo(migOvMap);
+      migOvLayers.street = L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', { attribution:'© Carto © OSM', maxZoom:19, subdomains:'abcd' }).addTo(migOvMap);
+      migOvLayers.satellite = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', { attribution:'© Esri', maxZoom:19 });
+      migOvLayers.streetNames = L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager_only_labels/{z}/{x}/{y}{r}.png', { attribution:'© Carto', maxZoom:19, subdomains:'abcd', opacity:0.9 }).addTo(migOvMap);
+      migOvLayers.landmarks = L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', { attribution:'© Carto', maxZoom:19, subdomains:'abcd', opacity:0.6 });
+
+      var brgyFeatures = Object.keys(BRGY_COORDS).map(function(name){
+        var c=BRGY_COORDS[name]; var d=0.008;
+        return { "type":"Feature","properties":{"name":name},"geometry":{"type":"Polygon","coordinates":[[[c[1]-d,c[0]-d],[c[1]+d,c[0]-d],[c[1]+d,c[0]+d],[c[1]-d,c[0]+d],[c[1]-d,c[0]-d]]]}};
+      });
+      migOvLayers.cityBoundaries = L.geoJSON({"type":"FeatureCollection","features":brgyFeatures}, { style:{ color:'#1d4ed8', weight:2.5, fill:false, opacity:0.8, dashArray:'6,4' } }).addTo(migOvMap);
+      migOvLayers.brgyBoundaries = L.geoJSON({"type":"FeatureCollection","features":brgyFeatures}, { style:{ color:'#60a5fa', weight:1, fill:false, opacity:0.6 } });
+      migOvLayers.brgyNames = L.layerGroup(Object.keys(BRGY_COORDS).map(function(name){
+        var c=BRGY_COORDS[name];
+        return L.marker([c[0],c[1]], { icon:L.divIcon({ html:'<div style="font-size:9px;font-weight:700;color:#1e40af;background:rgba(255,255,255,0.85);padding:1px 4px;border-radius:3px;white-space:nowrap;box-shadow:0 1px 3px rgba(0,0,0,0.2);">'+name+'</div>', className:'', iconAnchor:[0,0] }), interactive:false });
+      })).addTo(migOvMap);
+
+      function wire(id, layer, base) {
+        var chk=document.getElementById(id); if (!chk) return;
+        chk.addEventListener('change', function(){
+          if (this.checked) {
+            if (base==='satellite') { if (migOvMap.hasLayer(migOvLayers.street)) migOvMap.removeLayer(migOvLayers.street); document.getElementById('migOvLayerStreet').checked=false; layer.addTo(migOvMap); }
+            else if (base==='street') { if (migOvMap.hasLayer(migOvLayers.satellite)) migOvMap.removeLayer(migOvLayers.satellite); document.getElementById('migOvLayerSatellite').checked=false; layer.addTo(migOvMap); }
+            else layer.addTo(migOvMap);
+          } else { if (migOvMap.hasLayer(layer)) migOvMap.removeLayer(layer); }
+        });
+      }
+      wire('migOvLayerSatellite', migOvLayers.satellite, 'satellite');
+      wire('migOvLayerStreet', migOvLayers.street, 'street');
+      wire('migOvLayerStreetNames', migOvLayers.streetNames, false);
+      wire('migOvLayerLandmarks', migOvLayers.landmarks, false);
+      wire('migOvLayerCityBound', migOvLayers.cityBoundaries, false);
+      wire('migOvLayerBrgyBound', migOvLayers.brgyBoundaries, false);
+      wire('migOvLayerBrgyNames', migOvLayers.brgyNames, false);
+
+      /* Right-panel tabs */
+      var tl=document.getElementById('migOvTabLayers'); if (tl) tl.addEventListener('click', function(){ ovSwitchTab('layers'); });
+      var ts=document.getElementById('migOvTabSubscriber'); if (ts) ts.addEventListener('click', function(){ ovSwitchTab('subscriber'); });
+      var tm=document.getElementById('migOvTabMuni'); if (tm) tm.addEventListener('click', function(){ ovSwitchTab('muni'); });
+
+      /* Filters */
+      function onFilter(id, key) {
+        var el=document.getElementById(id); if (!el) return;
+        var ev = el.tagName==='SELECT' ? 'change' : 'input';
+        el.addEventListener(ev, function(){ migOvFilters[key]=this.value; renderMigOverall(); });
+      }
+      onFilter('migOvSearch','search');
+      onFilter('migOvMuni','muni');
+      onFilter('migOvBrgy','brgy');
+      onFilter('migOvStatus','status');
+      onFilter('migOvBundle','bundle');
+      onFilter('migOvDecomm','decomm');
+
+      migOvMapInit = true;
+    }
+    setTimeout(function(){ if (migOvMap) { migOvMap.invalidateSize(); renderMigOvPins(getMigOvFiltered()); } }, 220);
   }
 
   /* ════════════ MIGRATION DISPATCH MAP ════════════ */
