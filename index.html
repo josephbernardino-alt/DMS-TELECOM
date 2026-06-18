@@ -556,6 +556,31 @@
   @media (max-width: 700px) { .reports-grid { grid-template-columns: 1fr; } }
 
 
+  /* ===== NAP LOCATOR PAGE ===== */
+  .nap-kpi-strip { display: flex; gap: 14px; padding: 14px 20px; background: white; border-bottom: 1px solid #e5eaf2; flex-wrap: wrap; align-items: stretch; }
+  .nap-locator-btn { background: linear-gradient(135deg, #1d4ed8, #1e40af); color: white; border: none; padding: 12px 20px; border-radius: 10px; font-size: 13px; font-weight: 700; display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
+  .nap-kpi { flex: 1; min-width: 200px; border-radius: 10px; border: 1px solid; padding: 12px 18px; text-align: center; display: flex; flex-direction: column; justify-content: center; gap: 4px; }
+  .nap-kpi .nap-kpi-label { font-size: 11px; font-weight: 700; letter-spacing: 0.5px; text-transform: uppercase; }
+  .nap-kpi .nap-kpi-count { font-size: 26px; font-weight: 800; }
+  .nap-kpi.available { background: #f0fdf4; border-color: #86efac; }
+  .nap-kpi.available .nap-kpi-label, .nap-kpi.available .nap-kpi-count { color: #15803d; }
+  .nap-kpi.full { background: #fef2f2; border-color: #fca5a5; }
+  .nap-kpi.full .nap-kpi-label, .nap-kpi.full .nap-kpi-count { color: #b91c1c; }
+  .nap-kpi.norecord { background: #eff6ff; border-color: #93c5fd; }
+  .nap-kpi.norecord .nap-kpi-label, .nap-kpi.norecord .nap-kpi-count { color: #1d4ed8; }
+  .nap-kpi.notupdated { background: #fefce8; border-color: #fde68a; }
+  .nap-kpi.notupdated .nap-kpi-label, .nap-kpi.notupdated .nap-kpi-count { color: #a16207; }
+  .nap-view-on-map { color: #1d4ed8; font-size: 11px; font-weight: 600; cursor: pointer; margin-left: 8px; white-space: nowrap; }
+  .nap-view-on-map:hover { text-decoration: underline; }
+  .nap-details-btn { background: #1d4ed8; color: white; border: none; border-radius: 6px; padding: 4px 10px; font-size: 11px; font-weight: 600; cursor: pointer; white-space: nowrap; }
+  .nap-genqr-btn { background: #16a34a; color: white; border: none; border-radius: 6px; padding: 4px 10px; font-size: 11px; font-weight: 600; cursor: pointer; white-space: nowrap; margin-left: 4px; }
+  .nap-qr-img { width: 34px; height: 34px; background: repeating-conic-gradient(#1e293b 0% 25%, #fde047 0% 50%) 50% / 8px 8px; border: 1px solid #cbd5e1; border-radius: 3px; display: inline-block; vertical-align: middle; margin-left: 4px; }
+  .nap-withrec-y { color: #15803d; font-weight: 700; }
+  .nap-withrec-n { color: #94a3b8; font-weight: 600; }
+  .nap-pager { display: flex; align-items: center; gap: 14px; }
+  .nap-pager-btn { border: 1px solid #dce3ed; background: white; color: #475569; padding: 5px 14px; border-radius: 7px; font-size: 12px; font-weight: 600; cursor: pointer; }
+  .nap-pager-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
   /* MIGRATION PAGES */
   .mig-header-btn { background: linear-gradient(135deg, #7c3aed, #6d28d9); color: white; border: none; padding: 10px 18px; border-radius: 8px; font-size: 13px; font-weight: 700; cursor: pointer; display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
   .mig-kpi-strip { display: flex; gap: 12px; padding: 12px 20px; background: white; border-bottom: 1px solid #e5eaf2; flex-wrap: wrap; }
@@ -814,7 +839,7 @@
     </div>
   </div>
   <button class="nav-btn" id="reportsBtn">Reports</button>
-  <button class="nav-btn">NAP Locator</button>
+  <button class="nav-btn" id="napLocatorBtn">NAP Locator</button>
   <div style="position:relative;">
     <button class="nav-btn" id="notifBtn" style="position:relative;">🔔 <span class="notif-badge" id="notifBadge">0</span></button>
     <div class="notif-panel" id="notifPanel">
@@ -1160,6 +1185,42 @@
   </div>
 </div>
 
+<!-- ============ NAP LOCATOR PAGE ============ -->
+<div class="page-view" id="page-nap">
+  <div class="filterbar sticky-top">
+    <input class="search-input" id="napSearch" type="text" placeholder="Search NAP Code or Area..." style="max-width:380px;">
+    <div class="filter-spacer"></div>
+    <button class="view-btn active" id="napTableBtn">☰ Table</button>
+    <button class="view-btn" id="napMapBtn">🗺 Map</button>
+  </div>
+  <div class="nap-kpi-strip sticky-top">
+    <button class="nap-locator-btn">◉ NAP LOCATOR</button>
+    <div class="nap-kpi available"><div class="nap-kpi-label">Available NAP</div><div class="nap-kpi-count" id="napKpiAvailable">0</div></div>
+    <div class="nap-kpi full"><div class="nap-kpi-label">Full NAP</div><div class="nap-kpi-count" id="napKpiFull">0</div></div>
+    <div class="nap-kpi norecord"><div class="nap-kpi-label">No Record</div><div class="nap-kpi-count" id="napKpiNoRecord">0</div></div>
+    <div class="nap-kpi notupdated"><div class="nap-kpi-label">Not Yet Updated</div><div class="nap-kpi-count" id="napKpiNotUpdated">0</div></div>
+  </div>
+  <div class="mig-head-wrap" id="napHeadWrap">
+    <table class="mig-head-table"><tbody><tr id="napHeadRow">
+      <td style="min-width:44px;">#</td><td style="min-width:230px;">NAP Code</td><td style="min-width:96px;">No of Ports</td><td style="min-width:100px;">Latitude</td><td style="min-width:104px;">Longitude</td>
+      <td style="min-width:220px;">Area</td><td style="min-width:88px;">Used Port</td><td style="min-width:150px;">Unused/Vacant Port</td><td style="min-width:116px;">ONU Connect</td>
+      <td style="min-width:108px;">With Record</td><td style="min-width:188px;">QR Code</td><td style="min-width:110px;">Updated By</td>
+    </tr></tbody></table>
+  </div>
+  <div class="mig-body-wrap" id="napBodyWrap">
+    <table class="mig-body-table"><tbody id="napBody">
+      <tr class="loading-row"><td colspan="12"><span class="spinner"></span>Loading NAP data...</td></tr>
+    </tbody></table>
+  </div>
+  <div class="mig-footer" style="display:flex;justify-content:space-between;align-items:center;">
+    <span id="napShowingLabel">Showing 0 of 0</span>
+    <div class="nap-pager">
+      <button class="nap-pager-btn" id="napPrevBtn">Prev</button>
+      <span id="napPageLabel">Page 1 of 1</span>
+      <button class="nap-pager-btn" id="napNextBtn">Next</button>
+    </div>
+  </div>
+</div>
 
 <!-- ============ MIGRATION PAGES ============ -->
 
@@ -1829,7 +1890,43 @@
       return out;
     }
 
-    return { teams:TEAMS, jobs:genJobs(), mig:genMig() };
+    /* ----- NAP LOCATOR: ~600 NAP points across the area ----- */
+    function genNap(){
+      var rand=lcg(424242);
+      var AREAS=['MTF- SHAW BLVD/ BONI AVE','JOVAN CONDO','LOPEZ RIZAL COR SAMAT','Calbayog cor. Samat','SAN JUAN CITY HALL','GREENHILLS SHOPPING','WACK WACK ROAD','ADDITION HILLS','PINAGBUHATAN PROPER','MAYBUNGA HIGHWAY','SANTOLAN LRT','ORANBO DRIVE','KAPITOLYO BRGY HALL','UGONG PROPER','BAGONG ILOG BRIDGE'];
+      var UPDBY=['System Admin','ODizon','TAlacian','FBorja','Charion','—'];
+      var out=[]; 
+      var hubs=['MAN001','MAN002','MAN033','PSG003','SJC001','MRK002'];
+      for (var i=0;i<600;i++){
+        var hub=pick(rand,hubs);
+        var lp=1+Math.floor(rand()*14);
+        var npA=1+Math.floor(rand()*7), npB=npA+1;
+        var code=hub+' LP'+lp+' NP'+npA+(rand()<0.6?'-'+npB:'');
+        var ports=pick(rand,[8,16,16,16]);
+        var hasRecord = rand()<0.55;
+        var hasGeo = rand()<0.8;
+        var used = hasRecord?Math.floor(rand()*ports):null;
+        var vacant = hasRecord?ports-used:null;
+        var onu = hasRecord?Math.floor(rand()*ports):null;
+        if (ports===0) { used=null; vacant=null; onu=null; }
+        out.push({
+          id:'nap-'+i,
+          nap_code:code,
+          no_of_ports:ports,
+          latitude: hasGeo?(14.55+rand()*0.13).toFixed(6):null,
+          longitude: hasGeo?(121.02+rand()*0.10).toFixed(6):null,
+          area:pick(rand,AREAS),
+          used_port:used,
+          vacant_port:vacant,
+          onu_connect:onu,
+          with_record: hasRecord?'Y':'N',
+          updated_by:pick(rand,UPDBY)
+        });
+      }
+      return out;
+    }
+
+    return { teams:TEAMS, jobs:genJobs(), mig:genMig(), nap:genNap() };
   })();
 
   function demoJobsForRange(from,to){
@@ -2762,6 +2859,9 @@
       if(mb) { mb.classList.remove('active'); }
     } else if (page === 'reports') {
       document.getElementById('page-reports').classList.add('active');
+    } else if (page === 'nap') {
+      document.getElementById('page-nap').classList.add('active');
+      loadNapData();
     } else if (page === 'dashboard' && view === 'map') {
       document.getElementById('page-map').classList.add('active');
       setTimeout(initMap, 100);
@@ -2820,6 +2920,120 @@
       showToast(this.querySelector('.report-card-title').textContent + ' — coming soon', 'warning');
     });
   });
+
+  /* ════════════ NAP LOCATOR ════════════ */
+  var napData = [];
+  var napFiltered = [];
+  var napPage = 1;
+  var NAP_PAGE_SIZE = 100;
+
+  safeOn('napLocatorBtn', 'click', function(){ switchPage('nap'); });
+
+  async function loadNapData() {
+    var tbody = document.getElementById('napBody');
+    if (tbody) tbody.innerHTML = '<tr class="loading-row"><td colspan="12"><span class="spinner"></span>Loading NAP data...</td></tr>';
+    if (!db) {
+      napData = DEMO_MODE ? DEMO.nap.slice() : [];
+      napPage = 1; applyNapFilter(); return;
+    }
+    try {
+      var r = await db.from('nap_locator').select('*').limit(30000);
+      if (r.error) throw r.error;
+      napData = r.data || [];
+      if (DEMO_MODE && !napData.length) napData = DEMO.nap.slice();
+    } catch(err) {
+      napData = DEMO_MODE ? DEMO.nap.slice() : [];
+    }
+    napPage = 1; applyNapFilter();
+  }
+
+  function applyNapFilter() {
+    var q = (document.getElementById('napSearch') ? document.getElementById('napSearch').value : '').toLowerCase().trim();
+    napFiltered = !q ? napData.slice() : napData.filter(function(r){
+      return (r.nap_code||'').toLowerCase().indexOf(q) !== -1 || (r.area||'').toLowerCase().indexOf(q) !== -1;
+    });
+    renderNapKpis();
+    renderNapRows();
+  }
+
+  function renderNapKpis() {
+    function setN(id,v){ var el=document.getElementById(id); if(el) el.textContent=Number(v).toLocaleString(); }
+    /* Available = has record and at least 1 vacant port; Full = has record and 0 vacant;
+       No Record = with_record N; Not Yet Updated = no lat/lng captured */
+    var available=0, full=0, norec=0, notupd=0;
+    napData.forEach(function(r){
+      if (r.with_record !== 'Y') norec++;
+      else if ((r.vacant_port||0) > 0) available++;
+      else full++;
+      if (!r.latitude || !r.longitude) notupd++;
+    });
+    setN('napKpiAvailable', available);
+    setN('napKpiFull', full);
+    setN('napKpiNoRecord', norec);
+    setN('napKpiNotUpdated', notupd);
+  }
+
+  function renderNapRows() {
+    var tbody = document.getElementById('napBody');
+    if (!tbody) return;
+    var total = napFiltered.length;
+    var pages = Math.max(1, Math.ceil(total / NAP_PAGE_SIZE));
+    if (napPage > pages) napPage = pages;
+    var start = (napPage-1)*NAP_PAGE_SIZE;
+    var slice = napFiltered.slice(start, start+NAP_PAGE_SIZE);
+
+    if (!slice.length) {
+      tbody.innerHTML = '<tr class="loading-row"><td colspan="12" style="text-align:center;padding:40px;color:#94a3b8;">No NAP records match the current search.</td></tr>';
+    } else {
+      tbody.innerHTML = slice.map(function(r,i){
+        var qrCell = (r.with_record==='Y')
+          ? '<button class="nap-details-btn" onclick="napShowDetails(\''+r.id+'\')">NAP Details</button><span class="nap-qr-img" title="QR code (placeholder)"></span>'
+          : '<button class="nap-details-btn" onclick="napShowDetails(\''+r.id+'\')">NAP Details</button><button class="nap-genqr-btn" onclick="napGenerateQr(\''+r.id+'\')">Generate QR</button>';
+        var wr = r.with_record==='Y'
+          ? '<span class="nap-withrec-y">Y</span>'
+          : (r.with_record==='N' ? '<span class="nap-withrec-n">N</span>' : '—');
+        return '<tr>'
+          +'<td class="count-cell" style="min-width:44px;">'+(start+i+1)+'</td>'
+          +'<td style="white-space:nowrap;font-weight:600;min-width:230px;">'+mv(r.nap_code)+'<span class="nap-view-on-map" onclick="napViewOnMap(\''+r.id+'\')">View on Map</span></td>'
+          +'<td style="text-align:center;min-width:96px;">'+(r.no_of_ports!=null?r.no_of_ports:'—')+'</td>'
+          +'<td style="min-width:100px;">'+mv(r.latitude)+'</td>'
+          +'<td style="min-width:104px;">'+mv(r.longitude)+'</td>'
+          +'<td style="min-width:220px;">'+mv(r.area)+'</td>'
+          +'<td style="text-align:center;min-width:88px;">'+(r.used_port!=null?r.used_port:'—')+'</td>'
+          +'<td style="text-align:center;min-width:150px;">'+(r.vacant_port!=null?r.vacant_port:'—')+'</td>'
+          +'<td style="text-align:center;min-width:116px;">'+(r.onu_connect!=null?r.onu_connect:'—')+'</td>'
+          +'<td style="text-align:center;min-width:108px;">'+wr+'</td>'
+          +'<td style="white-space:nowrap;min-width:188px;">'+qrCell+'</td>'
+          +'<td style="white-space:nowrap;color:#1d4ed8;min-width:110px;">'+mv(r.updated_by)+'</td>'
+          +'</tr>';
+      }).join('');
+    }
+
+    var showingFrom = total ? start+1 : 0;
+    var showingTo = Math.min(start+NAP_PAGE_SIZE, total);
+    var sl = document.getElementById('napShowingLabel');
+    if (sl) sl.textContent = 'Showing '+showingFrom.toLocaleString()+'–'+showingTo.toLocaleString()+' of '+total.toLocaleString();
+    var pl = document.getElementById('napPageLabel');
+    if (pl) pl.textContent = 'Page '+napPage+' of '+pages;
+    var pb = document.getElementById('napPrevBtn'); if (pb) pb.disabled = napPage<=1;
+    var nb = document.getElementById('napNextBtn'); if (nb) nb.disabled = napPage>=pages;
+
+    setTimeout(function(){ syncMigHeader('napBodyWrap','napHeadWrap','napHeadRow'); }, 80);
+  }
+
+  window.napShowDetails = function(id){ var r=napData.find(function(x){return String(x.id)===String(id);}); showToast('NAP Details: '+(r?r.nap_code:id)+' — detail view coming soon', 'warning'); };
+  window.napGenerateQr = function(id){ var r=napData.find(function(x){return String(x.id)===String(id);}); showToast('Generate QR for '+(r?r.nap_code:id)+' — coming soon', 'warning'); };
+  window.napViewOnMap = function(id){ showToast('Map view coming soon', 'warning'); };
+
+  safeOn('napSearch', 'input', function(){ napPage=1; applyNapFilter(); });
+  safeOn('napPrevBtn', 'click', function(){ if(napPage>1){ napPage--; renderNapRows(); } });
+  safeOn('napNextBtn', 'click', function(){ napPage++; renderNapRows(); });
+  safeOn('napTableBtn', 'click', function(){
+    document.getElementById('napTableBtn').classList.add('active');
+    document.getElementById('napMapBtn').classList.remove('active');
+  });
+  safeOn('napMapBtn', 'click', function(){ showToast('NAP map view coming soon', 'warning'); });
+
 
   /* ── USER MENU / LOGOUT ── */
   safeOn('userAvatarBtn', 'click', function(e){
