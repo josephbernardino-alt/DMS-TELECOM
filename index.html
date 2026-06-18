@@ -498,7 +498,7 @@
   /* MAP PAGE */
   #mapContainer { display: flex; position: fixed; left: 0; right: 0; bottom: 0; z-index: 1; }
   .map-sidebar-left { width: 220px; background: white; border-right: 1px solid #e5eaf2; overflow-y: auto; flex-shrink: 0; }
-  .map-sidebar-right { width: 220px; background: white; border-left: 1px solid #e5eaf2; overflow-y: auto; flex-shrink: 0; padding: 12px; }
+  .map-sidebar-right { width: 290px; background: white; border-left: 1px solid #e5eaf2; overflow-y: auto; flex-shrink: 0; padding: 12px; }
   #leafletMap { flex: 1; position: relative; z-index: 1; }
   .map-panel { border-bottom: 1px solid #f1f5f9; }
   .map-panel-head { padding: 10px 12px; font-size: 10px; font-weight: 700; color: #475569; text-transform: uppercase; letter-spacing: 0.4px; display: flex; justify-content: space-between; align-items: center; cursor: pointer; background: #f8fafc; user-select: none; }
@@ -735,9 +735,9 @@
   .subscriber-detail-card { padding: 4px; }
   .subscriber-detail-name { font-size: 15px; font-weight: 700; color: #1e293b; margin-bottom: 2px; }
   .subscriber-detail-acct { font-size: 12px; color: #94a3b8; margin-bottom: 14px; }
-  .subscriber-detail-row { display: flex; justify-content: space-between; padding: 7px 0; border-bottom: 1px solid #f1f5f9; font-size: 12px; }
-  .subscriber-detail-label { color: #94a3b8; }
-  .subscriber-detail-value { color: #1e293b; font-weight: 600; text-align: right; max-width: 60%; }
+  .subscriber-detail-row { display: flex; justify-content: space-between; gap: 12px; align-items: baseline; padding: 7px 0; border-bottom: 1px solid #f1f5f9; font-size: 12px; }
+  .subscriber-detail-label { color: #94a3b8; white-space: nowrap; flex-shrink: 0; }
+  .subscriber-detail-value { color: #1e293b; font-weight: 600; text-align: right; word-break: break-word; }
 
   /* NO TEAMS CARD ACCENT */
   .no-teams-card { border-left: 3px solid #f59e0b; }
