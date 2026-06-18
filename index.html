@@ -1367,7 +1367,13 @@
       <div id="migDeployedTeamsList"></div>
     </div>
     <!-- MAP -->
-    <div id="migLeafletMap"></div>
+    <div id="migLeafletMap">
+      <div id="migSetLocBanner" style="display:none;position:absolute;top:14px;left:50%;transform:translateX(-50%);z-index:600;background:#1e293b;color:white;border-radius:8px;padding:8px 12px;align-items:center;gap:10px;box-shadow:0 4px 14px rgba(0,0,0,0.25);font-size:12px;font-weight:600;">
+        <span>◉ Click on the map to set new location</span>
+        <button onclick="migSetLocSave()" style="background:#16a34a;color:white;border:none;border-radius:6px;padding:5px 12px;font-size:12px;font-weight:700;cursor:pointer;">Save</button>
+        <button onclick="migSetLocCancel()" style="background:#3b82f6;color:white;border:none;border-radius:6px;padding:5px 12px;font-size:12px;font-weight:700;cursor:pointer;">Cancel</button>
+      </div>
+    </div>
     <!-- RIGHT SIDEBAR -->
     <div class="map-sidebar-right">
       <div class="map-tabs">
@@ -4939,21 +4945,73 @@
     function row(label, val) {
       return '<div class="subscriber-detail-row"><span class="subscriber-detail-label">'+label+'</span><span class="subscriber-detail-value">'+(val||'—')+'</span></div>';
     }
+    function sectionTitle(t){ return '<div class="layer-section-title" style="margin-top:14px;">'+t+'</div>'; }
+
+    var initials = (r.name||'?').split(/[\s,]+/).filter(Boolean).map(function(w){return w[0];}).slice(0,2).join('').toUpperCase();
+    var st = r.jo_status || 'Pending';
+    var statusColor = ({Done:'#16a34a',Completed:'#16a34a',Visited:'#4338ca',Called:'#0f766e',Pending:'#f59e0b',Rescheduled:'#f97316',Cancelled:'#ef4444'})[st] || '#64748b';
+    var p = (r.personnel||'').split(',').map(function(s){return s.trim();});
+    var decomm = (r.decomm===true||r.decomm==='Y'||r.decomm==='Yes') ? 'Y' : 'N';
+
+    var resultSection = '';
+    if (r.remarks || r.date_completed || ['Rescheduled','Cancelled','Done','Completed'].indexOf(st)>=0) {
+      resultSection = sectionTitle('Result')
+        + row('Action Result', st)
+        + row('Date Completed', r.date_completed)
+        + row('Remarks', r.remarks);
+    }
 
     document.getElementById('migSubscriberContent').outerHTML =
-      '<div id="migSubscriberContent" class="subscriber-detail-card">'
-      +'<div class="subscriber-detail-name">'+(r.name||'—')+'</div>'
-      +'<div class="subscriber-detail-acct">Acct # '+(r.old_acct_no||'—')+'</div>'
-      +row('Status', r.jo_status||'Pending')
+      '<div id="migSubscriberContent">'
+      +'<div style="background:linear-gradient(135deg,#7c3aed,#6d28d9);color:white;border-radius:10px;padding:12px 14px;margin-bottom:12px;">'
+        +'<div style="display:flex;align-items:center;gap:10px;">'
+          +'<div style="width:34px;height:34px;border-radius:50%;background:rgba(255,255,255,0.2);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:12px;flex-shrink:0;">'+initials+'</div>'
+          +'<div style="min-width:0;"><div style="font-weight:700;font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">'+(r.name||'—')+'</div>'
+          +'<div style="font-size:11px;opacity:0.85;">Acct #'+(r.old_acct_no||'—')+'</div></div>'
+        +'</div>'
+        +'<div style="font-size:11px;margin-top:8px;opacity:0.9;">◉ '+(r.barangay||'')+(r.municipality?', '+r.municipality:'')+'</div>'
+      +'</div>'
+      +'<div style="display:flex;gap:8px;margin-bottom:4px;">'
+        +'<div style="flex:1;"><div class="subscriber-detail-label">STATUS</div><div style="font-weight:600;color:'+statusColor+';font-size:12px;">● '+st+'</div></div>'
+        +'<div style="flex:1;"><div class="subscriber-detail-label">TEAM</div><div style="font-weight:600;font-size:12px;">'+(r.team_number||'—')+'</div></div>'
+      +'</div>'
+      +sectionTitle('Account')
+      +row('Old Acct No.', r.old_acct_no)
+      +row('Bundle Type', r.bundle_type)
+      +row('Address', r.address)
+      +sectionTitle('Schedule &amp; Crew')
+      +row('Dispatch Date', r.date_visited || r.date_endorsed)
+      +row('Personnel 1', p[0])
+      +row('Personnel 2', p[1])
+      +row('Call Status', r.call_status)
+      +sectionTitle('Location')
       +row('Municipality', r.municipality)
       +row('Barangay', r.barangay)
-      +row('Address', r.address)
       +row('Contact', r.contact_info)
-      +row('Bundle Type', r.bundle_type)
-      +row('Team', r.team_number)
-      +row('Personnel', r.personnel)
-      +row('Remarks', r.remarks)
+      +row('Decomm', decomm)
+      +resultSection
+      +'<button class="no-teams-assign-btn" style="margin-top:14px;" onclick="napMigSetLocation(\''+r.id+'\')">◉ Set location on map</button>'
       +'</div>';
+  };
+
+  /* "Set location on map" mode — shows the click-to-set banner over the migration map */
+  var migSetLocationFor = null;
+  window.napMigSetLocation = function(recordId) {
+    migSetLocationFor = recordId;
+    var banner = document.getElementById('migSetLocBanner');
+    if (banner) banner.style.display = 'flex';
+    showToast('Click on the map to set the new location', 'warning');
+  };
+  window.migSetLocSave = function() {
+    var banner = document.getElementById('migSetLocBanner');
+    if (banner) banner.style.display = 'none';
+    migSetLocationFor = null;
+    showToast('✓ Location saved', 'success');
+  };
+  window.migSetLocCancel = function() {
+    var banner = document.getElementById('migSetLocBanner');
+    if (banner) banner.style.display = 'none';
+    migSetLocationFor = null;
   };
 
   /* ── Right sidebar tab switching ── */
