@@ -717,6 +717,10 @@
   .mig-team-name { font-weight: 700; font-size: 13px; color: #1e293b; }
   .mig-team-count-badge { background: #f1f5f9; border-radius: 99px; padding: 1px 7px; font-size: 10px; color: #475569; }
   .mig-team-stats { margin-left: auto; font-size: 10px; color: #64748b; }
+  .mig-team-chevron { font-size: 10px; color: #94a3b8; margin-left: 6px; transition: transform 0.15s; flex-shrink: 0; }
+  .mig-team-jobs { margin-top: 8px; }
+  .mig-team-job { border: 1px solid #e5eaf2; border-radius: 7px; padding: 8px 10px; margin-bottom: 7px; cursor: pointer; background: #fafbfc; }
+  .mig-team-job:hover { background: #f1f5f9; }
   .mig-team-personnel { font-size: 11px; color: #94a3b8; padding-left: 18px; margin-top: 2px; }
   .no-teams-card { border: 1px solid #e5eaf2; border-radius: 8px; padding: 10px 12px; margin-bottom: 10px; }
   .no-teams-acct { display: flex; justify-content: space-between; align-items: center; font-size: 12px; font-weight: 700; color: #1e293b; }
@@ -1355,8 +1359,10 @@
     <!-- LEFT SIDEBAR: DEPLOYED TEAMS -->
     <div class="map-sidebar-left">
       <div class="map-panel-head" style="cursor:default;">
-        <span>Deployed Teams</span>
-        <span class="badge-num" id="migDeployedTotal">0</span>
+        <span>Deployed Teams <span class="badge-num" id="migDeployedTotal" style="margin-left:4px;">0</span></span>
+        <label style="display:flex;align-items:center;gap:5px;font-size:10px;font-weight:600;color:#64748b;text-transform:none;cursor:pointer;">
+          <input type="checkbox" id="migOtherCo" style="accent-color:#1d4ed8;cursor:pointer;"> Other co.
+        </label>
       </div>
       <div id="migDeployedTeamsList"></div>
     </div>
@@ -4866,17 +4872,38 @@
       var rs = t.records.filter(function(r){return r.jo_status==='Rescheduled';}).length;
       var x = t.records.filter(function(r){return r.jo_status==='Cancelled';}).length;
       var col = teamColors[i % teamColors.length];
-      return '<div class="mig-team-card">'
-        +'<div class="mig-team-card-head">'
+      var jobCards = t.records.map(function(r){
+        return '<div class="mig-team-job" onclick="showSubscriberDetail(\''+r.id+'\', event)">'
+          +'<div class="no-teams-acct"><span>'+(r.old_acct_no||'—')+'</span>'+migStatusBadge(r.jo_status)+'</div>'
+          +'<div class="no-teams-name">'+(r.name||'—')+'</div>'
+          +'<div class="no-teams-loc">'+(r.barangay||'')+(r.municipality?', '+r.municipality:'')+'</div>'
+          +'<div class="no-teams-addr">'+(r.address||'')+'</div>'
+          +'</div>';
+      }).join('');
+      return '<div class="mig-team-card" data-team="'+tn+'">'
+        +'<div class="mig-team-card-head" onclick="toggleDeployedTeam(this)">'
         +'<span class="mig-team-dot" style="background:'+col+'"></span>'
         +'<span class="mig-team-name">'+tn+'</span>'
         +'<span class="mig-team-count-badge">'+t.records.length+'</span>'
         +'<span class="mig-team-stats">P:'+p+' C:'+c+' R:'+rs+' X:'+x+'</span>'
+        +'<span class="mig-team-chevron">▾</span>'
         +'</div>'
         +(t.personnel ? '<div class="mig-team-personnel">'+t.personnel+'</div>' : '')
+        +'<div class="mig-team-jobs" style="display:none;">'+jobCards+'</div>'
         +'</div>';
     }).join('');
   }
+
+  window.toggleDeployedTeam = function(head){
+    var card = head.closest('.mig-team-card');
+    if (!card) return;
+    var jobs = card.querySelector('.mig-team-jobs');
+    var chev = head.querySelector('.mig-team-chevron');
+    if (!jobs) return;
+    var open = jobs.style.display !== 'none';
+    jobs.style.display = open ? 'none' : 'block';
+    if (chev) chev.style.transform = open ? '' : 'rotate(180deg)';
+  };
 
   /* ── No Teams sidebar (right) ── */
   function buildNoTeamsPanel(noTeamRecords) {
