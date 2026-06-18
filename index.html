@@ -562,6 +562,12 @@
   .report-card-icon { width: 34px; height: 34px; margin-bottom: 10px; }
   .report-card-title { font-size: 14px; font-weight: 700; color: #1e293b; margin-bottom: 6px; }
   .report-card-desc { font-size: 12px; color: #64748b; line-height: 1.5; }
+  .report-table { width: 100%; border-collapse: collapse; font-size: 12px; }
+  .report-table th { background: #f8fafc; text-align: left; padding: 9px 12px; font-size: 11px; font-weight: 700; color: #475569; text-transform: uppercase; letter-spacing: 0.3px; border-bottom: 2px solid #e2e8f0; white-space: nowrap; position: sticky; top: 0; }
+  .report-table td { padding: 8px 12px; border-bottom: 1px solid #f1f5f9; color: #1e293b; white-space: nowrap; }
+  .report-table tr:nth-child(even) td { background: #fafbfc; }
+  .report-table tr.report-total-row td { font-weight: 800; background: #eff6ff; color: #1e3a8a; border-top: 2px solid #bfdbfe; }
+  .report-table td.report-num, .report-table th.report-num { text-align: center; }
   @media (max-width: 1100px) { .reports-grid { grid-template-columns: repeat(2, 1fr); } }
   @media (max-width: 700px) { .reports-grid { grid-template-columns: 1fr; } }
 
@@ -1301,6 +1307,26 @@
 </div>
 
 <!-- ============ MIGRATION PAGES ============ -->
+
+<!-- REPORT VIEWER MODAL -->
+<div class="staging-overlay" id="reportOverlay">
+  <div class="staging-modal" style="width:900px;max-width:96vw;">
+    <div class="staging-header">
+      <span class="staging-title" id="reportTitle">Report</span>
+      <button class="modal-close" onclick="closeReport()">✕</button>
+    </div>
+    <div class="staging-body" style="max-height:70vh;">
+      <div id="reportDesc" style="font-size:12px;color:#64748b;margin-bottom:12px;"></div>
+      <div id="reportTableWrap" style="overflow:auto;border:1px solid #e5eaf2;border-radius:8px;"></div>
+      <div id="reportEmpty" style="display:none;text-align:center;padding:40px;color:#94a3b8;font-size:13px;">No data available for the current date range.</div>
+    </div>
+    <div class="staging-footer" style="align-items:center;">
+      <span style="flex:1;font-size:11px;color:#94a3b8;" id="reportMeta"></span>
+      <button class="btn btn-close" onclick="closeReport()">Close</button>
+      <button class="btn-refresh" onclick="downloadReportCsv()">⬇ Download CSV</button>
+    </div>
+  </div>
+</div>
 
 <!-- NAP DETAILS MODAL -->
 <div class="staging-overlay" id="napDetailsOverlay">
@@ -3065,9 +3091,140 @@
   });
   document.querySelectorAll('.report-card').forEach(function(card){
     card.addEventListener('click', function(){
-      showToast(this.querySelector('.report-card-title').textContent + ' — coming soon', 'warning');
+      openReport(this.getAttribute('data-report'), this.querySelector('.report-card-title').textContent, this.querySelector('.report-card-desc').textContent);
     });
   });
+
+  /* ════════════ REPORTS ENGINE ════════════ */
+  var currentReport = { columns: [], rows: [], title: '' };
+
+  function agencyOf(rec) {
+    /* Use the team-number prefix (ATS / BEST / etc.) as the contractor/agency. */
+    var tn = rec.team_number || '';
+    var m = tn.match(/^([A-Za-z]+)/);
+    return m ? m[1].toUpperCase() : (tn ? tn : '—');
+  }
+  function isDone(s){ s=s||''; return s==='Done'||s==='Completed'||s==='Visited'; }
+
+  function buildReport(type) {
+    var ni = (allOrders||[]);
+    var mig = (migData && migData.length) ? migData : (DEMO_MODE && DEMO.mig ? DEMO.mig : []);
+
+    function groupCountByDate(records, keyFn, dateFn) {
+      /* Returns { columns:[key, ...dates, Total], rows:[...] } pivoting count by key x date. */
+      var dates = {}, keys = {};
+      records.forEach(function(r){
+        var k = keyFn(r); if (k==null || k==='') return;
+        var d = (dateFn(r)||'').slice(0,10); if (!d) return;
+        keys[k] = keys[k] || {}; keys[k][d] = (keys[k][d]||0)+1;
+        dates[d] = true;
+      });
+      var dateList = Object.keys(dates).sort();
+      var cols = ['Name'].concat(dateList).concat(['Total']);
+      var rows = Object.keys(keys).sort().map(function(k){
+        var row = [k], total = 0;
+        dateList.forEach(function(d){ var v = keys[k][d]||0; row.push(v||''); total += v; });
+        row.push(total);
+        return row;
+      });
+      /* totals row */
+      if (rows.length) {
+        var totRow = ['TOTAL'], grand = 0;
+        dateList.forEach(function(d,i){
+          var sum = rows.reduce(function(a,r){ return a + (Number(r[i+1])||0); }, 0);
+          totRow.push(sum); grand += sum;
+        });
+        totRow.push(grand);
+        rows.push(totRow);
+      }
+      return { columns: cols, rows: rows, totalRow: true };
+    }
+    function groupCountSimple(records, keyFn, label) {
+      var keys = {};
+      records.forEach(function(r){ var k=keyFn(r); if(k==null||k==='')return; keys[k]=(keys[k]||0)+1; });
+      var rows = Object.keys(keys).sort(function(a,b){return keys[b]-keys[a];}).map(function(k){ return [k, keys[k]]; });
+      var total = rows.reduce(function(a,r){return a+r[1];},0);
+      if (rows.length) rows.push(['TOTAL', total]);
+      return { columns: [label, 'Count'], rows: rows, totalRow: true };
+    }
+
+    switch(type) {
+      case 'contractor':
+        return groupCountByDate(ni.filter(function(r){return isDone(r.status);}), agencyOf, function(r){return r.dispatch_date;});
+      case 'ni-teams':
+        return groupCountByDate(ni.filter(function(r){return isDone(r.status);}), function(r){return r.team_number;}, function(r){return r.dispatch_date;});
+      case 'ni-personnel':
+        return groupCountByDate(ni.filter(function(r){return isDone(r.status);}), function(r){return (r.personnel||'').split(',')[0].trim();}, function(r){return r.dispatch_date;});
+      case 'migration-teams':
+        return groupCountByDate(mig.filter(function(r){return isDone(r.jo_status);}), function(r){return r.team_number;}, function(r){return r.date_completed;});
+      case 'migration-personnel':
+        return groupCountByDate(mig.filter(function(r){return isDone(r.jo_status);}), function(r){return (r.personnel||'').split(',')[0].trim();}, function(r){return r.date_completed;});
+      case 'output-per-city':
+        return groupCountSimple(ni.filter(function(r){return isDone(r.status);}), function(r){return r.municipality;}, 'City');
+      case 'scorecard':
+        /* Per team: Done / Cancelled / Rescheduled / Total + done-rate */
+        var byTeam = {};
+        ni.forEach(function(r){
+          var tn=r.team_number; if(!tn) return;
+          byTeam[tn]=byTeam[tn]||{done:0,cancel:0,resched:0,total:0};
+          byTeam[tn].total++;
+          if(isDone(r.status)) byTeam[tn].done++;
+          else if(r.status==='Cancelled') byTeam[tn].cancel++;
+          else if(r.status==='Rescheduled') byTeam[tn].resched++;
+        });
+        var srows = Object.keys(byTeam).sort().map(function(tn){
+          var s=byTeam[tn];
+          var rate = s.total? Math.round(s.done/s.total*100) : 0;
+          return [tn, s.done, s.cancel, s.resched, s.total, rate+'%'];
+        });
+        return { columns:['Team','Done','Cancelled','Rescheduled','Total','Done Rate'], rows: srows, totalRow: false };
+      default:
+        return { columns:['Info'], rows:[['No report definition']], totalRow:false };
+    }
+  }
+
+  window.openReport = function(type, title, desc) {
+    var rep = buildReport(type);
+    currentReport = { columns: rep.columns, rows: rep.rows, title: title };
+    document.getElementById('reportTitle').textContent = title;
+    document.getElementById('reportDesc').textContent = desc || '';
+    var wrap = document.getElementById('reportTableWrap');
+    var empty = document.getElementById('reportEmpty');
+    var dataRows = rep.rows.filter(function(r){ return r[0]!=='TOTAL'; });
+    if (!dataRows.length) {
+      wrap.style.display='none'; empty.style.display='block';
+    } else {
+      wrap.style.display='block'; empty.style.display='none';
+      var html = '<table class="report-table"><thead><tr>'
+        + rep.columns.map(function(c,i){ return '<th class="'+(i>0?'report-num':'')+'">'+c+'</th>'; }).join('')
+        + '</tr></thead><tbody>'
+        + rep.rows.map(function(r){
+            var isTot = r[0]==='TOTAL';
+            return '<tr class="'+(isTot?'report-total-row':'')+'">'
+              + r.map(function(c,i){ return '<td class="'+(i>0?'report-num':'')+'">'+(c===''?'':c)+'</td>'; }).join('')
+              + '</tr>';
+          }).join('')
+        + '</tbody></table>';
+      wrap.innerHTML = html;
+    }
+    document.getElementById('reportMeta').textContent = dataRows.length + ' rows · '+ (dateFrom||'') + (dateFrom?' to '+(dateTo||''):'');
+    document.getElementById('reportOverlay').style.display = 'flex';
+  };
+  window.closeReport = function(){ document.getElementById('reportOverlay').style.display='none'; };
+  window.downloadReportCsv = function(){
+    if (!currentReport.rows.length) { showToast('Nothing to download', 'warning'); return; }
+    var csv = [currentReport.columns.join(',')].concat(
+      currentReport.rows.map(function(r){ return r.map(function(c){ var s=String(c==null?'':c); return /[",\n]/.test(s)?'"'+s.replace(/"/g,'""')+'"':s; }).join(','); })
+    ).join('\n');
+    var blob = new Blob([csv], { type:'text/csv;charset=utf-8;' });
+    var url = URL.createObjectURL(blob);
+    var a = document.createElement('a');
+    a.href = url; a.download = (currentReport.title||'report').replace(/[^a-z0-9]+/gi,'_').toLowerCase()+'.csv';
+    document.body.appendChild(a); a.click(); document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  };
+  safeOn('reportOverlay', 'click', function(e){ if(e.target===this) closeReport(); });
+
 
   /* ════════════ NAP LOCATOR ════════════ */
   var napData = [];
