@@ -1145,21 +1145,35 @@
     <!-- RIGHT SIDEBAR -->
     <div class="map-sidebar-right">
       <div class="map-tabs">
-        <button class="map-tab active">Layers</button>
-        <button class="map-tab">Subscriber</button>
-        <button class="map-tab">Municipality</button>
+        <button class="map-tab active" id="niTabLayers">Layers</button>
+        <button class="map-tab" id="niTabSubscriber">Subscriber</button>
+        <button class="map-tab" id="niTabNoTeams">No Teams</button>
       </div>
-      <div class="layer-section-title">Layers</div>
-      <label class="layer-item"><input type="checkbox" id="layerStreet"> Street Map</label>
-      <label class="layer-item"><input type="checkbox" id="layerSatellite" checked> Satellite</label>
-      <label class="layer-item"><input type="checkbox" id="layerStreetNames" checked> Street/Road Names</label>
-      <label class="layer-item"><input type="checkbox" id="layerLandmarks"> Landmarks</label>
-      <label class="layer-item"><input type="checkbox" id="layerCityBound" checked> City Boundaries</label>
-      <label class="layer-item"><input type="checkbox" id="layerBrgyBound"> Barangay Boundaries</label>
-      <label class="layer-item"><input type="checkbox" id="layerBrgyNames"> Barangay Names</label>
-      <label class="layer-item"><input type="checkbox" id="layerMobileUsers"> Mobile Users</label>
-      <div class="layer-section-title">Teams Today</div>
-      <div id="teamsLegend"></div>
+      <div id="niLayersPanel">
+        <div class="layer-section-title">Layers</div>
+        <label class="layer-item"><input type="checkbox" id="layerStreet"> Street Map</label>
+        <label class="layer-item"><input type="checkbox" id="layerSatellite" checked> Satellite</label>
+        <label class="layer-item"><input type="checkbox" id="layerStreetNames" checked> Street/Road Names</label>
+        <label class="layer-item"><input type="checkbox" id="layerLandmarks"> Landmarks</label>
+        <label class="layer-item"><input type="checkbox" id="layerCityBound" checked> City Boundaries</label>
+        <label class="layer-item"><input type="checkbox" id="layerBrgyBound"> Barangay Boundaries</label>
+        <label class="layer-item"><input type="checkbox" id="layerBrgyNames"> Barangay Names</label>
+        <label class="layer-item"><input type="checkbox" id="layerMobileUsers"> Mobile Users</label>
+        <div class="layer-section-title">Teams Today</div>
+        <div id="teamsLegend"></div>
+      </div>
+      <div id="niSubscriberPanel" style="display:none;">
+        <div id="niSubscriberContent" class="subscriber-empty">
+          <div class="subscriber-empty-icon">
+            <svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="#94a3b8" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M4 21v-1a8 8 0 0116 0v1"/></svg>
+          </div>
+          <div class="subscriber-empty-text">Click a job order or map marker<br>to view subscriber details.</div>
+        </div>
+      </div>
+      <div id="niNoTeamsPanel" style="display:none;">
+        <div class="layer-section-title">No Teams <span class="badge-num" id="niNoTeamsCount" style="margin-left:6px;">0</span></div>
+        <div id="niNoTeamsList" style="max-height:calc(100vh - 320px);overflow-y:auto;"></div>
+      </div>
     </div>
   </div>
 </div>
@@ -3561,13 +3575,16 @@
       var color = statusColors[o.status] || '#64748b';
       var marker = L.marker([lat,lng], { icon: houseIcon(color) }).addTo(leafletMap);
       marker.bindPopup(
-        '<div style="font-size:12px;min-width:160px;">'
-        +'<b>'+o.customer_name+'</b><br>'
-        +'<span style="color:#64748b">'+o.jo_number+'</span><br>'
-        +'<span>'+o.barangay+'</span><br>'
-        +'<span style="font-weight:700;color:'+color+'">'+o.status+'</span>'
+        '<div style="font-size:12px;min-width:180px;">'
+        +'<span style="color:#64748b">'+(o.jo_number||'')+'</span><br>'
+        +'<b style="color:#1d4ed8;">'+(o.customer_name||'—')+'</b><br>'
+        +'<span style="font-weight:700;color:'+color+'">● '+(o.status||'Pending')+'</span><br>'
+        +'<span>'+(o.address||o.barangay||'')+'</span><br>'
+        +'<span style="color:#94a3b8;">'+(o.barangay||'')+(o.municipality?', '+o.municipality:'')+'</span>'
+        +(teamNum(o.team_id)?'':'<br><span style="color:#94a3b8;font-style:italic;">No team assigned</span>')
         +'</div>'
       );
+      (function(rec){ marker.on('click', function(){ showNiSubscriberDetail(rec); }); })(o);
       mapMarkers.push(marker);
 
       var tn = teamNum(o.team_id);
@@ -3683,6 +3700,80 @@
       var s = teamsWithJobs[tn];
       var c = colors[i % colors.length];
       return '<div class="team-legend-item"><span class="team-dot" style="background:'+c+'"></span>'+tn+'<span class="team-stats">P'+s.pending+' C'+s.completed+' X'+s.cancelled+' R'+s.resched+'</span></div>';
+    }).join('');
+    buildNiNoTeams();
+  }
+
+  /* ── NI Dashboard right-sidebar tabs (Layers / Subscriber / No Teams) ── */
+  function niSwitchTab(which) {
+    [['niTabLayers','niLayersPanel','layers'],['niTabSubscriber','niSubscriberPanel','subscriber'],['niTabNoTeams','niNoTeamsPanel','noteams']]
+      .forEach(function(t){
+        var tab=document.getElementById(t[0]), panel=document.getElementById(t[1]);
+        if (tab) tab.classList.toggle('active', t[2]===which);
+        if (panel) panel.style.display = (t[2]===which)?'':'none';
+      });
+  }
+  safeOn('niTabLayers', 'click', function(){ niSwitchTab('layers'); });
+  safeOn('niTabSubscriber', 'click', function(){ niSwitchTab('subscriber'); });
+  safeOn('niTabNoTeams', 'click', function(){ niSwitchTab('noteams'); });
+
+  /* Rich subscriber detail card (mirrors the bestphtech NI layout) */
+  function showNiSubscriberDetail(o) {
+    niSwitchTab('subscriber');
+    var tn = teamNum(o.team_id);
+    function row(label, val) {
+      return '<div class="subscriber-detail-row"><span class="subscriber-detail-label">'+label+'</span><span class="subscriber-detail-value">'+(val||'—')+'</span></div>';
+    }
+    function sectionTitle(t){ return '<div class="layer-section-title" style="margin-top:14px;">'+t+'</div>'; }
+    var initials = (o.customer_name||'?').split(' ').map(function(w){return w[0];}).slice(0,2).join('').toUpperCase();
+    var statusColor = ({Completed:'#16a34a',Pending:'#f59e0b',Rescheduled:'#f97316',Cancelled:'#ef4444'})[o.status] || '#64748b';
+    var el = document.getElementById('niSubscriberContent');
+    if (!el) return;
+    el.outerHTML =
+      '<div id="niSubscriberContent">'
+      +'<div style="background:linear-gradient(135deg,#1d4ed8,#1e40af);color:white;border-radius:10px;padding:12px 14px;margin-bottom:12px;">'
+        +'<div style="display:flex;align-items:center;gap:10px;">'
+          +'<div style="width:34px;height:34px;border-radius:50%;background:rgba(255,255,255,0.2);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:12px;flex-shrink:0;">'+initials+'</div>'
+          +'<div style="min-width:0;"><div style="font-weight:700;font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">'+(o.customer_name||'—')+'</div>'
+          +'<div style="font-size:11px;opacity:0.85;">JO #'+(o.jo_number||'—')+'</div></div>'
+        +'</div>'
+        +'<div style="font-size:11px;margin-top:8px;opacity:0.9;">◉ '+(o.barangay||'')+(o.municipality?', '+o.municipality:'')+'</div>'
+      +'</div>'
+      +'<div style="display:flex;gap:8px;margin-bottom:4px;">'
+        +'<div style="flex:1;"><div class="subscriber-detail-label">STATUS</div><div style="font-weight:600;color:'+statusColor+';font-size:12px;">● '+(o.status||'Pending')+'</div></div>'
+        +'<div style="flex:1;"><div class="subscriber-detail-label">TEAM</div><div style="font-weight:600;font-size:12px;">'+(tn||'—')+'</div></div>'
+      +'</div>'
+      +sectionTitle('Account')
+      +row('Account No.', o.account_number)
+      +row('Reference ID', o.reference_id)
+      +row('Plan', o.plan)
+      +sectionTitle('Schedule &amp; Crew')
+      +row('Job Date', o.dispatch_date)
+      +row('Personnel 1', (o.personnel||'').split(',')[0])
+      +row('Personnel 2', (o.personnel||'').split(',')[1])
+      +row('Call Status', o.call_status)
+      +sectionTitle('Location')
+      +row('Municipality', o.municipality)
+      +row('Barangay', o.barangay)
+      +row('Address', o.address)
+      +'</div>';
+  }
+
+  /* No Teams list — pending NI orders with no team assigned */
+  function buildNiNoTeams() {
+    var noTeam = allOrders.filter(function(o){ return (o.status==='Pending') && !o.team_id; });
+    var cEl = document.getElementById('niNoTeamsCount');
+    if (cEl) cEl.textContent = noTeam.length;
+    var list = document.getElementById('niNoTeamsList');
+    if (!list) return;
+    if (!noTeam.length) { list.innerHTML = '<div style="padding:16px;color:#94a3b8;font-size:12px;">All pending orders have teams assigned</div>'; return; }
+    list.innerHTML = noTeam.slice(0,100).map(function(o){
+      return '<div class="no-teams-card" style="cursor:pointer;">'
+        +'<div class="no-teams-acct"><span>'+(o.jo_number||'—')+'</span><span class="no-teams-pending-badge">Pending</span></div>'
+        +'<div class="no-teams-name">'+(o.customer_name||'—')+'</div>'
+        +'<div class="no-teams-loc">'+(o.barangay||'')+(o.municipality?', '+o.municipality:'')+'</div>'
+        +'<div class="no-teams-addr">'+(o.address||'')+'</div>'
+        +'</div>';
     }).join('');
   }
 
