@@ -86,35 +86,40 @@
   .view-btn.active { background: #1d4ed8; color: white; border-color: #1d4ed8; }
 
   /* KPI CARDS */
-  .summary-row { display: flex; gap: 10px; padding: 12px 20px; background: white; border-bottom: 1px solid #e5eaf2; flex-wrap: wrap; align-items: stretch; z-index: 10; }
-  .new-install-btn { background: linear-gradient(135deg, #1d4ed8, #1e40af); color: white; border: none; padding: 10px 16px; border-radius: 8px; font-size: 12px; font-weight: 700; cursor: pointer; white-space: nowrap; display: flex; align-items: center; gap: 6px; }
-  .sum-card { flex: 1; min-width: 160px; border-radius: 10px; border: 1px solid; padding: 12px 16px; display: flex; flex-direction: column; gap: 6px; }
-  .sum-card.pending { background: linear-gradient(135deg, #fffbeb, #fef3c7); border-color: #fcd34d; }
-  .sum-card.active { background: linear-gradient(135deg, #f0fdf4, #dcfce7); border-color: #86efac; }
+  .summary-row { display: flex; gap: 12px; padding: 14px 20px; background: white; border-bottom: 1px solid #e5eaf2; flex-wrap: wrap; align-items: stretch; z-index: 10; }
+  .new-install-btn { flex: 1; min-width: 200px; background: linear-gradient(135deg, #2563eb, #1e40af); color: white; border: none; padding: 16px 20px; border-radius: 14px; font-size: 19px; font-weight: 800; letter-spacing: 0.3px; cursor: pointer; white-space: nowrap; display: flex; align-items: center; justify-content: space-between; gap: 10px; box-shadow: 0 6px 16px rgba(37,99,235,0.25); }
+  .new-install-btn .ni-left { display: flex; align-items: center; gap: 10px; }
+  .new-install-btn .ni-count { font-size: 34px; font-weight: 800; line-height: 1; opacity: 0.95; }
+  .sum-card { flex: 1.3; min-width: 230px; border-radius: 14px; border: 1px solid; border-left-width: 5px; padding: 14px 18px; display: flex; flex-direction: column; gap: 8px; box-shadow: 0 2px 8px rgba(15,23,42,0.04); }
+  .sum-card-top { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+  .sum-card.pending { background: linear-gradient(135deg, #fffdf5, #fef6e0); border-color: #fcd34d; }
+  .sum-card.active { background: linear-gradient(135deg, #f3fdf6, #dcfce7); border-color: #86efac; }
   .sum-card.active.dimmed { background: #f8fafc; border-color: #e2e8f0; opacity: 0.6; }
-  .sum-card.rescheduled { background: linear-gradient(135deg, #eff6ff, #dbeafe); border-color: #93c5fd; }
+  .sum-card.rescheduled { background: linear-gradient(135deg, #f5f9ff, #dbeafe); border-color: #93c5fd; }
   .sum-card .sub-pill:focus { outline: none; }
-  .sum-card.cancelled { background: linear-gradient(135deg, #fef2f2, #fee2e2); border-color: #fca5a5; }
+  .sum-card.cancelled { background: linear-gradient(135deg, #fff6f6, #fee2e2); border-color: #fca5a5; }
   .sum-card.cancelled.dimmed { background: #f8fafc; border-color: #e2e8f0; opacity: 0.6; }
-  .sum-label { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; }
-  .sum-card.pending .sum-label { color: #92400e; }
-  .sum-card.active .sum-label { color: #166534; }
+  .sum-label { font-size: 22px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.5px; line-height: 1; }
+  .sum-card.pending .sum-label { color: #b45309; }
+  .sum-card.active .sum-label { color: #15803d; }
   .sum-card.active.dimmed .sum-label { color: #94a3b8; }
-  .sum-card.rescheduled .sum-label { color: #1e40af; }
-  .sum-card.cancelled .sum-label { color: #991b1b; }
+  .sum-card.rescheduled .sum-label { color: #1d4ed8; }
+  .sum-card.cancelled .sum-label { color: #b91c1c; }
   .sum-card.cancelled.dimmed .sum-label { color: #94a3b8; }
-  .sum-count { font-size: 30px; font-weight: 800; line-height: 1; }
-  .sum-card.pending .sum-count { color: #92400e; }
+  .sum-count { font-size: 40px; font-weight: 800; line-height: 1; flex-shrink: 0; }
+  .sum-card.pending .sum-count { color: #b45309; }
   .sum-card.active .sum-count { color: #15803d; }
   .sum-card.active.dimmed .sum-count { color: #94a3b8; }
   .sum-card.rescheduled .sum-count { color: #1d4ed8; }
   .sum-card.cancelled .sum-count { color: #b91c1c; }
   .sum-card.cancelled.dimmed .sum-count { color: #94a3b8; }
-  .sum-sub { font-size: 10px; color: #64748b; display: flex; gap: 5px; flex-wrap: wrap; }
-  .sub-pill { background: rgba(0,0,0,0.06); border-radius: 4px; padding: 2px 7px; font-size: 10px; font-weight: 500; white-space: nowrap; cursor: pointer; transition: all 0.15s; border: 1.5px solid transparent; }
-  .sub-pill:hover { background: rgba(0,0,0,0.12); }
+  .sum-sub { font-size: 11px; color: #64748b; display: flex; gap: 6px; flex-wrap: wrap; }
+  .sub-pill { background: rgba(255,255,255,0.7); border-radius: 6px; padding: 3px 9px; font-size: 11px; font-weight: 600; white-space: nowrap; cursor: pointer; transition: all 0.15s; border: 1.5px solid rgba(0,0,0,0.05); display: inline-flex; align-items: center; gap: 4px; }
+  .sub-pill svg { width: 12px; height: 12px; opacity: 0.7; }
+  .sub-pill:hover { background: white; border-color: rgba(0,0,0,0.12); }
   .sub-pill.active-filter { background: #1d4ed8; color: white; border-color: #1d4ed8; }
-  .sum-card.pending .sub-pill.active-filter { background: #92400e; border-color: #92400e; color: white; box-shadow: none; }
+  .sub-pill.active-filter svg { opacity: 1; }
+  .sum-card.pending .sub-pill.active-filter { background: #b45309; border-color: #b45309; color: white; box-shadow: none; }
   .sum-card.active .sub-pill.active-filter { background: #15803d; border-color: #15803d; color: white; box-shadow: none; }
   .sum-card.rescheduled .sub-pill.active-filter { background: #1d4ed8; border-color: #1d4ed8; color: white; box-shadow: none; }
   .sum-card.cancelled .sub-pill.active-filter { background: #b91c1c; border-color: #b91c1c; color: white; box-shadow: none; }
@@ -964,39 +969,51 @@
 
 <!-- KPI CARDS -->
 <div class="summary-row sticky-top">
-  <button class="new-install-btn">⊕ NEW INSTALLATION</button>
+  <button class="new-install-btn">
+    <span class="ni-left"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M2 12h20M12 2a15 15 0 010 20M12 2a15 15 0 000 20"/></svg> NEW INSTALLATION</span>
+    <span class="ni-count" id="cntNewInstall">0</span>
+  </button>
   <div class="sum-card pending">
-    <span class="sum-label">Pending</span>
-    <span class="sum-count" id="cntPending">0</span>
+    <div class="sum-card-top">
+      <span class="sum-label">Pending</span>
+      <span class="sum-count" id="cntPending">0</span>
+    </div>
     <div class="sum-sub">
-      <span class="sub-pill" id="subWT">0 w/ Team</span>
-      <span class="sub-pill" id="subWOT">0 w/o Team</span>
+      <span class="sub-pill" id="subWT"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/></svg><span class="pill-text">0 Team Assigned</span></span>
+      <span class="sub-pill" id="subWOT"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/></svg><span class="pill-text">0 No Team</span></span>
     </div>
   </div>
   <div class="sum-card active" id="cardActive">
-    <span class="sum-label">Active / Complete</span>
-    <span class="sum-count" id="cntActive">0</span>
+    <div class="sum-card-top">
+      <span class="sum-label">Active / Complete</span>
+      <span class="sum-count" id="cntActive">0</span>
+    </div>
     <div class="sum-sub">
-      <span class="sub-pill" id="subGF">0 GF</span>
-      <span class="sub-pill" id="subJO">0 JO</span>
-      <span class="sub-pill" id="subBoth">0 Both</span>
+      <span class="sub-pill" id="subGF"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg><span class="pill-text">0 GF</span></span>
+      <span class="sub-pill" id="subJO"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 10h18"/></svg><span class="pill-text">0 JO</span></span>
+      <span class="sub-pill" id="subBoth"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg><span class="pill-text">0 Total</span></span>
     </div>
   </div>
   <div class="sum-card rescheduled">
-    <span class="sum-label">Rescheduled</span>
-    <span class="sum-count" id="cntRescheduled">0</span>
+    <div class="sum-card-top">
+      <span class="sum-label">Rescheduled</span>
+      <span class="sum-count" id="cntRescheduled">0</span>
+    </div>
     <div class="sum-sub">
-      <span class="sub-pill" id="subResOther">0 Other reason</span>
-      <span class="sub-pill" id="subResCust">0 Requested by customer</span>
-      <span class="sub-pill" id="subResPerm">0 Needs permit</span>
+      <span class="sub-pill" id="subResCust"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 11.5a8.38 8.38 0 01-.9 3.8 8.5 8.5 0 01-7.6 4.7 8.38 8.38 0 01-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 01-.9-3.8 8.5 8.5 0 014.7-7.6 8.38 8.38 0 013.8-.9h.5a8.48 8.48 0 018 8v.5z"/></svg><span class="pill-text">0 Customer Req.</span></span>
+      <span class="sub-pill" id="subResPerm"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg><span class="pill-text">Site Access</span></span>
+      <span class="sub-pill" id="subResOther"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/></svg><span class="pill-text">0 Tech Unavailable</span></span>
     </div>
   </div>
   <div class="sum-card cancelled" id="cardCancelled">
-    <span class="sum-label">Cancelled</span>
-    <span class="sum-count" id="cntCancelled">0</span>
+    <div class="sum-card-top">
+      <span class="sum-label">Cancelled</span>
+      <span class="sum-count" id="cntCancelled">0</span>
+    </div>
     <div class="sum-sub">
-      <span class="sub-pill" id="subCancelNAP">0 Full NAP</span>
-      <span class="sub-pill" id="subCancelOther">0 Other reason</span>
+      <span class="sub-pill" id="subCancelNAP"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><path d="M14 2v6h6"/></svg><span class="pill-text">0 Order Req.</span></span>
+      <span class="sub-pill" id="subCancelFull"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 21V5a2 2 0 00-2-2h-4a2 2 0 00-2 2v16"/></svg><span class="pill-text">0 Facility Full</span></span>
+      <span class="sub-pill" id="subCancelOther"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg><span class="pill-text">0 Duplicate</span></span>
     </div>
   </div>
 </div>
@@ -2548,22 +2565,28 @@
     var needsPerm = resched.filter(function(r){return r.status_remarks&&r.status_remarks.toLowerCase().includes('permit');}).length;
 
     function setCnt(id, val) { var el = document.getElementById(id); if (el) el.textContent = val; }
+    setCnt('cntNewInstall',  data.length);
     setCnt('cntPending',     pending.length);
     setCnt('cntActive',      active.length+comp.length);
     setCnt('cntRescheduled', resched.length);
     setCnt('cntCancelled',   cancel.length);
 
-    function setPill(id, text) { var el = document.getElementById(id); if (el) el.textContent = text; }
-    setPill('subWT',   wt+' w/ Team');
-    setPill('subWOT',  wot+' w/o Team');
+    function setPill(id, text) {
+      var el = document.getElementById(id); if (!el) return;
+      var t = el.querySelector('.pill-text');
+      if (t) t.textContent = text; else el.textContent = text;
+    }
+    setPill('subWT',   wt+' Team Assigned');
+    setPill('subWOT',  wot+' No Team');
     setPill('subGF',   active.length+' GF');
     setPill('subJO',   comp.length+' JO');
-    setPill('subBoth', (active.length+comp.length)+' Both');
-    setPill('subResOther',  Math.max(0,resched.length-needsPerm)+' Other reason');
-    setPill('subResCust',   resched.filter(function(r){return r.status_remarks&&r.status_remarks.toLowerCase().includes('customer');}).length+' Requested by customer');
-    setPill('subResPerm',   needsPerm+' Needs permit');
-    setPill('subCancelNAP', cancel.filter(function(r){return r.status_remarks&&r.status_remarks.toLowerCase().includes('nap');}).length+' Full NAP');
-    setPill('subCancelOther', cancel.length+' Other reason');
+    setPill('subBoth', (active.length+comp.length)+' Total');
+    setPill('subResCust',   resched.filter(function(r){return r.status_remarks&&r.status_remarks.toLowerCase().includes('customer');}).length+' Customer Req.');
+    setPill('subResPerm',   'Site Access');
+    setPill('subResOther',  Math.max(0,resched.length-needsPerm)+' Tech Unavailable');
+    setPill('subCancelNAP', cancel.filter(function(r){return r.status_remarks&&r.status_remarks.toLowerCase().includes('nap');}).length+' Order Req.');
+    setPill('subCancelFull', cancel.filter(function(r){return r.status_remarks&&r.status_remarks.toLowerCase().includes('full');}).length+' Facility Full');
+    setPill('subCancelOther', cancel.filter(function(r){return r.status_remarks&&r.status_remarks.toLowerCase().includes('duplicate');}).length+' Duplicate');
 
     /* Add onclick to sub-pills */
     var pillMap = {
