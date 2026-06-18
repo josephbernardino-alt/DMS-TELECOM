@@ -721,6 +721,11 @@
   .no-teams-card { border: 1px solid #e5eaf2; border-radius: 8px; padding: 10px 12px; margin-bottom: 10px; }
   .no-teams-acct { display: flex; justify-content: space-between; align-items: center; font-size: 12px; font-weight: 700; color: #1e293b; }
   .no-teams-pending-badge { background: #fef9c3; color: #92400e; border-radius: 5px; padding: 2px 8px; font-size: 10px; font-weight: 700; }
+  .nt-status-badge { border-radius: 5px; padding: 2px 9px; font-size: 10px; font-weight: 700; letter-spacing: 0.3px; }
+  .nt-badge-pending { background: #fef3c7; color: #b45309; }
+  .nt-badge-cancelled { background: #fee2e2; color: #b91c1c; }
+  .nt-badge-completed { background: #dcfce7; color: #15803d; }
+  .nt-badge-resched { background: #ffedd5; color: #c2410c; }
   .no-teams-name { color: #1d4ed8; font-weight: 700; font-size: 12px; margin: 3px 0; }
   .no-teams-loc { font-size: 11px; color: #64748b; }
   .no-teams-addr { font-size: 10px; color: #94a3b8; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin: 2px 0 8px; }
@@ -3761,18 +3766,28 @@
 
   /* No Teams list — pending NI orders with no team assigned */
   function buildNiNoTeams() {
-    var noTeam = allOrders.filter(function(o){ return (o.status==='Pending') && !o.team_id; });
+    /* Any order with no team assigned (Pending, Cancelled, etc.) — matches reference */
+    var noTeam = allOrders.filter(function(o){ return !o.team_id; });
     var cEl = document.getElementById('niNoTeamsCount');
     if (cEl) cEl.textContent = noTeam.length;
     var list = document.getElementById('niNoTeamsList');
     if (!list) return;
-    if (!noTeam.length) { list.innerHTML = '<div style="padding:16px;color:#94a3b8;font-size:12px;">All pending orders have teams assigned</div>'; return; }
-    list.innerHTML = noTeam.slice(0,100).map(function(o){
-      return '<div class="no-teams-card" style="cursor:pointer;">'
-        +'<div class="no-teams-acct"><span>'+(o.jo_number||'—')+'</span><span class="no-teams-pending-badge">Pending</span></div>'
+    if (!noTeam.length) { list.innerHTML = '<div style="padding:16px;color:#94a3b8;font-size:12px;">All orders have teams assigned</div>'; return; }
+    function statusBadge(s){
+      var st = s || 'Pending';
+      var cls = ({Pending:'nt-badge-pending',Cancelled:'nt-badge-cancelled',Completed:'nt-badge-completed',Rescheduled:'nt-badge-resched'})[st] || 'nt-badge-pending';
+      return '<span class="nt-status-badge '+cls+'">'+st.toUpperCase()+'</span>';
+    }
+    function borderColor(s){
+      return ({Pending:'#f59e0b',Cancelled:'#ef4444',Completed:'#16a34a',Rescheduled:'#f97316'})[s||'Pending'] || '#f59e0b';
+    }
+    list.innerHTML = noTeam.slice(0,150).map(function(o){
+      return '<div class="no-teams-card" style="border-left:3px solid '+borderColor(o.status)+';">'
+        +'<div class="no-teams-acct"><span>'+(o.jo_number||'—')+'</span>'+statusBadge(o.status)+'</div>'
         +'<div class="no-teams-name">'+(o.customer_name||'—')+'</div>'
         +'<div class="no-teams-loc">'+(o.barangay||'')+(o.municipality?', '+o.municipality:'')+'</div>'
         +'<div class="no-teams-addr">'+(o.address||'')+'</div>'
+        +'<button class="no-teams-assign-btn" onclick="openAssignTeamModal(\''+o.id+'\',\'ni\')">+ Assign team</button>'
         +'</div>';
     }).join('');
   }
@@ -5158,8 +5173,11 @@
     e.target.value = '';
   });
 
-  window.openAssignTeamModal = function(recordId) {
-    pendingAssignRecord = migData.find(function(r){ return String(r.id) === String(recordId); });
+  var assignContext = 'mig';
+  window.openAssignTeamModal = function(recordId, ctx) {
+    assignContext = ctx || 'mig';
+    var pool = assignContext === 'ni' ? allOrders : migData;
+    pendingAssignRecord = pool.find(function(r){ return String(r.id) === String(recordId); });
     if (!pendingAssignRecord) return;
 
     var teamSelect = document.getElementById('assignTeamSelect');
@@ -5192,11 +5210,46 @@
     if (!pendingAssignRecord) return;
 
     var personnelStr = p1Val + (p2Val ? ', '+p2Val : '');
+    var recId = pendingAssignRecord.id;
 
+    if (assignContext === 'ni') {
+      /* NI order — update job_orders by team_id (resolve team_number -> id) */
+      var teamObj = allTeams.find(function(t){ return t.team_number === teamVal; });
+      if (!db) {
+        /* demo mode: update in-memory so the UI reflects the change */
+        var rec = allOrders.find(function(o){ return String(o.id)===String(recId); });
+        if (rec) { rec.team_id = teamObj ? teamObj.id : teamVal; rec.team_number = teamVal; rec.personnel = personnelStr; }
+        showToast('✓ Team '+teamVal+' assigned!', 'success');
+        closeAssignTeamModal();
+        render(shown); summary(shown);
+        if (mapInitialized) updateMapData();
+        return;
+      }
+      try {
+        var upd = { personnel: personnelStr };
+        if (teamObj) upd.team_id = teamObj.id; else upd.team_number = teamVal;
+        var r1 = await db.from('job_orders').update(upd).eq('id', recId);
+        if (r1.error) throw r1.error;
+        showToast('✓ Team '+teamVal+' assigned!', 'success');
+        closeAssignTeamModal();
+        load();
+      } catch(err) { showToast('Error: '+err.message, 'error'); }
+      return;
+    }
+
+    /* Migration order */
+    if (!db) {
+      var mrec = migData.find(function(o){ return String(o.id)===String(recId); });
+      if (mrec) { mrec.team_number = teamVal; mrec.personnel = personnelStr; }
+      showToast('✓ Team '+teamVal+' assigned!', 'success');
+      closeAssignTeamModal();
+      renderMigPage(currentMigPage);
+      return;
+    }
     try {
       var { error } = await db.from(MIG_TABLE)
         .update({ team_number: teamVal, personnel: personnelStr })
-        .eq('id', pendingAssignRecord.id);
+        .eq('id', recId);
       if (error) throw error;
       showToast('✓ Team '+teamVal+' assigned!', 'success');
       closeAssignTeamModal();
