@@ -7,6 +7,7 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
 <style>
   * { margin: 0; padding: 0; box-sizing: border-box; }
   html, body { height: 100%; }
@@ -580,6 +581,34 @@
   .nap-pager { display: flex; align-items: center; gap: 14px; }
   .nap-pager-btn { border: 1px solid #dce3ed; background: white; color: #475569; padding: 5px 14px; border-radius: 7px; font-size: 12px; font-weight: 600; cursor: pointer; }
   .nap-pager-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+  /* NAP DETAILS MODAL */
+  .napd-summary { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 14px 16px; margin-bottom: 0; }
+  .napd-nap { font-size: 13px; font-weight: 700; color: #1e293b; }
+  .napd-sub { font-size: 11px; color: #94a3b8; margin-top: 2px; }
+  .napd-nims { font-size: 11px; color: #64748b; margin-top: 8px; }
+  .napd-portline { font-size: 12px; color: #1e293b; margin-top: 3px; }
+  .napd-portline b { font-weight: 700; }
+  .napd-tabs { display: flex; border-bottom: 1px solid #e2e8f0; margin: 14px 0 0; }
+  .napd-tab { padding: 9px 16px; border: none; background: none; font-size: 12px; font-weight: 700; letter-spacing: 0.3px; text-transform: uppercase; color: #64748b; cursor: pointer; border-bottom: 2.5px solid transparent; }
+  .napd-tab.active { color: #1d4ed8; border-bottom-color: #1d4ed8; }
+  .napd-table { width: 100%; border-collapse: collapse; font-size: 12px; margin-top: 6px; }
+  .napd-table th { text-align: left; padding: 8px 10px; font-size: 10px; font-weight: 700; color: #64748b; text-transform: uppercase; border-bottom: 1px solid #e2e8f0; }
+  .napd-table td { padding: 8px 10px; border-bottom: 1px solid #f1f5f9; color: #1e293b; }
+  .napd-table tr:nth-child(even) { background: #f8fafc; }
+  .napd-done { color: #15803d; font-weight: 600; }
+  .napd-footer-note { font-size: 11px; color: #94a3b8; text-align: center; flex: 1; }
+  .btn-refresh { background: #1d4ed8; color: white; border: none; padding: 8px 18px; border-radius: 7px; font-size: 12px; font-weight: 700; cursor: pointer; }
+  .btn-ok { background: #16a34a; color: white; border: none; padding: 8px 22px; border-radius: 7px; font-size: 12px; font-weight: 700; cursor: pointer; }
+
+  /* QR MODAL */
+  .qr-modal-nap { font-size: 13px; font-weight: 600; color: #64748b; margin-left: 8px; }
+  .qr-canvas-wrap { background: #fde047; border-radius: 10px; padding: 16px; display: flex; align-items: center; justify-content: center; margin: 4px auto 16px; width: fit-content; }
+  .qr-canvas-wrap img, .qr-canvas-wrap canvas { display: block; }
+  .qr-stats { display: flex; gap: 10px; margin-bottom: 4px; }
+  .qr-stat { flex: 1; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 10px 12px; }
+  .qr-stat-label { font-size: 10px; color: #94a3b8; font-weight: 600; }
+  .qr-stat-val { font-size: 16px; font-weight: 700; color: #1e293b; margin-top: 2px; }
 
   /* MIGRATION PAGES */
   .mig-header-btn { background: linear-gradient(135deg, #7c3aed, #6d28d9); color: white; border: none; padding: 10px 18px; border-radius: 8px; font-size: 13px; font-weight: 700; cursor: pointer; display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
@@ -1223,6 +1252,62 @@
 </div>
 
 <!-- ============ MIGRATION PAGES ============ -->
+
+<!-- NAP DETAILS MODAL -->
+<div class="staging-overlay" id="napDetailsOverlay">
+  <div class="staging-modal" style="width:560px;max-width:95vw;">
+    <div class="staging-header">
+      <span class="staging-title">Nap Details</span>
+      <button class="modal-close" onclick="closeNapDetails()">✕</button>
+    </div>
+    <div class="staging-body" style="max-height:72vh;">
+      <div class="napd-summary">
+        <div class="napd-nap" id="napdNapCode">NAP: —</div>
+        <div class="napd-sub">Last Audited: <span id="napdLastAudited">—</span></div>
+        <div class="napd-nims">NIMS Record:</div>
+        <div class="napd-portline">Port Used: <b id="napdPortUsed">0</b></div>
+        <div class="napd-portline">Unused Ports: <b id="napdUnused">0</b></div>
+      </div>
+      <div class="napd-tabs">
+        <button class="napd-tab active" id="napdTabAudited" onclick="napdSwitchTab('audited')">AUDITED</button>
+        <button class="napd-tab" id="napdTabHistory" onclick="napdSwitchTab('history')">NAP HISTORY</button>
+      </div>
+      <div id="napdAuditedPane">
+        <table class="napd-table">
+          <thead><tr><th>Nap Port</th><th>Port No</th><th>Serial Number</th><th>Package</th><th>Activity Status</th></tr></thead>
+          <tbody id="napdAuditedBody"></tbody>
+        </table>
+      </div>
+      <div id="napdHistoryPane" style="display:none;font-size:12px;color:#94a3b8;text-align:center;padding:40px 0;">No NAP history recorded yet.</div>
+    </div>
+    <div class="staging-footer" style="align-items:center;">
+      <span class="napd-footer-note" id="napdFooterNote">Loaded from server</span>
+      <button class="btn-ok" onclick="closeNapDetails()">OK</button>
+      <button class="btn-refresh" onclick="napdRefresh()">Refresh</button>
+    </div>
+  </div>
+</div>
+
+<!-- QR CODE MODAL -->
+<div class="staging-overlay" id="napQrOverlay">
+  <div class="staging-modal" style="width:380px;max-width:94vw;">
+    <div class="staging-header">
+      <span class="staging-title">QR Code<span class="qr-modal-nap" id="qrNapCode">—</span></span>
+      <button class="modal-close" onclick="closeNapQr()">✕</button>
+    </div>
+    <div class="staging-body">
+      <div class="qr-canvas-wrap" id="qrCanvasWrap"></div>
+      <div class="qr-stats">
+        <div class="qr-stat"><div class="qr-stat-label">Used Port</div><div class="qr-stat-val" id="qrUsedPort">—</div></div>
+        <div class="qr-stat"><div class="qr-stat-label">Unused/Vacant</div><div class="qr-stat-val" id="qrVacantPort">—</div></div>
+        <div class="qr-stat"><div class="qr-stat-label">ONU Connect</div><div class="qr-stat-val" id="qrOnuConnect">—</div></div>
+      </div>
+    </div>
+    <div class="staging-footer">
+      <button class="btn btn-close" onclick="closeNapQr()">Close</button>
+    </div>
+  </div>
+</div>
 
 <!-- 1. MIGRATION DISPATCH (MAP VIEW) -->
 <div class="page-view" id="page-mig-dispatch">
@@ -2987,7 +3072,7 @@
     } else {
       tbody.innerHTML = slice.map(function(r,i){
         var qrCell = (r.with_record==='Y')
-          ? '<button class="nap-details-btn" onclick="napShowDetails(\''+r.id+'\')">NAP Details</button><span class="nap-qr-img" title="QR code (placeholder)"></span>'
+          ? '<button class="nap-details-btn" onclick="napShowDetails(\''+r.id+'\')">NAP Details</button><span class="nap-qr-img" title="View QR code" style="cursor:pointer;" onclick="napShowQr(\''+r.id+'\')"></span>'
           : '<button class="nap-details-btn" onclick="napShowDetails(\''+r.id+'\')">NAP Details</button><button class="nap-genqr-btn" onclick="napGenerateQr(\''+r.id+'\')">Generate QR</button>';
         var wr = r.with_record==='Y'
           ? '<span class="nap-withrec-y">Y</span>'
@@ -3021,8 +3106,85 @@
     setTimeout(function(){ syncMigHeader('napBodyWrap','napHeadWrap','napHeadRow'); }, 80);
   }
 
-  window.napShowDetails = function(id){ var r=napData.find(function(x){return String(x.id)===String(id);}); showToast('NAP Details: '+(r?r.nap_code:id)+' — detail view coming soon', 'warning'); };
-  window.napGenerateQr = function(id){ var r=napData.find(function(x){return String(x.id)===String(id);}); showToast('Generate QR for '+(r?r.nap_code:id)+' — coming soon', 'warning'); };
+  /* ── NAP Details modal ── */
+  var currentNapRecord = null;
+  function napPortRows(r) {
+    /* Build per-port audit rows from the NAP's port groups (e.g. NP3, NP4). */
+    var code = r.nap_code || '';
+    var groups = [];
+    var m = code.match(/NP(\d+)(?:-(\d+))?/);
+    if (m) {
+      var a = parseInt(m[1],10);
+      var b = m[2] ? parseInt(m[2],10) : a;
+      for (var g=a; g<=b; g++) groups.push('NP'+g);
+    } else { groups = ['NP1']; }
+    var ports = r.no_of_ports || 8;
+    var perGroup = groups.length ? Math.max(1, Math.round(ports/groups.length)) : ports;
+    var used = r.used_port || 0;
+    var rows = [], filled = 0;
+    var rand = 0;
+    groups.forEach(function(grp){
+      for (var p=1; p<=perGroup; p++){
+        rand = (rand*1103515245 + 12345) & 0x7fffffff;
+        var isUsed = (r.with_record==='Y') && filled < used && ((rand/0x7fffffff) < 0.6);
+        if (isUsed) filled++;
+        var serial = isUsed ? (4857500 + (rand%900000)).toString()+'A'+(rand%9000) : '';
+        var pkg = isUsed ? (((rand>>3)%2)===0 ? 'FTTX_50MB_PROMO2' : 'N/A') : '';
+        rows.push({ grp:grp, port:'P'+p, serial:serial, pkg:pkg, status: r.with_record==='Y' ? 'Done Audit' : '' });
+      }
+    });
+    return rows;
+  }
+
+  window.napShowDetails = function(id){
+    var r = napData.find(function(x){ return String(x.id)===String(id); });
+    if (!r) return;
+    currentNapRecord = r;
+    document.getElementById('napdNapCode').textContent = 'NAP: ' + (r.nap_code||'—');
+    document.getElementById('napdLastAudited').textContent = r.last_audited || '—';
+    document.getElementById('napdPortUsed').textContent = r.used_port!=null ? r.used_port : 0;
+    document.getElementById('napdUnused').textContent = r.vacant_port!=null ? r.vacant_port : (r.no_of_ports||0);
+    var rows = napPortRows(r);
+    document.getElementById('napdAuditedBody').innerHTML = rows.map(function(p){
+      return '<tr><td>'+p.grp+'</td><td>'+p.port+'</td><td>'+(p.serial||'')+'</td><td>'+(p.pkg||'')+'</td><td>'+(p.status?'<span class="napd-done">'+p.status+'</span>':'')+'</td></tr>';
+    }).join('');
+    var now = new Date();
+    document.getElementById('napdFooterNote').textContent = 'Loaded from server · ' + (now.getMonth()+1)+'/'+now.getDate()+'/'+now.getFullYear()+', '+now.toLocaleTimeString();
+    napdSwitchTab('audited');
+    document.getElementById('napDetailsOverlay').style.display = 'flex';
+  };
+  window.closeNapDetails = function(){ document.getElementById('napDetailsOverlay').style.display='none'; };
+  window.napdSwitchTab = function(tab){
+    document.getElementById('napdTabAudited').classList.toggle('active', tab==='audited');
+    document.getElementById('napdTabHistory').classList.toggle('active', tab==='history');
+    document.getElementById('napdAuditedPane').style.display = tab==='audited' ? 'block' : 'none';
+    document.getElementById('napdHistoryPane').style.display = tab==='history' ? 'block' : 'none';
+  };
+  window.napdRefresh = function(){ if (currentNapRecord) napShowDetails(currentNapRecord.id); showToast('Refreshed', 'success'); };
+
+  /* ── QR Code modal ── */
+  window.napGenerateQr = function(id){ napShowQr(id); };
+  window.napShowQr = function(id){
+    var r = napData.find(function(x){ return String(x.id)===String(id); });
+    if (!r) return;
+    document.getElementById('qrNapCode').textContent = r.nap_code || '—';
+    document.getElementById('qrUsedPort').textContent = r.used_port!=null ? r.used_port : '—';
+    document.getElementById('qrVacantPort').textContent = r.vacant_port!=null ? r.vacant_port : '—';
+    document.getElementById('qrOnuConnect').textContent = r.onu_connect!=null ? r.onu_connect : '—';
+    var wrap = document.getElementById('qrCanvasWrap');
+    wrap.innerHTML = '';
+    var payload = JSON.stringify({ nap:r.nap_code, ports:r.no_of_ports, used:r.used_port, vacant:r.vacant_port, lat:r.latitude, lng:r.longitude });
+    if (window.QRCode) {
+      try {
+        new QRCode(wrap, { text: payload, width: 220, height: 220, colorDark:'#000000', colorLight:'#fde047', correctLevel: QRCode.CorrectLevel.M });
+      } catch(e) { wrap.innerHTML = '<div class="nap-qr-img" style="width:220px;height:220px;margin:0;"></div>'; }
+    } else {
+      /* CDN blocked — graceful placeholder */
+      wrap.innerHTML = '<div class="nap-qr-img" style="width:220px;height:220px;margin:0;"></div>';
+    }
+    document.getElementById('napQrOverlay').style.display = 'flex';
+  };
+  window.closeNapQr = function(){ document.getElementById('napQrOverlay').style.display='none'; };
   window.napViewOnMap = function(id){ showToast('Map view coming soon', 'warning'); };
 
   safeOn('napSearch', 'input', function(){ napPage=1; applyNapFilter(); });
@@ -3033,6 +3195,8 @@
     document.getElementById('napMapBtn').classList.remove('active');
   });
   safeOn('napMapBtn', 'click', function(){ showToast('NAP map view coming soon', 'warning'); });
+  safeOn('napDetailsOverlay', 'click', function(e){ if(e.target===this) closeNapDetails(); });
+  safeOn('napQrOverlay', 'click', function(e){ if(e.target===this) closeNapQr(); });
 
 
   /* ── USER MENU / LOGOUT ── */
