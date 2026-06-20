@@ -869,8 +869,8 @@
         <button class="demo-login-pick" data-u="fborja">Manager · All</button>
         <button class="demo-login-pick" data-u="ncrdisp">Dispatch · NCR</button>
         <button class="demo-login-pick" data-u="cavenc">Encoder · Cavite</button>
-        <button class="demo-login-pick" data-u="panaysa">Sales · Panay</button>
-        <button class="demo-login-pick" data-u="admin">Admin</button>
+        <button class="demo-login-pick" data-u="salesadm">Sales Admin · All</button>
+        <button class="demo-login-pick" data-u="developer">Developer</button>
       </div>
     </div>
     <!-- END DEMO QUICK-LOGIN -->
@@ -2813,17 +2813,17 @@
      The rest of the app reads `currentUser` to filter data (by region) and gate UI (by role).
      These are in-memory demo users for now; later they come from a Supabase `users` table + RLS. */
   var USERS = [
-    { username: 'admin',   password: 'best2026', name: 'Admin',        initials: 'AD', region: 'ALL',       role: 'admin' },
+    { username: 'developer', password: 'best2026', name: 'Developer',    initials: 'DV', region: 'ALL',       role: 'developer' },
     { username: 'fborja',  password: 'best2026', name: 'F. Borja',     initials: 'FB', region: 'ALL',       role: 'manager' },
     { username: 'ncrdisp', password: 'best2026', name: 'NCR Dispatch', initials: 'ND', region: 'NCR_RIZAL', role: 'dispatch' },
     { username: 'cavenc',  password: 'best2026', name: 'Cavite Encoder', initials: 'CE', region: 'CAVITE',  role: 'encoder' },
-    { username: 'panaysa', password: 'best2026', name: 'Panay Sales',  initials: 'PS', region: 'PANAY',     role: 'sales_admin' },
-    { username: 'joseph',  password: 'best2026', name: 'Joseph',       initials: 'JO', region: 'ALL',       role: 'admin' }
+    { username: 'salesadm', password: 'best2026', name: 'Sales Admin', initials: 'SA', region: 'ALL',       role: 'sales_admin' },
+    { username: 'joseph',  password: 'best2026', name: 'Joseph',       initials: 'JO', region: 'ALL',       role: 'developer' }
   ];
 
   /* Human-readable labels for regions and roles (used in the UI). */
   var REGION_LABELS = { ALL: 'All Regions', NCR_RIZAL: 'NCR / Rizal', CAVITE: 'Cavite', PANAY: 'Panay' };
-  var ROLE_LABELS   = { admin:'Administrator', manager:'Manager / Supervisor', dispatch:'Dispatch', sales_admin:'Sales Admin', encoder:'Encoder', tl:'Team Leader', agent:'Agent', subcon:'Subcon' };
+  var ROLE_LABELS   = { developer:'Developer', manager:'Manager / Supervisor', dispatch:'Dispatch', sales_admin:'Sales Admin (view-only)', encoder:'Encoder', tl:'Team Leader', agent:'Agent', subcon:'Subcon' };
 
   /* The single source of truth for "who is logged in right now". Null = logged out. */
   var currentUser = null;
@@ -2905,10 +2905,12 @@
   /* Which roles are allowed each capability. Edit this table to change the rules —
      it mirrors the permissions matrix in the checklist. */
   var ROLE_CAPABILITIES = {
-    admin:       ['view_dashboard','view_reports','edit_records','assign','update_status','import','manage_users','all_regions'],
-    manager:     ['view_dashboard','view_reports','edit_records','assign','update_status','import'],
+    developer:   ['view_dashboard','view_reports','edit_records','assign','update_status','import','manage_users','all_regions','edit_sales_remarks'],
+    manager:     ['view_dashboard','view_reports','edit_records','assign','update_status','import','edit_sales_remarks'],
     dispatch:    ['view_dashboard','view_reports','assign','update_status'],
-    sales_admin: ['view_dashboard','view_reports','edit_records'],
+    /* Sales Admin: views everything (all regions) but cannot change operational data.
+       Their only write power is leaving a Sales Admin Remark on a record. */
+    sales_admin: ['view_dashboard','view_reports','edit_sales_remarks'],
     encoder:     ['view_dashboard','edit_records','import'],
     tl:          ['view_dashboard','update_status'],
     agent:       ['view_dashboard','update_status'],
@@ -4179,8 +4181,45 @@
       +row('Municipality', o.municipality)
       +row('Barangay', o.barangay)
       +row('Address', o.address)
+      +salesRemarksSection(o)
       +'</div>';
   }
+
+  /* Sales Admin Remarks block — editable only if the role has edit_sales_remarks
+     (developer / manager / sales_admin); everyone else sees it read-only. */
+  function salesRemarksSection(o) {
+    var title = '<div class="layer-section-title" style="margin-top:14px;">Sales Admin Remarks</div>';
+    var existing = o.sales_remarks || '';
+    if (can('edit_sales_remarks')) {
+      return title
+        + '<textarea id="salesRemarksInput" placeholder="Add a sales remark…" '
+        + 'style="width:100%;min-height:60px;border:1px solid #cbd5e1;border-radius:8px;padding:8px;font-size:12px;font-family:inherit;resize:vertical;box-sizing:border-box;">'
+        + (existing.replace(/</g,'&lt;')) + '</textarea>'
+        + '<button class="no-teams-assign-btn" style="margin-top:6px;" onclick="saveSalesRemarks(\''+o.id+'\')">Save Remark</button>';
+    }
+    /* read-only view */
+    return title
+      + '<div style="font-size:12px;color:'+(existing?'#1e293b':'#94a3b8')+';background:#f8fafc;border:1px solid #eef2f7;border-radius:8px;padding:8px;">'
+      + (existing ? existing.replace(/</g,'&lt;') : 'No sales remarks.') + '</div>';
+  }
+
+  /* Save a sales remark onto the record. In demo mode this updates memory;
+     with a real DB it writes the sales_remarks column on job_orders. */
+  window.saveSalesRemarks = async function(recordId) {
+    if (!can('edit_sales_remarks')) { showToast('You do not have permission to do that', 'warning'); return; }
+    var input = document.getElementById('salesRemarksInput');
+    if (!input) return;
+    var text = input.value.trim();
+    var rec = allOrders.find(function(x){ return String(x.id) === String(recordId); });
+    if (rec) rec.sales_remarks = text;            /* update in-memory so the UI reflects it */
+    if (db && !DEMO_MODE) {
+      try {
+        var r = await db.from('job_orders').update({ sales_remarks: text }).eq('id', recordId);
+        if (r.error) throw r.error;
+      } catch(err) { showToast('Error saving: '+err.message, 'error'); return; }
+    }
+    showToast('✓ Sales remark saved', 'success');
+  };
 
   /* No Teams list — pending NI orders with no team assigned */
   function buildNiNoTeams() {
