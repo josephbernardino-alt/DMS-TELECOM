@@ -583,6 +583,34 @@
   @media (max-width: 1100px) { .reports-grid { grid-template-columns: repeat(2, 1fr); } }
   @media (max-width: 700px) { .reports-grid { grid-template-columns: 1fr; } }
 
+  /* ── TEAM LEADER lean view ── */
+  /* Collapsed KPI bar: a single tappable summary line for the TL */
+  .tl-kpi-bar { display: none; align-items: center; justify-content: space-between; gap: 10px; background: white; border-bottom: 1px solid #e5eaf2; padding: 10px 14px; cursor: pointer; font-size: 13px; }
+  .tl-kpi-bar .tl-kpi-stats { display: flex; gap: 12px; font-weight: 700; }
+  .tl-kpi-bar .tl-kpi-stats span { display: inline-flex; align-items: center; gap: 4px; }
+  .tl-kpi-dot { width: 9px; height: 9px; border-radius: 50%; display: inline-block; }
+  .tl-kpi-chevron { color: #94a3b8; font-size: 12px; transition: transform 0.2s; }
+  /* When TL view active: hide the big cards by default, show the bar */
+  body.tl-view .summary-row { display: none; }
+  body.tl-view .summary-row.tl-expanded { display: flex; }
+  body.tl-view .tl-kpi-bar { display: flex; }
+  body.tl-view #tableBodyWrap, body.tl-view .table-head-wrap { display: none; }
+  body.tl-view #tlCardList { display: block !important; }
+
+  .tl-card { background: white; border: 1px solid #e5eaf2; border-left: 4px solid #94a3b8; border-radius: 12px; padding: 12px 14px; margin-bottom: 10px; box-shadow: 0 1px 4px rgba(15,23,42,0.05); }
+  .tl-card-top { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+  .tl-card-name { font-weight: 800; font-size: 14px; color: #1e293b; }
+  .tl-card-jo { font-size: 11px; color: #94a3b8; }
+  .tl-card-addr { font-size: 12px; color: #475569; margin-top: 6px; line-height: 1.4; }
+  .tl-card-meta { font-size: 11px; color: #94a3b8; margin-top: 4px; }
+  .tl-card-actions { display: flex; gap: 8px; margin-top: 10px; }
+  .tl-chat-btn { flex: 1; background: #1d4ed8; color: white; border: none; border-radius: 8px; padding: 9px; font-size: 13px; font-weight: 700; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px; }
+  .tl-chat-btn .tl-unread { background: #ef4444; color: white; border-radius: 50%; min-width: 18px; height: 18px; font-size: 10px; display: inline-flex; align-items: center; justify-content: center; padding: 0 4px; }
+  .tl-card.s-completed, .tl-card.s-done { border-left-color: #16a34a; }
+  .tl-card.s-pending { border-left-color: #f59e0b; }
+  .tl-card.s-rescheduled { border-left-color: #f97316; }
+  .tl-card.s-cancelled { border-left-color: #ef4444; }
+
   /* ═══════════ MOBILE / PHONE LAYOUT ═══════════
      The TL uses a phone in the field. On narrow screens we restack the desktop
      layout. Key fix: the desktop navbar is position:fixed at 52px tall with a
@@ -1057,6 +1085,16 @@
 </div>
 
 <!-- KPI CARDS -->
+<!-- TL collapsed KPI bar (only shows in TL view) -->
+<div class="tl-kpi-bar" id="tlKpiBar" onclick="toggleTlKpi()">
+  <div class="tl-kpi-stats">
+    <span><span class="tl-kpi-dot" style="background:#f59e0b"></span><span id="tlkP">0</span></span>
+    <span><span class="tl-kpi-dot" style="background:#16a34a"></span><span id="tlkC">0</span></span>
+    <span><span class="tl-kpi-dot" style="background:#f97316"></span><span id="tlkR">0</span></span>
+    <span><span class="tl-kpi-dot" style="background:#ef4444"></span><span id="tlkX">0</span></span>
+  </div>
+  <span class="tl-kpi-chevron" id="tlKpiChevron">▾ tap for details</span>
+</div>
 <div class="summary-row sticky-top">
   <button class="new-install-btn">
     <span class="ni-left"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M2 12h20M12 2a15 15 0 010 20M12 2a15 15 0 000 20"/></svg> NEW INSTALLATION</span>
@@ -1128,6 +1166,8 @@
       </tbody>
     </table>
   </div>
+  <!-- TEAM LEADER card list (shown instead of the table for TL role) -->
+  <div id="tlCardList" style="display:none;padding:10px;"></div>
 </div>
 
 <!-- FOOTER -->
@@ -2630,6 +2670,7 @@
   function render(data) {
     shown = data;
     if (typeof seedChatsForRecords === 'function') seedChatsForRecords(data);
+    if (currentUser && currentUser.role === 'tl') renderTlCards(data);
     var tbody = document.getElementById('tableBody');
     if (!data.length) {
       tbody.innerHTML = '<tr class="loading-row"><td colspan="18">No job orders found for '+fmtDate(dateFrom)+'</td></tr>';
@@ -3136,6 +3177,8 @@
     if (badge) {
       badge.textContent = (ROLE_LABELS[currentUser.role]||currentUser.role) + ' · ' + (REGION_LABELS[currentUser.region]||currentUser.region);
     }
+    /* Team Leaders get a lean, phone-friendly view (collapsed KPIs + client cards). */
+    document.body.classList.toggle('tl-view', currentUser.role === 'tl');
   }
 
 
@@ -3565,6 +3608,55 @@
   };
   safeOn('reportOverlay', 'click', function(e){ if(e.target===this) closeReport(); });
 
+
+  /* ════════════ TEAM LEADER LEAN VIEW ════════════ */
+  function renderTlCards(data) {
+    var box = document.getElementById('tlCardList');
+    if (!box) return;
+    if (!data || !data.length) {
+      box.innerHTML = '<div style="text-align:center;color:#94a3b8;font-size:13px;padding:40px 0;">No job orders for your team today.</div>';
+      updateTlKpiBar(data||[]);
+      return;
+    }
+    box.innerHTML = data.map(function(o){
+      var st = o.status || 'Pending';
+      var sClass = 's-' + st.toLowerCase();
+      var chatN = chatThread(o.id).filter(function(m){return !m.read;}).length;
+      var args = "'"+o.id+"','"+(o.jo_number||'')+"','"+(o.customer_name||'').replace(/'/g,'')+"','"+(o.dispatch_date||'')+"','"+st+"'";
+      return '<div class="tl-card '+sClass+'">'
+        +'<div class="tl-card-top">'
+          +'<span class="tl-card-name">'+(o.customer_name||'—')+'</span>'
+          +migStatusBadge(st)
+        +'</div>'
+        +'<div class="tl-card-jo">JO '+(o.jo_number||'—')+' · '+(o.account_number||'')+'</div>'
+        +'<div class="tl-card-addr">◉ '+(o.address||o.barangay||'')+(o.municipality?', '+o.municipality:'')+'</div>'
+        +'<div class="tl-card-meta">Team '+(o.team_number||'—')+' · '+(o.personnel||'no personnel')+'</div>'
+        +'<div class="tl-card-actions">'
+          +'<button class="tl-chat-btn" onclick="openChat('+args+')">💬 Chat / Update'
+            +(chatN>0?' <span class="tl-unread">'+chatN+'</span>':'')+'</button>'
+        +'</div>'
+      +'</div>';
+    }).join('');
+    updateTlKpiBar(data);
+  }
+
+  function updateTlKpiBar(data) {
+    function c(fn){ return (data||[]).filter(fn).length; }
+    var p = c(function(r){var s=r.status||'Pending'; return s==='Pending';});
+    var done = c(function(r){var s=r.status||''; return s==='Completed'||s==='Done'||s==='Visited';});
+    var re = c(function(r){return r.status==='Rescheduled';});
+    var x = c(function(r){return r.status==='Cancelled';});
+    var set=function(id,v){var e=document.getElementById(id); if(e) e.textContent=v;};
+    set('tlkP',p); set('tlkC',done); set('tlkR',re); set('tlkX',x);
+  }
+
+  window.toggleTlKpi = function() {
+    var row = document.querySelector('#page-dashboard .summary-row');
+    var chev = document.getElementById('tlKpiChevron');
+    if (!row) return;
+    var open = row.classList.toggle('tl-expanded');
+    if (chev) chev.textContent = open ? '▴ tap to hide' : '▾ tap for details';
+  };
 
   /* ════════════ JOB-ORDER CHAT ════════════
      A chat is just a list of messages tied to one job order. Data shape per message:
