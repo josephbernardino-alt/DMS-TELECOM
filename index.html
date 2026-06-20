@@ -2599,7 +2599,7 @@
         : (r.status?'<span class="status-badge '+sBadge(r.status)+'">'+r.status+'</span>':'—');
       html += '<tr data-idx="'+i+'">'
         +'<td class="count-cell">'+(i+1)+'</td>'
-        +'<td style="text-align:center">'+(r.chat_count>0?'<div class="chat-badge clickable" onclick="openChat(\''+r.id+'\',\''+(r.jo_number||'')+'\',\''+(r.customer_name||'').replace(/\x27/g,"")+'\',\''+(r.dispatch_date||'')+'\',\''+(r.status||'')+'\')">'+r.chat_count+'</div>':'<span class="chat-zero" onclick="openChat(\''+r.id+'\',\''+(r.jo_number||'')+'\',\''+(r.customer_name||'').replace(/\x27/g,"")+'\',\''+(r.dispatch_date||'')+'\',\''+(r.status||'')+'\')">0</span>')+'</td>'
+        +'<td style="text-align:center">'+(r.chat_count>0?'<div class="chat-badge clickable" onclick="event.stopPropagation();openChat(\''+r.id+'\',\''+(r.jo_number||'')+'\',\''+(r.customer_name||'').replace(/\x27/g,"")+'\',\''+(r.dispatch_date||'')+'\',\''+(r.status||'')+'\')">'+r.chat_count+'</div>':'<span class="chat-zero" onclick="event.stopPropagation();openChat(\''+r.id+'\',\''+(r.jo_number||'')+'\',\''+(r.customer_name||'').replace(/\x27/g,"")+'\',\''+(r.dispatch_date||'')+'\',\''+(r.status||'')+'\')">0</span>')+'</td>'
         +'<td style="white-space:nowrap">'+v(r.dispatch_date)+'</td>'
         +'<td>'+(r.gofib_status?'<span class="status-badge '+gBadge(r.gofib_status)+'">'+r.gofib_status+'</span>':'—')+'</td>'
         +'<td><span class="jo-link '+(tn?'has-team':'no-team')+'">'+v(r.jo_number)+'</span></td>'
@@ -2750,6 +2750,10 @@
 
   /* ── ROW CLICK ── */
   safeOn('tableBody', 'click', function(e){
+    /* If the click came from the chat bubble/cell, let openChat handle it alone —
+       don't also open the job-order detail modal. (Event bubbling would otherwise
+       fire both: the bubble's onclick AND this row handler.) */
+    if (e.target.closest('.chat-badge') || e.target.closest('.chat-zero')) return;
     var tr=e.target.closest('tr');
     if(!tr||!tr.dataset.idx)return;
     var idx=parseInt(tr.dataset.idx,10);
