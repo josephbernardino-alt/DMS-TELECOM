@@ -596,6 +596,8 @@
   body.tl-view .tl-kpi-bar { display: flex; }
   body.tl-view #tableBodyWrap, body.tl-view .table-head-wrap { display: none; }
   body.tl-view #tlCardList { display: block !important; }
+  /* Hide nav items a Team Leader doesn't need (NI/Migration/NAP menus, view-adjust eye) */
+  body.tl-view .tl-hide { display: none !important; }
 
   .tl-card { background: white; border: 1px solid #e5eaf2; border-left: 4px solid #94a3b8; border-radius: 12px; padding: 12px 14px; margin-bottom: 10px; box-shadow: 0 1px 4px rgba(15,23,42,0.05); }
   .tl-card-top { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
@@ -976,7 +978,7 @@
   <span class="nav-sep">|</span>
   <span id="navDate" style="color:rgba(255,255,255,0.8);font-size:12px;white-space:nowrap;"></span>
   <div class="nav-spacer"></div>
-  <div class="nav-dropdown">
+  <div class="nav-dropdown tl-hide">
     <button class="nav-btn" id="niBtn">New Installation ▾</button>
     <div class="nav-menu" id="niMenu">
       <div class="nav-menu-item active" data-page="dashboard" data-view="map">NI Dashboard</div>
@@ -984,7 +986,7 @@
       <div class="nav-menu-item" data-page="dashboard" data-view="table">For Dispatch</div>
     </div>
   </div>
-  <div class="nav-dropdown">
+  <div class="nav-dropdown tl-hide">
     <button class="nav-btn" id="migBtn">Migration ▾</button>
     <div class="nav-menu" id="migMenu">
       <div class="nav-menu-item" data-migpage="dispatch">Migration Dispatch</div>
@@ -996,7 +998,7 @@
     </div>
   </div>
   <button class="nav-btn" id="reportsBtn" data-cap="view_reports">Reports</button>
-  <button class="nav-btn" id="napLocatorBtn">NAP Locator</button>
+  <button class="nav-btn tl-hide" id="napLocatorBtn">NAP Locator</button>
   <div style="position:relative;">
     <button class="nav-btn" id="notifBtn" style="position:relative;">🔔 <span class="notif-badge" id="notifBadge">0</span></button>
     <div class="notif-panel" id="notifPanel">
@@ -1010,7 +1012,7 @@
       <div class="notif-footer"><a onclick="closeNotifPanel()">View all messages</a></div>
     </div>
   </div>
-  <div style="position:relative;">
+  <div style="position:relative;" class="tl-hide">
     <button class="nav-btn" id="densityBtn">👁</button>
     <div class="density-menu" id="densityMenu">
       <div class="density-item active" data-density="normal">
