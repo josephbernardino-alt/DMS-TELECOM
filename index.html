@@ -583,6 +583,47 @@
   @media (max-width: 1100px) { .reports-grid { grid-template-columns: repeat(2, 1fr); } }
   @media (max-width: 700px) { .reports-grid { grid-template-columns: 1fr; } }
 
+  /* ═══════════ MOBILE / PHONE LAYOUT ═══════════
+     The TL uses a phone in the field. On narrow screens we restack the desktop
+     layout: navbar wraps, KPI cards go vertical, the filter bar stacks, and wide
+     tables scroll sideways with bigger touch targets. Same HTML, different layout. */
+  @media (max-width: 768px) {
+    /* Navbar: let the buttons wrap instead of overflowing off-screen */
+    .topnav { flex-wrap: wrap; height: auto; padding: 8px 10px; gap: 6px; }
+    .nav-center, .nav-right { width: 100%; justify-content: flex-start; flex-wrap: wrap; }
+    .nav-btn, .nav-dropdown > .nav-btn { font-size: 12px; padding: 7px 10px; }
+    .logo-text { font-size: 14px; }
+    .nav-clock { font-size: 11px; }
+
+    /* KPI cards: stack vertically, full width, so numbers stay readable */
+    .summary-row, .mig-kpi-strip { flex-direction: column; gap: 8px; padding: 10px; }
+    .sum-card, .mig-kpi, .new-install-btn { min-width: 0; width: 100%; }
+    .sum-count, .mig-kpi-count { font-size: 26px; }
+
+    /* Filter bar: stack the search + date controls */
+    .filterbar { flex-wrap: wrap; gap: 6px; padding: 8px 10px; }
+    .search-wrap, .search-input { width: 100%; }
+    .filter-spacer { display: none; }
+
+    /* Tables: keep them usable by allowing horizontal scroll + momentum on iOS */
+    .table-body-wrap, .table-head-wrap, .mig-body-wrap, .mig-head-wrap,
+    #napBodyWrap, #napHeadWrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+
+    /* Map pages: the side panels stack under the map instead of squeezing it */
+    #migMapContainer, .map-shell { flex-direction: column; }
+    .map-sidebar-right, .map-sidebar-left { width: 100%; max-height: 320px; border-left: none; border-top: 1px solid #e5eaf2; }
+    #leafletMap, #migLeafletMap { min-height: 300px; }
+
+    /* Modals: nearly full-width on a phone */
+    .staging-modal { width: 96vw !important; }
+
+    /* Bigger tap targets for thumbs */
+    .view-btn, .today-btn, .date-nav, .nav-btn { min-height: 38px; }
+
+    /* Demo login buttons wrap nicely */
+    #demoQuickLogin .demo-login-pick { font-size: 12px; padding: 7px 12px; }
+  }
+
 
   /* ===== NAP LOCATOR PAGE ===== */
   .nap-kpi-strip { display: flex; gap: 14px; padding: 14px 20px; background: white; border-bottom: 1px solid #e5eaf2; flex-wrap: wrap; align-items: stretch; }
@@ -2519,7 +2560,7 @@
     document.getElementById('tableBody').innerHTML =
       '<tr class="loading-row"><td colspan="18"><span class="spinner"></span>Loading job orders for '+fmtDate(dateFrom)+'...</td></tr>';
     if (!db) {
-      if (DEMO_MODE) { seedDemoTeams(); allOrders = filterByRegion(demoJobsForRange(dateFrom,dateTo)); shown = allOrders; render(shown); summary(shown); updateDateLabel(); }
+      if (DEMO_MODE) { seedDemoTeams(); allOrders = scopeRecords(demoJobsForRange(dateFrom,dateTo)); shown = allOrders; render(shown); summary(shown); updateDateLabel(); }
       return;
     }
     try {
@@ -2542,14 +2583,14 @@
       if (r1.error) throw r1.error;
       allOrders = r1.data||[];
       if (DEMO_MODE && !allOrders.length) { seedDemoTeams(); allOrders = demoJobsForRange(dateFrom,dateTo); }
-      allOrders = filterByRegion(allOrders);   /* scope to the user's office/region */
+      allOrders = scopeRecords(allOrders);   /* scope to the user's office/region */
       shown = allOrders;
       render(shown); summary(shown); updateDateLabel();
       if (mapInitialized && document.getElementById('page-map').classList.contains('active')) updateMapData();
       document.getElementById('notifBadge').textContent = allOrders.filter(function(o){return o.status==='Pending';}).length;
     } catch(err) {
       if (DEMO_MODE) {
-        seedDemoTeams(); allOrders = filterByRegion(demoJobsForRange(dateFrom,dateTo)); shown = allOrders;
+        seedDemoTeams(); allOrders = scopeRecords(demoJobsForRange(dateFrom,dateTo)); shown = allOrders;
         render(shown); summary(shown); updateDateLabel();
       } else {
         document.getElementById('tableBody').innerHTML =
@@ -2876,6 +2917,7 @@
     { username: 'ncrdisp', password: 'best2026', name: 'NCR Dispatch', initials: 'ND', region: 'NCR_RIZAL', role: 'dispatch' },
     { username: 'cavenc',  password: 'best2026', name: 'Cavite Encoder', initials: 'CE', region: 'CAVITE',  role: 'encoder' },
     { username: 'salesadm', password: 'best2026', name: 'Sales Admin', initials: 'SA', region: 'ALL',       role: 'sales_admin' },
+    { username: 'tlcesar', password: 'best2026', name: 'TL Cesar',    initials: 'TC', region: 'NCR_RIZAL', role: 'tl', team: 'BEST-0034' },
     { username: 'joseph',  password: 'best2026', name: 'Joseph',       initials: 'JO', region: 'ALL',       role: 'developer' }
   ];
 
@@ -2990,6 +3032,22 @@
     return (records || []).filter(function(r) {
       return regionOf(r) === currentUser.region;
     });
+  }
+
+  /* Team scoping: if the user is tied to a specific team (e.g. a Team Leader),
+     they only see records for that team. Users with no `team` see everything.
+     Works the same way as filterByRegion — one narrow rule, applied at the source. */
+  function filterByTeam(records) {
+    if (!currentUser || !currentUser.team) return records;
+    return (records || []).filter(function(r) {
+      return r.team_number === currentUser.team;
+    });
+  }
+
+  /* Convenience: apply BOTH scopes (region then team) in one call, since most
+     data loads want both. A TL is region-scoped AND team-scoped. */
+  function scopeRecords(records) {
+    return filterByTeam(filterByRegion(records));
   }
 
   /* ── Municipality → Region mapping ──
@@ -4686,7 +4744,7 @@
   /* ── Load data ── */
   async function loadMigData(pg) {
     if (!db) {
-      if (DEMO_MODE) { migData = filterByRegion(demoMigForPage(pg)); renderMigPage(pg); }
+      if (DEMO_MODE) { migData = scopeRecords(demoMigForPage(pg)); renderMigPage(pg); }
       return;
     }
     try {
@@ -4705,11 +4763,11 @@
       if (r.error) throw r.error;
       migData = r.data || [];
       if (DEMO_MODE && !migData.length) migData = demoMigForPage(pg);
-      migData = filterByRegion(migData);   /* scope migration data to the user's region */
+      migData = scopeRecords(migData);   /* scope migration data to the user's region */
       renderMigPage(pg);
     } catch(err) {
       console.log('Migration load error:', err);
-      migData = DEMO_MODE ? filterByRegion(demoMigForPage(pg)) : [];
+      migData = DEMO_MODE ? scopeRecords(demoMigForPage(pg)) : [];
       renderMigPage(pg);
     }
   }
