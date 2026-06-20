@@ -896,7 +896,7 @@
       <div class="nav-menu-item" data-migpage="overall">Overall Migration Progress</div>
     </div>
   </div>
-  <button class="nav-btn" id="reportsBtn">Reports</button>
+  <button class="nav-btn" id="reportsBtn" data-cap="view_reports">Reports</button>
   <button class="nav-btn" id="napLocatorBtn">NAP Locator</button>
   <div style="position:relative;">
     <button class="nav-btn" id="notifBtn" style="position:relative;">🔔 <span class="notif-badge" id="notifBadge">0</span></button>
@@ -930,7 +930,10 @@
     </div>
   </div>
   <div class="nav-dropdown">
-    <div class="nav-avatar" id="userAvatarBtn">FB</div>
+    <div style="display:flex;align-items:center;gap:8px;">
+      <span id="userAccessBadge" style="font-size:10px;color:rgba(255,255,255,0.85);font-weight:600;white-space:nowrap;text-align:right;line-height:1.2;"></span>
+      <div class="nav-avatar" id="userAvatarBtn">FB</div>
+    </div>
     <div class="nav-menu" id="userMenu" style="right:0;left:auto;min-width:170px;">
       <div class="nav-menu-item" id="teamsBtn">Teams</div>
       <div class="nav-menu-item" id="changePwBtn">Change Password</div>
@@ -2783,21 +2786,37 @@
   safeOn('modalOverlay', 'click', function(e){ if(e.target===this)closeModal(); });
 
 
-  /* ── LOGIN ── */
+  /* ── LOGIN & ACCESS ──
+     Each user now carries two access attributes:
+       • region — which office's data they may see (NCR_RIZAL / CAVITE / PANAY / ALL)
+       • role   — what they're allowed to do (admin/manager/dispatch/sales_admin/encoder/tl/agent/subcon)
+     The rest of the app reads `currentUser` to filter data (by region) and gate UI (by role).
+     These are in-memory demo users for now; later they come from a Supabase `users` table + RLS. */
   var USERS = [
-    { username: 'admin',   password: 'best2026', name: 'Admin',   initials: 'AD' },
-    { username: 'fborja',  password: 'best2026', name: 'FBorja',  initials: 'FB' },
-    { username: 'charlon', password: 'best2026', name: 'Charlon', initials: 'CH' },
-    { username: 'joseph',  password: 'best2026', name: 'Joseph',  initials: 'JO' }
+    { username: 'admin',   password: 'best2026', name: 'Admin',        initials: 'AD', region: 'ALL',       role: 'admin' },
+    { username: 'fborja',  password: 'best2026', name: 'F. Borja',     initials: 'FB', region: 'ALL',       role: 'manager' },
+    { username: 'ncrdisp', password: 'best2026', name: 'NCR Dispatch', initials: 'ND', region: 'NCR_RIZAL', role: 'dispatch' },
+    { username: 'cavenc',  password: 'best2026', name: 'Cavite Encoder', initials: 'CE', region: 'CAVITE',  role: 'encoder' },
+    { username: 'panaysa', password: 'best2026', name: 'Panay Sales',  initials: 'PS', region: 'PANAY',     role: 'sales_admin' },
+    { username: 'joseph',  password: 'best2026', name: 'Joseph',       initials: 'JO', region: 'ALL',       role: 'admin' }
   ];
+
+  /* Human-readable labels for regions and roles (used in the UI). */
+  var REGION_LABELS = { ALL: 'All Regions', NCR_RIZAL: 'NCR / Rizal', CAVITE: 'Cavite', PANAY: 'Panay' };
+  var ROLE_LABELS   = { admin:'Administrator', manager:'Manager / Supervisor', dispatch:'Dispatch', sales_admin:'Sales Admin', encoder:'Encoder', tl:'Team Leader', agent:'Agent', subcon:'Subcon' };
+
+  /* The single source of truth for "who is logged in right now". Null = logged out. */
+  var currentUser = null;
 
   function showLogin() {
     document.getElementById('loginOverlay').style.display = 'flex';
   }
 
   function showApp(user) {
+    currentUser = user;                 /* <- the whole app can now read who's logged in */
     document.getElementById('loginOverlay').style.display = 'none';
     document.querySelector('.nav-avatar').textContent = user.initials;
+    applyAccessControl();               /* gate the UI for this user's role/region */
   }
 
   var savedUser = sessionStorage.getItem('bestdms_user');
@@ -2846,6 +2865,59 @@
   safeOn('loginBtn', 'click', doLogin);
   safeOn('loginPassword', 'keydown', function(e) { if (e.key === 'Enter') doLogin(); });
   safeOn('loginUsername', 'keydown', function(e) { if (e.key === 'Enter') document.getElementById('loginPassword').focus(); });
+
+  /* ════════════ ACCESS CONTROL ════════════
+     Two helpers the whole app uses:
+       can(capability)        → true/false: may the current role do this?
+       filterByRegion(records)→ returns only rows the current user's region may see.
+     Plus applyAccessControl() which hides UI elements based on role.
+     IMPORTANT: this is FRONT-END gating only — convenient, not secure on its own.
+     The real enforcement comes later from Supabase RLS (see checklist Phase 4D). */
+
+  /* Which roles are allowed each capability. Edit this table to change the rules —
+     it mirrors the permissions matrix in the checklist. */
+  var ROLE_CAPABILITIES = {
+    admin:       ['view_dashboard','view_reports','edit_records','assign','update_status','import','manage_users','all_regions'],
+    manager:     ['view_dashboard','view_reports','edit_records','assign','update_status','import'],
+    dispatch:    ['view_dashboard','view_reports','assign','update_status'],
+    sales_admin: ['view_dashboard','view_reports','edit_records'],
+    encoder:     ['view_dashboard','edit_records','import'],
+    tl:          ['view_dashboard','update_status'],
+    agent:       ['view_dashboard','update_status'],
+    subcon:      ['view_dashboard','update_status']
+  };
+
+  function can(capability) {
+    if (!currentUser) return false;
+    var caps = ROLE_CAPABILITIES[currentUser.role] || [];
+    return caps.indexOf(capability) !== -1;
+  }
+
+  /* Returns only the records whose region matches the user's region.
+     A user with region 'ALL' (admins/managers) sees everything.
+     Records with no region set are shown to ALL-region users only, so nothing
+     silently disappears for admins while still scoping office users. */
+  function filterByRegion(records) {
+    if (!currentUser || currentUser.region === 'ALL') return records;
+    return (records || []).filter(function(r) {
+      return r.region === currentUser.region;
+    });
+  }
+
+  /* Hide or show UI based on the logged-in role. Driven by data-cap attributes:
+     any element with data-cap="x" is hidden unless the role has capability x. */
+  function applyAccessControl() {
+    if (!currentUser) return;
+    document.querySelectorAll('[data-cap]').forEach(function(el) {
+      el.style.display = can(el.getAttribute('data-cap')) ? '' : 'none';
+    });
+    /* Show the logged-in user's role + region near the avatar so it's always visible. */
+    var badge = document.getElementById('userAccessBadge');
+    if (badge) {
+      badge.textContent = (ROLE_LABELS[currentUser.role]||currentUser.role) + ' · ' + (REGION_LABELS[currentUser.region]||currentUser.region);
+    }
+  }
+
 
 
   /* ── ACTION BUTTONS ── */
