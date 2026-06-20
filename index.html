@@ -4528,7 +4528,7 @@
   /* ── Load data ── */
   async function loadMigData(pg) {
     if (!db) {
-      if (DEMO_MODE) { migData = demoMigForPage(pg); renderMigPage(pg); }
+      if (DEMO_MODE) { migData = filterByRegion(demoMigForPage(pg)); renderMigPage(pg); }
       return;
     }
     try {
@@ -4547,10 +4547,11 @@
       if (r.error) throw r.error;
       migData = r.data || [];
       if (DEMO_MODE && !migData.length) migData = demoMigForPage(pg);
+      migData = filterByRegion(migData);   /* scope migration data to the user's region */
       renderMigPage(pg);
     } catch(err) {
       console.log('Migration load error:', err);
-      migData = DEMO_MODE ? demoMigForPage(pg) : [];
+      migData = DEMO_MODE ? filterByRegion(demoMigForPage(pg)) : [];
       renderMigPage(pg);
     }
   }
