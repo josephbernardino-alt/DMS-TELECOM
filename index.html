@@ -378,6 +378,8 @@
     transition: all 0.2s;
     box-shadow: 0 4px 12px rgba(13,148,136,0.3);
   }
+  .demo-login-pick { background: #eff6ff; color: #1d4ed8; border: 1px solid #bfdbfe; border-radius: 6px; padding: 5px 10px; font-size: 11px; font-weight: 600; cursor: pointer; }
+  .demo-login-pick:hover { background: #1d4ed8; color: white; border-color: #1d4ed8; }
 
   .login-btn:hover {
     transform: translateY(-1px);
@@ -859,6 +861,19 @@
     </div>
 
     <button class="login-btn" id="loginBtn">Sign In</button>
+
+    <!-- DEMO QUICK-LOGIN — remove this block for production -->
+    <div id="demoQuickLogin" style="margin-top:16px;border-top:1px dashed #cbd5e1;padding-top:12px;">
+      <div style="font-size:10px;color:#94a3b8;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:8px;text-align:center;">Demo: tap to log in as…</div>
+      <div style="display:flex;flex-wrap:wrap;gap:6px;justify-content:center;">
+        <button class="demo-login-pick" data-u="fborja">Manager · All</button>
+        <button class="demo-login-pick" data-u="ncrdisp">Dispatch · NCR</button>
+        <button class="demo-login-pick" data-u="cavenc">Encoder · Cavite</button>
+        <button class="demo-login-pick" data-u="panaysa">Sales · Panay</button>
+        <button class="demo-login-pick" data-u="admin">Admin</button>
+      </div>
+    </div>
+    <!-- END DEMO QUICK-LOGIN -->
 
   </div>
   <div class="login-copyright">© 2026 BEST Inc. All rights reserved.</div>
@@ -1957,7 +1972,11 @@
     var FIRST=['LOURDES','EARL','ALYSSA','DUVINCENT','EMEE JOY','MARY GRACE','AYESSA','SHIELA','GLORIA','NORA','ELMER','JOEL','JOANNA MAE','MANUEL','BERNADETTE','BILLY JOE','HARIETH','ROCKY','SHERYL','DELFIN','MARK','EMMANUEL','FRANCIS','MYLENE','JENNIFER','CINDERELLA','MARVIN','AVELINO','FRED','MARILOU','JANET','RACHIN','ROLLY','REY MARK','ELOISA','DEREK'];
     var LAST=['ARAZA','MALINTAD','BRANZUELA','YONSON','GONZAGA','NONOY','BARDAJE','CISNEROS','UMAPAS','JUANILLO','RANO','CABANBAN','BALDESCO','ANDRADA','NAGERA','FERRER','BACALLA','BOBIS','MACASPAC','PULUSAN','GONZA','BEDANA','ESTRADA','PANALIGAN','NATIVIDAD','SIBAYAN','DIANO','SUNIGA','JUAREZ','PANGALANGAN','BADIAO','TURNOS','LALISAN','GERAGA','BUNTUA','SABLAS'];
     var SUFF=['S','D','T','E','R','M','C','Y','A','G','P'];
-    var BRGYS=[['PINAGBUHATAN','PASIG'],['TUMANA','MARIKINA'],['ROSARIO','PASIG'],['MALANDAY','MARIKINA'],['NANGKA','MARIKINA'],['MAYBUNGA','PASIG'],['SANTOLAN','PASIG'],['SANTO NIÑO','MARIKINA'],['WACK-WACK GREENHILLS','MANDALUYONG'],['HULO','MANDALUYONG'],['HIGHWAY HILLS','MANDALUYONG'],['MANGGAHAN','PASIG'],['SANTA LUCIA','PASIG'],['CONCEPCION DOS','MARIKINA'],['DELA PAZ','PASIG'],['SAN MIGUEL','PASIG'],['KALAWAAN','PASIG'],['BAMBANG','PASIG'],['CANIOGAN','PASIG'],['ADDITION HILLS','MANDALUYONG'],['SAN JOSE','SAN JUAN'],['KAPITOLYO','PASIG'],['UGONG','PASIG'],['PLAINVIEW','MANDALUYONG'],['LITTLE BAGUIO','SAN JUAN'],['GREENHILLS','SAN JUAN']];
+    var BRGYS=[['PINAGBUHATAN','PASIG'],['TUMANA','MARIKINA'],['ROSARIO','PASIG'],['MALANDAY','MARIKINA'],['NANGKA','MARIKINA'],['MAYBUNGA','PASIG'],['SANTOLAN','PASIG'],['SANTO NIÑO','MARIKINA'],['WACK-WACK GREENHILLS','MANDALUYONG'],['HULO','MANDALUYONG'],['HIGHWAY HILLS','MANDALUYONG'],['MANGGAHAN','PASIG'],['SANTA LUCIA','PASIG'],['CONCEPCION DOS','MARIKINA'],['DELA PAZ','PASIG'],['SAN MIGUEL','PASIG'],['KALAWAAN','PASIG'],['BAMBANG','PASIG'],['CANIOGAN','PASIG'],['ADDITION HILLS','MANDALUYONG'],['SAN JOSE','SAN JUAN'],['KAPITOLYO','PASIG'],['UGONG','PASIG'],['PLAINVIEW','MANDALUYONG'],['LITTLE BAGUIO','SAN JUAN'],['GREENHILLS','SAN JUAN'],
+      /* Cavite (for region-filter testing) */
+      ['MOLINO','BACOOR'],['SALINAS','BACOOR'],['BUROL','DASMARINAS'],['POBLACION','IMUS'],['TEJERO','GENERAL TRIAS'],['SAN AGUSTIN','TRECE MARTIRES'],['TIBIG','SILANG'],['DAANG AMAYA','TANZA'],
+      /* Panay / Iloilo (for region-filter testing) */
+      ['LAPAZ','ILOILO CITY'],['MOLO','ILOILO CITY'],['JARO','ILOILO CITY'],['POBLACION','OTON'],['UGBO','PAVIA'],['DUYAN-DUYAN','SANTA BARBARA'],['BALABAG','PASSI'],['BANBAN','CABATUAN']];
     var BUNDLES=['1P Broadband','2 Play','3 Play','1PBB'];
     var TLS=['TL Cesar','TL Flor','TL Cris','TL Joyce','TL Mika','TL Editha'];
     var PERS=['MReyes, YOmar','Larios, Toribio','JBonaga, JBeltran','AHumpa, VDumalanta','RCaparas, Salih','JOcson, JDuyuhin','NRoxas, JMacaranas','FdelosReyes, MFernandez','Balangue, Niepes'];
@@ -2447,7 +2466,7 @@
     document.getElementById('tableBody').innerHTML =
       '<tr class="loading-row"><td colspan="18"><span class="spinner"></span>Loading job orders for '+fmtDate(dateFrom)+'...</td></tr>';
     if (!db) {
-      if (DEMO_MODE) { seedDemoTeams(); allOrders = demoJobsForRange(dateFrom,dateTo); shown = allOrders; render(shown); summary(shown); updateDateLabel(); }
+      if (DEMO_MODE) { seedDemoTeams(); allOrders = filterByRegion(demoJobsForRange(dateFrom,dateTo)); shown = allOrders; render(shown); summary(shown); updateDateLabel(); }
       return;
     }
     try {
@@ -2470,13 +2489,14 @@
       if (r1.error) throw r1.error;
       allOrders = r1.data||[];
       if (DEMO_MODE && !allOrders.length) { seedDemoTeams(); allOrders = demoJobsForRange(dateFrom,dateTo); }
+      allOrders = filterByRegion(allOrders);   /* scope to the user's office/region */
       shown = allOrders;
       render(shown); summary(shown); updateDateLabel();
       if (mapInitialized && document.getElementById('page-map').classList.contains('active')) updateMapData();
       document.getElementById('notifBadge').textContent = allOrders.filter(function(o){return o.status==='Pending';}).length;
     } catch(err) {
       if (DEMO_MODE) {
-        seedDemoTeams(); allOrders = demoJobsForRange(dateFrom,dateTo); shown = allOrders;
+        seedDemoTeams(); allOrders = filterByRegion(demoJobsForRange(dateFrom,dateTo)); shown = allOrders;
         render(shown); summary(shown); updateDateLabel();
       } else {
         document.getElementById('tableBody').innerHTML =
@@ -2866,6 +2886,14 @@
   safeOn('loginPassword', 'keydown', function(e) { if (e.key === 'Enter') doLogin(); });
   safeOn('loginUsername', 'keydown', function(e) { if (e.key === 'Enter') document.getElementById('loginPassword').focus(); });
 
+  /* DEMO quick-login: tap a role button to sign in instantly (remove for production). */
+  document.querySelectorAll('.demo-login-pick').forEach(function(btn){
+    btn.addEventListener('click', function(){
+      var u = USERS.find(function(x){ return x.username === btn.getAttribute('data-u'); });
+      if (u) { sessionStorage.setItem('bestdms_user', JSON.stringify(u)); showApp(u); load(); }
+    });
+  });
+
   /* ════════════ ACCESS CONTROL ════════════
      Two helpers the whole app uses:
        can(capability)        → true/false: may the current role do this?
@@ -2900,9 +2928,78 @@
   function filterByRegion(records) {
     if (!currentUser || currentUser.region === 'ALL') return records;
     return (records || []).filter(function(r) {
-      return r.region === currentUser.region;
+      return regionOf(r) === currentUser.region;
     });
   }
+
+  /* ── Municipality → Region mapping ──
+     Region is the account's physical location, derived from its municipality/city.
+     No 'region' column exists in the data yet, so we COMPUTE it from `municipality`.
+     (Later, when a real region column is added, regionOf() will prefer that field.)
+     NOTE TO MAINTAINER: this is a STANDARD Philippine mapping — please review and
+     correct. Add any municipalities your operation covers that are missing here. */
+  var MUNI_TO_REGION = {};
+  (function buildMuniMap(){
+    var groups = {
+      NCR_RIZAL: [
+        /* NCR (Metro Manila) */
+        'CALOOCAN','LAS PINAS','MAKATI','MALABON','MANDALUYONG','MANILA','MARIKINA',
+        'MUNTINLUPA','NAVOTAS','PARANAQUE','PASAY','PASIG','QUEZON CITY','SAN JUAN',
+        'TAGUIG','VALENZUELA','PATEROS',
+        /* Rizal province */
+        'ANTIPOLO','ANGONO','BARAS','BINANGONAN','CAINTA','CARDONA','JALAJALA',
+        'MORONG','PILILLA','RODRIGUEZ','MONTALBAN','SAN MATEO','TANAY','TAYTAY','TERESA'
+      ],
+      CAVITE: [
+        'BACOOR','CAVITE CITY','DASMARINAS','GENERAL TRIAS','IMUS','TAGAYTAY',
+        'TRECE MARTIRES','CARMONA','ALFONSO','AMADEO','GENERAL MARIANO ALVAREZ','GMA',
+        'INDANG','KAWIT','MAGALLANES','MARAGONDON','MENDEZ','MENDEZ-NUNEZ','NAIC',
+        'NOVELETA','ROSARIO','SILANG','TANZA','TERNATE'
+      ],
+      PANAY: [
+        /* Iloilo */
+        'ILOILO CITY','PASSI','AJUY','ALIMODIAN','ANILAO','BADIANGAN','BALASAN','BANATE',
+        'BAROTAC NUEVO','BAROTAC VIEJO','BATAD','BINGAWAN','CABATUAN','CALINOG','CARLES',
+        'CONCEPCION','DINGLE','DUENAS','DUMANGAS','ESTANCIA','GUIMBAL','IGBARAS','JANIUAY',
+        'LAMBUNAO','LEGANES','LEMERY','LEON','MAASIN','MIAGAO','MINA','NEW LUCENA','OTON',
+        'PAVIA','POTOTAN','SAN DIONISIO','SAN ENRIQUE','SAN JOAQUIN','SAN MIGUEL','SAN RAFAEL',
+        'SANTA BARBARA','SARA','TIGBAUAN','TUBUNGAN','ZARRAGA',
+        /* Capiz */
+        'ROXAS','ROXAS CITY','CUARTERO','DAO','DUMALAG','DUMARAO','IVISAN','JAMINDAN','MAAYON',
+        'MAMBUSAO','PANAY','PANITAN','PILAR','PONTEVEDRA','PRESIDENT ROXAS','SAPIAN','SIGMA','TAPAZ',
+        /* Aklan */
+        'KALIBO','ALTAVAS','BALETE','BANGA','BATAN','BURUANGA','IBAJAY','LEZO','LIBACAO','MADALAG',
+        'MAKATO','MALAY','MALINAO','NABAS','NEW WASHINGTON','NUMANCIA','TANGALAN',
+        /* Antique */
+        'SAN JOSE DE BUENAVISTA','ANINI-Y','BARBAZA','BELISON','BUGASONG','CALUYA','CULASI',
+        'HAMTIC','LAUA-AN','LIBERTAD','PANDAN','PATNONGON','SAN REMIGIO','SEBASTE','SIBALOM',
+        'TIBIAO','TOBIAS FORNIER','VALDERRAMA'
+      ]
+    };
+    Object.keys(groups).forEach(function(region){
+      groups[region].forEach(function(m){ MUNI_TO_REGION[m] = region; });
+    });
+  })();
+
+  /* Normalize a municipality name to match the map keys:
+     uppercase, trim, drop "CITY OF " prefix and trailing " CITY", collapse spaces. */
+  function normMuni(s){
+    return (s||'').toString().trim().toUpperCase()
+      .replace(/^CITY OF\s+/, '')
+      .replace(/\s+CITY$/, '')
+      .replace(/\./g,'')
+      .replace(/\s+/g,' ')
+      .trim();
+  }
+
+  /* The region a record belongs to. Prefers a real `region` field if one ever exists,
+     otherwise derives it from the municipality. Returns null if unmapped. */
+  function regionOf(rec){
+    if (rec && rec.region) return rec.region;
+    var m = normMuni(rec && (rec.municipality || rec.city));
+    return MUNI_TO_REGION[m] || null;
+  }
+
 
   /* Hide or show UI based on the logged-in role. Driven by data-cap attributes:
      any element with data-cap="x" is hidden unless the role has capability x. */
