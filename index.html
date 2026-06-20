@@ -590,14 +590,14 @@
   .tl-kpi-bar .tl-kpi-stats span { display: inline-flex; align-items: center; gap: 4px; }
   .tl-kpi-dot { width: 9px; height: 9px; border-radius: 50%; display: inline-block; }
   .tl-kpi-chevron { color: #94a3b8; font-size: 12px; transition: transform 0.2s; }
-  /* When TL view active: hide the big cards by default, show the bar */
-  body.tl-view .summary-row { display: none; }
-  body.tl-view .summary-row.tl-expanded { display: flex; }
-  body.tl-view .tl-kpi-bar { display: flex; }
-  body.tl-view #tableBodyWrap, body.tl-view .table-head-wrap { display: none; }
-  body.tl-view #tlCardList { display: block !important; }
-  /* Hide nav items a Team Leader doesn't need (NI/Migration/NAP menus, view-adjust eye) */
+
+  /* Nav items a Team Leader never needs (NI/Migration/NAP menus, view-adjust eye)
+     are hidden on every screen size. */
   body.tl-view .tl-hide { display: none !important; }
+
+  /* The lean CARD view is PHONE-ONLY. On a laptop the TL keeps the normal table.
+     So the card-vs-table swap lives inside the mobile media query below.
+     (On desktop, #tlCardList stays hidden and the table stays visible.) */
 
   .tl-card { background: white; border: 1px solid #e5eaf2; border-left: 4px solid #94a3b8; border-radius: 12px; padding: 12px 14px; margin-bottom: 10px; box-shadow: 0 1px 4px rgba(15,23,42,0.05); }
   .tl-card-top { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
@@ -620,6 +620,14 @@
      and would COVER the content, so on mobile we make it scroll with the page
      (position:static) and drop the now-wrong spacer. Same HTML, different layout. */
   @media (max-width: 768px) {
+    /* TEAM LEADER on a phone: swap the table for the lean card list + collapsed KPI bar.
+       (On a laptop this block doesn't run, so the TL keeps the normal table.) */
+    body.tl-view .summary-row { display: none; }
+    body.tl-view .summary-row.tl-expanded { display: flex; }
+    body.tl-view .tl-kpi-bar { display: flex; }
+    body.tl-view #tableBodyWrap, body.tl-view .table-head-wrap { display: none; }
+    body.tl-view #tlCardList { display: block !important; }
+
     /* Navbar: stop pinning it, let it wrap and grow, scroll with the page */
     .topnav { position: static; height: auto; flex-wrap: wrap; padding: 8px 10px; gap: 6px; row-gap: 6px; }
     #navPlaceholder { display: none !important; }   /* no longer needed once nav isn't fixed */
