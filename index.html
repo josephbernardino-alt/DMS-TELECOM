@@ -585,43 +585,48 @@
 
   /* ═══════════ MOBILE / PHONE LAYOUT ═══════════
      The TL uses a phone in the field. On narrow screens we restack the desktop
-     layout: navbar wraps, KPI cards go vertical, the filter bar stacks, and wide
-     tables scroll sideways with bigger touch targets. Same HTML, different layout. */
+     layout. Key fix: the desktop navbar is position:fixed at 52px tall with a
+     52px spacer pushing content down. On a phone the navbar wraps to several rows
+     and would COVER the content, so on mobile we make it scroll with the page
+     (position:static) and drop the now-wrong spacer. Same HTML, different layout. */
   @media (max-width: 768px) {
-    /* Navbar: let the buttons wrap instead of overflowing off-screen */
-    .topnav { flex-wrap: wrap; height: auto; padding: 8px 10px; gap: 6px; }
-    .nav-center, .nav-right { width: 100%; justify-content: flex-start; flex-wrap: wrap; }
-    .nav-btn, .nav-dropdown > .nav-btn { font-size: 12px; padding: 7px 10px; }
+    /* Navbar: stop pinning it, let it wrap and grow, scroll with the page */
+    .topnav { position: static; height: auto; flex-wrap: wrap; padding: 8px 10px; gap: 6px; row-gap: 6px; }
+    #navPlaceholder { display: none !important; }   /* no longer needed once nav isn't fixed */
+    .sticky-top.pinned { position: static !important; }   /* don't pin bars on mobile (avoids overlap) */
+    .sticky-placeholder, .sticky-placeholder.active { display: none !important; }   /* no spacers needed when nothing is pinned */
+    .nav-spacer { flex-basis: 100%; height: 0; }    /* force a line break so buttons wrap to a new row */
+    .logo { margin-right: 0; }
     .logo-text { font-size: 14px; }
-    .nav-clock { font-size: 11px; }
+    .nav-sep, #clock, #navDate { display: none; }   /* hide clock/date to save space */
+    .nav-btn { font-size: 12px; padding: 7px 11px; min-height: 36px; }
+    .nav-dropdown { position: static; }
 
-    /* KPI cards: stack vertically, full width, so numbers stay readable */
+    /* KPI cards: stack vertically, full width */
     .summary-row, .mig-kpi-strip { flex-direction: column; gap: 8px; padding: 10px; }
-    .sum-card, .mig-kpi, .new-install-btn { min-width: 0; width: 100%; }
+    .sum-card, .mig-kpi, .new-install-btn { min-width: 0; width: 100%; box-sizing: border-box; }
     .sum-count, .mig-kpi-count { font-size: 26px; }
 
-    /* Filter bar: stack the search + date controls */
+    /* Filter bar: stack the search + date controls, full-width search */
     .filterbar { flex-wrap: wrap; gap: 6px; padding: 8px 10px; }
-    .search-wrap, .search-input { width: 100%; }
-    .filter-spacer { display: none; }
+    .search-wrap, .search-input { width: 100%; box-sizing: border-box; }
+    .nav-spacer, .filter-spacer { }
 
-    /* Tables: keep them usable by allowing horizontal scroll + momentum on iOS */
+    /* Tables: usable via horizontal scroll with iOS momentum */
     .table-body-wrap, .table-head-wrap, .mig-body-wrap, .mig-head-wrap,
     #napBodyWrap, #napHeadWrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
 
-    /* Map pages: the side panels stack under the map instead of squeezing it */
-    #migMapContainer, .map-shell { flex-direction: column; }
-    .map-sidebar-right, .map-sidebar-left { width: 100%; max-height: 320px; border-left: none; border-top: 1px solid #e5eaf2; }
-    #leafletMap, #migLeafletMap { min-height: 300px; }
+    /* Map pages: side panels stack under the map instead of squeezing it */
+    #migMapContainer { flex-direction: column; }
+    .map-sidebar-right, .map-sidebar-left { width: 100%; max-height: 300px; border-left: none; border-top: 1px solid #e5eaf2; box-sizing: border-box; }
+    #leafletMap, #migLeafletMap { min-height: 280px; }
 
-    /* Modals: nearly full-width on a phone */
-    .staging-modal { width: 96vw !important; }
+    /* Modals nearly full-width */
+    .staging-modal, .modal { width: 96vw !important; max-width: 96vw !important; }
 
     /* Bigger tap targets for thumbs */
-    .view-btn, .today-btn, .date-nav, .nav-btn { min-height: 38px; }
-
-    /* Demo login buttons wrap nicely */
-    #demoQuickLogin .demo-login-pick { font-size: 12px; padding: 7px 12px; }
+    .view-btn, .today-btn, .date-nav { min-height: 38px; }
+    #demoQuickLogin .demo-login-pick { font-size: 12px; padding: 8px 12px; }
   }
 
 
