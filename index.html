@@ -1326,6 +1326,25 @@
 
 <!-- ============ MIGRATION PAGES ============ -->
 
+<!-- SALES REMARK EDIT MODAL -->
+<div class="staging-overlay" id="salesRemarkOverlay">
+  <div class="staging-modal" style="width:440px;max-width:94vw;">
+    <div class="staging-header">
+      <span class="staging-title">Sales Admin Remark</span>
+      <button class="modal-close" onclick="closeSalesRemark()">✕</button>
+    </div>
+    <div class="staging-body">
+      <div style="font-size:12px;color:#64748b;margin-bottom:8px;" id="salesRemarkWho"></div>
+      <input type="hidden" id="salesRemarkRecId">
+      <textarea id="salesRemarkText" placeholder="Write a note for the dispatcher / team…" style="width:100%;min-height:90px;border:1px solid #cbd5e1;border-radius:8px;padding:10px;font-size:13px;font-family:inherit;resize:vertical;box-sizing:border-box;"></textarea>
+    </div>
+    <div class="staging-footer">
+      <button class="btn btn-close" onclick="closeSalesRemark()">Cancel</button>
+      <button class="btn-refresh" onclick="saveMigSalesRemark()">Save Remark</button>
+    </div>
+  </div>
+</div>
+
 <!-- REPORT VIEWER MODAL -->
 <div class="staging-overlay" id="reportOverlay">
   <div class="staging-modal" style="width:900px;max-width:96vw;">
@@ -1791,7 +1810,7 @@
     <table class="mig-head-table"><tbody><tr id="migFDHeadRow">
       <td>#</td><td>Old Acct No</td><td>Name</td><td>Municipality</td><td>Barangay</td>
       <td>Contact</td><td>Bundle Type</td><td>Team</td><td>Personnel</td>
-      <td>JO Status</td><td>Remarks</td><td>Decom Date</td>
+      <td>JO Status</td><td>Remarks</td><td>Sales Remarks</td><td>Decom Date</td>
     </tr></tbody></table>
   </div>
   <div class="mig-body-wrap" id="migFDBodyWrap">
@@ -2074,6 +2093,7 @@
           date_visited: (hasTeam||done)?'2026-06-'+pad2(Math.min(25,day+Math.floor(rand()*4))):'',
           date_completed: done?'2026-06-'+pad2(Math.min(25,day+Math.floor(rand()*4))):'',
           remarks: done?'Migration done':(st==='Cancelled'?'Cancelled':''),
+          sales_remarks: rand()<0.25 ? pick(rand,['Customer prefers AM visit','VIP account — handle with care','Call before dispatch, gate code needed','Follow up on unpaid balance first','Customer requested specific technician']) : '',
           chat_count: rand()<0.1?Math.floor(1+rand()*3):0,
           updated_by:pick(rand,UPDBY)
         });
@@ -4549,6 +4569,49 @@
 
   function mv(val) { return val || '—'; }
 
+  /* ── Sales Remarks on migration records ──
+     The dispatcher SEES the sales admin's note (read-only); Sales Admin / Manager /
+     Developer can edit it via a small popup. This is how the sales admin communicates
+     to dispatch, who then coordinates with the team leaders and agents. */
+  function salesRemarkCell(r) {
+    var txt = r.sales_remarks || '';
+    var safe = txt.replace(/</g,'&lt;');
+    if (can('edit_sales_remarks')) {
+      /* editable: show text (or "+ Add") and a pencil to edit */
+      var shown = txt ? safe : '<span style="color:#94a3b8;">+ Add</span>';
+      return '<td style="max-width:200px;overflow:hidden;text-overflow:ellipsis;cursor:pointer;color:#1d4ed8;" '
+        + 'onclick="openSalesRemark(\''+r.id+'\')" title="Click to edit sales remark">'+shown+' ✎</td>';
+    }
+    /* read-only for dispatch and others */
+    return '<td style="max-width:200px;overflow:hidden;text-overflow:ellipsis;">'+(txt?safe:'—')+'</td>';
+  }
+
+  window.openSalesRemark = function(recordId) {
+    if (!can('edit_sales_remarks')) return;
+    var r = (migData||[]).find(function(x){ return String(x.id)===String(recordId); });
+    if (!r) return;
+    document.getElementById('salesRemarkRecId').value = recordId;
+    document.getElementById('salesRemarkText').value = r.sales_remarks || '';
+    document.getElementById('salesRemarkWho').textContent = (r.name||'') + ' · Acct ' + (r.old_acct_no||'—');
+    document.getElementById('salesRemarkOverlay').style.display = 'flex';
+    setTimeout(function(){ document.getElementById('salesRemarkText').focus(); }, 50);
+  };
+  window.closeSalesRemark = function(){ document.getElementById('salesRemarkOverlay').style.display='none'; };
+  safeOn('salesRemarkOverlay', 'click', function(e){ if(e.target===this) closeSalesRemark(); });
+  window.saveMigSalesRemark = async function() {
+    var recId = document.getElementById('salesRemarkRecId').value;
+    var text = document.getElementById('salesRemarkText').value.trim();
+    var r = (migData||[]).find(function(x){ return String(x.id)===String(recId); });
+    if (r) r.sales_remarks = text;
+    if (db && !DEMO_MODE) {
+      try { var res = await db.from(MIG_TABLE).update({ sales_remarks: text }).eq('id', recId); if (res.error) throw res.error; }
+      catch(err){ showToast('Error: '+err.message, 'error'); return; }
+    }
+    closeSalesRemark();
+    renderMigPage(currentMigPage);   /* re-render so the new remark shows in the cell */
+    showToast('✓ Sales remark saved', 'success');
+  };
+
   /* ── Call status pill (For Calling page) ── */
   function callStatusBadge(status) {
     if (!status) return '—';
@@ -4830,6 +4893,7 @@
           +'<td>'+mv(r.personnel)+'</td>'
           +migStatusBadge(r.jo_status)+'</td>'
           +'<td style="max-width:200px;overflow:hidden;text-overflow:ellipsis;">'+mv(r.remarks)+'</td>'
+          +salesRemarkCell(r)
           +'<td>'+mv(r.date_completed)+'</td>'
           +'</tr>';
       }).join('');
