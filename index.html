@@ -1444,6 +1444,13 @@
         <span id="chatSubMeta"></span> <span id="chatStatusBadge" class="mig-status pending" style="display:none;"></span>
       </div>
     </div>
+    <!-- Only shown when the logged-in user has the 'update_status' capability (TL, Agent, Subcon, Dispatch, Manager).
+         Lets them change the job's status right from the conversation instead of needing a separate screen. -->
+    <div id="chatStatusControl" style="display:none;align-items:center;gap:8px;padding:10px 14px;border-bottom:1px solid #eef2f7;background:#fff;">
+      <span style="font-size:10px;color:#94a3b8;font-weight:700;text-transform:uppercase;letter-spacing:.3px;">Status</span>
+      <select id="chatStatusSelect" style="flex:1;border:1px solid #cbd5e1;border-radius:7px;padding:7px 8px;font-size:12px;background:#fff;"></select>
+      <button class="btn-refresh" style="padding:7px 12px;font-size:12px;white-space:nowrap;" onclick="updateChatJobStatus()">Update</button>
+    </div>
     <div class="staging-body" style="padding:0;">
       <div id="chatMessages" style="min-height:200px;max-height:46vh;overflow-y:auto;padding:14px;background:#f8fafc;"></div>
     </div>
@@ -3711,15 +3718,107 @@
     var sub = (customerName||'') + (dateStr?' · '+dateStr:'');
     document.getElementById('chatSubMeta').textContent = sub;
     var sb = document.getElementById('chatStatusBadge');
-    if (statusStr) { sb.textContent = statusStr; sb.style.display=''; sb.className = 'mig-status '+( {Done:'done',Completed:'done',Pending:'pending',Rescheduled:'rescheduled',Cancelled:'cancelled',Visited:'visited',Called:'called'}[statusStr]||'pending'); }
+    if (statusStr) { sb.textContent = statusStr; sb.style.display=''; sb.className = 'mig-status '+statusBadgeClass(statusStr); }
     else { sb.style.display='none'; }
     /* mark this thread read */
     chatThread(jobId).forEach(function(m){ m.read = true; });
     renderChatMessages();
+    setupChatStatusControl(jobId);
     document.getElementById('chatOverlay').style.display = 'flex';
     setTimeout(function(){ var i=document.getElementById('chatInput'); if(i) i.focus(); }, 60);
   };
   window.closeChat = function(){ document.getElementById('chatOverlay').style.display='none'; chatOpenJobId=null; };
+
+  /* Maps any status string to the CSS class that colors its badge. Pulled out as its own
+     function because both the chat badge and the status-update logic need the same mapping. */
+  function statusBadgeClass(statusStr) {
+    return {Done:'done',Completed:'done',Pending:'pending',Rescheduled:'rescheduled',Cancelled:'cancelled',Visited:'visited',Called:'called'}[statusStr] || 'pending';
+  }
+
+  /* Finds the underlying record for a chat thread, wherever it actually lives.
+     NI job orders live in `allOrders` and use the `status` field / `job_orders` table.
+     Migration records live in `migData` and use `jo_status` / `migration_orders`.
+     Returning the table + field name here (not just the record) means updateChatJobStatus()
+     doesn't need to know which kind of record it's looking at — it just asks this function. */
+  function findChatRecord(jobId) {
+    var rec = (allOrders||[]).find(function(o){ return String(o.id)===String(jobId); });
+    if (rec) return { rec: rec, table: 'job_orders', field: 'status' };
+    rec = (migData||[]).find(function(o){ return String(o.id)===String(jobId); });
+    if (rec) return { rec: rec, field: 'jo_status', table: 'migration_orders' };
+    return null;
+  }
+
+  /* The set of statuses offered in the dropdown depends on which kind of record it is —
+     job orders don't use Visited/Called/Done, migration records do. */
+  var STATUS_OPTIONS_BY_FIELD = {
+    status:    ['Pending','Completed','Rescheduled','Cancelled'],
+    jo_status: ['Pending','Visited','Called','Completed','Done','Rescheduled','Cancelled']
+  };
+
+  /* Show/hide and populate the status-update row inside the chat popup.
+     Gated by can('update_status') so an Encoder or Sales Admin opening a chat (e.g. to read it)
+     never even sees a control they're not allowed to use — this is the same front-end gating
+     pattern as everywhere else in the app (capability check + hide), backed later by RLS. */
+  function setupChatStatusControl(jobId) {
+    var wrap = document.getElementById('chatStatusControl');
+    var info = findChatRecord(jobId);
+    if (!wrap) return;
+    if (!can('update_status') || !info) { wrap.style.display = 'none'; return; }
+    var sel = document.getElementById('chatStatusSelect');
+    var opts = STATUS_OPTIONS_BY_FIELD[info.field] || STATUS_OPTIONS_BY_FIELD.status;
+    var current = info.rec[info.field] || 'Pending';
+    sel.innerHTML = opts.map(function(s){ return '<option value="'+s+'"'+(s===current?' selected':'')+'>'+s+'</option>'; }).join('');
+    wrap.style.display = 'flex';
+  }
+
+  /* Save a new status from the chat popup. Mirrors the same demo-vs-real-DB pattern used by
+     saveSalesRemarks(): update in memory immediately (so the UI feels instant), then write
+     through to Supabase when DEMO_MODE is off, rolling back the in-memory change if that fails. */
+  window.updateChatJobStatus = async function() {
+    if (!can('update_status')) { showToast('You do not have permission to do that', 'warning'); return; }
+    var info = findChatRecord(chatOpenJobId);
+    if (!info) return;
+    var sel = document.getElementById('chatStatusSelect');
+    var newStatus = sel.value;
+    var oldStatus = info.rec[info.field] || 'Pending';
+    if (newStatus === oldStatus) { showToast('Status is already '+newStatus, 'warning'); return; }
+
+    info.rec[info.field] = newStatus;
+
+    if (db && !DEMO_MODE) {
+      try {
+        var upd = {}; upd[info.field] = newStatus;
+        var r = await db.from(info.table).update(upd).eq('id', chatOpenJobId);
+        if (r.error) throw r.error;
+      } catch (err) {
+        info.rec[info.field] = oldStatus;   /* roll back so the UI doesn't lie about what's saved */
+        showToast('Error saving status: '+err.message, 'error');
+        return;
+      }
+    }
+
+    /* Log the change into the thread itself as a system message — this gives the office and
+       the field a visible, timestamped audit trail of who changed what, right in context,
+       without yet needing the real `messages` table from the checklist (Phase 2C). */
+    chatThread(chatOpenJobId).push({
+      id: 'sys-'+Date.now(), job_id: chatOpenJobId,
+      sender: currentUser.name, sender_role: currentUser.role,
+      text: 'Changed status: '+oldStatus+' → '+newStatus,
+      ts: new Date().toISOString(), read: true, system: true
+    });
+    renderChatMessages();
+    bumpChatCount(chatOpenJobId);
+
+    var sb = document.getElementById('chatStatusBadge');
+    sb.textContent = newStatus; sb.style.display=''; sb.className = 'mig-status '+statusBadgeClass(newStatus);
+
+    /* Refresh whichever list is on screen so the badge/card outside the popup doesn't go stale.
+       render(shown) also re-renders the TL card list internally when the logged-in user is a TL. */
+    if (info.table === 'job_orders' && typeof render === 'function') { render(shown); summary(shown); }
+    else if (info.table === 'migration_orders' && typeof renderMigPage === 'function') { renderMigPage(currentMigPage); }
+
+    showToast('✓ Status updated to '+newStatus, 'success');
+  };
 
   function renderChatMessages() {
     var box = document.getElementById('chatMessages');
@@ -3731,6 +3830,10 @@
     }
     /* color the sender name by whether it's "me" (current user) or someone else */
     box.innerHTML = msgs.map(function(m){
+      if (m.system) {
+        return '<div style="text-align:center;margin:8px 0;font-size:11px;color:#94a3b8;">'
+          + '— '+(m.text||'').replace(/</g,'&lt;')+' · '+m.sender+', '+fmtChatTime(m.ts)+' —</div>';
+      }
       var mine = currentUser && m.sender === currentUser.name;
       return '<div class="chat-msg'+(mine?' chat-msg-mine':'')+'">'
         + '<div class="chat-msg-head"><span class="chat-msg-sender">'+m.sender+'</span> · <span class="chat-msg-role">'+chatRoleLabel(m.sender_role)+'</span></div>'
