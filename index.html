@@ -2686,7 +2686,7 @@
   /* ── RENDER ── */
   function render(data) {
     shown = data;
-    if (typeof seedChatsForRecords === 'function') seedChatsForRecords(data);
+    if (typeof refreshChatCounts === 'function') refreshChatCounts(data);
     if (currentUser && currentUser.role === 'tl') renderTlCards(data);
     var tbody = document.getElementById('tableBody');
     if (!data.length) {
@@ -3642,7 +3642,7 @@
     box.innerHTML = data.map(function(o){
       var st = o.status || 'Pending';
       var sClass = 's-' + st.toLowerCase();
-      var chatN = chatThread(o.id).filter(function(m){return !m.read;}).length;
+      var chatN = chatThread(o.jo_number||o.id).filter(function(m){return !m.read;}).length;
       var args = "'"+o.id+"','"+(o.jo_number||'')+"','"+(o.customer_name||'').replace(/'/g,'')+"','"+(o.dispatch_date||'')+"','"+st+"'";
       return '<div class="tl-card '+sClass+'">'
         +'<div class="tl-card-top">'
@@ -3683,22 +3683,50 @@
      A chat is just a list of messages tied to one job order. Data shape per message:
        { id, job_id, sender, sender_role, text, ts (ISO timestamp), read }
      A "conversation" = all messages with the same job_id, shown oldest→newest.
-     For now messages live in memory (CHAT_STORE) seeded with demo threads; later this
-     becomes a Supabase `messages` table queried by job_id. */
-  var CHAT_STORE = {};   /* job_id -> [messages] */
-  var chatOpenJobId = null;
+     Messages now persist to the Supabase `public.messages` table, keyed by jo_number
+     (the R-number) so the same thread is visible on every device. CHAT_STORE is just a
+     local cache of what we've loaded, so the UI can render instantly without re-querying. */
+  var CHAT_STORE = {};        /* jo_number -> [messages] (local cache) */
+  var chatOpenJobId = null;   /* the record id (used for status updates via findChatRecord) */
+  var chatOpenJoNumber = null;/* the R-number (used as the message thread key) */
 
-  /* Seed a couple of demo threads so the feature isn't empty. Keyed by JO number. */
-  function seedDemoChats() {
-    CHAT_STORE = {
-      'demo-seed': []
+  /* Translate a row from the database into the shape the UI already expects.
+     The DB columns (sender_name, body, created_at, is_system) have different names than
+     the local fields (sender, text, ts, system), so this mapper keeps renderChatMessages
+     and everything else unchanged — only this one function knows about both shapes. */
+  function dbRowToMsg(r) {
+    return {
+      id: r.id, jo_number: r.jo_number,
+      sender: r.sender_name, sender_role: r.sender_role,
+      text: r.body, ts: r.created_at,
+      read: r.read, system: r.is_system
     };
   }
 
-  /* Return the message list for a job (creating an empty thread if needed). */
-  function chatThread(jobId) {
-    if (!CHAT_STORE[jobId]) CHAT_STORE[jobId] = [];
-    return CHAT_STORE[jobId];
+  /* Return the cached message list for a job's thread (empty array if none yet). */
+  function chatThread(joNumber) {
+    if (!CHAT_STORE[joNumber]) CHAT_STORE[joNumber] = [];
+    return CHAT_STORE[joNumber];
+  }
+
+  /* Pull a thread's messages fresh from the database into the cache.
+     Called every time the popup opens, which is exactly what makes cross-device work:
+     whatever the field agent sent on their phone is already in the table, so the office
+     sees it the moment they open the same job. If the DB is unreachable we keep whatever
+     is cached and show a small notice rather than blanking the conversation. */
+  async function loadChatThread(joNumber) {
+    if (!db || !joNumber) return chatThread(joNumber);
+    try {
+      var res = await db.from('messages').select('*')
+        .eq('jo_number', joNumber)
+        .order('created_at', { ascending: true });
+      if (res.error) throw res.error;
+      CHAT_STORE[joNumber] = (res.data || []).map(dbRowToMsg);
+    } catch (err) {
+      console.error('loadChatThread', err);
+      showToast('Could not load messages (offline?) — showing cached', 'warning');
+    }
+    return chatThread(joNumber);
   }
 
   /* Friendly label for a role (reuses ROLE_LABELS, adds a couple of chat-y ones). */
@@ -3716,22 +3744,37 @@
   }
 
   /* Open the chat popup for a given record (NI order or migration record). */
-  window.openChat = function(jobId, jobNumber, customerName, dateStr, statusStr) {
+  window.openChat = async function(jobId, jobNumber, customerName, dateStr, statusStr) {
     chatOpenJobId = jobId;
+    chatOpenJoNumber = jobNumber || jobId;   /* thread key — the R-number */
     document.getElementById('chatJobNumber').textContent = jobNumber || jobId;
     var sub = (customerName||'') + (dateStr?' · '+dateStr:'');
     document.getElementById('chatSubMeta').textContent = sub;
     var sb = document.getElementById('chatStatusBadge');
     if (statusStr) { sb.textContent = statusStr; sb.style.display=''; sb.className = 'mig-status '+statusBadgeClass(statusStr); }
     else { sb.style.display='none'; }
-    /* mark this thread read */
-    chatThread(jobId).forEach(function(m){ m.read = true; });
-    renderChatMessages();
     setupChatStatusControl(jobId);
     document.getElementById('chatOverlay').style.display = 'flex';
+    /* show whatever we have cached immediately, then refresh from the DB */
+    document.getElementById('chatMessages').innerHTML = '<div style="text-align:center;color:#94a3b8;font-size:12px;padding:30px 0;">Loading…</div>';
+    await loadChatThread(chatOpenJoNumber);
+    /* mark everything in this thread read locally + in the DB */
+    markThreadRead(chatOpenJoNumber);
+    renderChatMessages();
+    bumpChatCount(chatOpenJoNumber);
     setTimeout(function(){ var i=document.getElementById('chatInput'); if(i) i.focus(); }, 60);
   };
-  window.closeChat = function(){ document.getElementById('chatOverlay').style.display='none'; chatOpenJobId=null; };
+  window.closeChat = function(){ document.getElementById('chatOverlay').style.display='none'; chatOpenJobId=null; chatOpenJoNumber=null; };
+
+  /* Mark a thread's messages as read — locally for instant UI, and in the DB so the
+     unread badge stays cleared for this user on next load. Fire-and-forget on the DB side. */
+  function markThreadRead(joNumber) {
+    chatThread(joNumber).forEach(function(m){ m.read = true; });
+    if (db && joNumber) {
+      db.from('messages').update({ read: true }).eq('jo_number', joNumber).eq('read', false)
+        .then(function(r){ if (r && r.error) console.error('markRead', r.error); });
+    }
+  }
 
   /* Maps any status string to the CSS class that colors its badge. Pulled out as its own
      function because both the chat badge and the status-update logic need the same mapping. */
@@ -3801,17 +3844,30 @@
       }
     }
 
-    /* Log the change into the thread itself as a system message — this gives the office and
-       the field a visible, timestamped audit trail of who changed what, right in context,
-       without yet needing the real `messages` table from the checklist (Phase 2C). */
-    chatThread(chatOpenJobId).push({
-      id: 'sys-'+Date.now(), job_id: chatOpenJobId,
-      sender: currentUser.name, sender_role: currentUser.role,
-      text: 'Changed status: '+oldStatus+' → '+newStatus,
-      ts: new Date().toISOString(), read: true, system: true
-    });
+    /* Log the change into the thread itself as a system message — a visible, timestamped
+       audit trail of who changed what, right in context. Now persisted to the messages
+       table (is_system=true) so it shows on every device, same as a normal message. */
+    var sysMsg = {
+      jo_number: chatOpenJoNumber,
+      sender_name: currentUser.name, sender_role: currentUser.role,
+      body: 'Changed status: '+oldStatus+' → '+newStatus,
+      is_system: true, read: true
+    };
+    if (db) {
+      try {
+        var ins = await db.from('messages').insert(sysMsg).select().single();
+        if (ins.error) throw ins.error;
+        chatThread(chatOpenJoNumber).push(dbRowToMsg(ins.data));
+      } catch (err) {
+        console.error('sys insert', err);
+        /* fall back to a local-only entry so the UI still reflects the change */
+        chatThread(chatOpenJoNumber).push({ id:'sys-'+Date.now(), jo_number:chatOpenJoNumber, sender:currentUser.name, sender_role:currentUser.role, text:sysMsg.body, ts:new Date().toISOString(), read:true, system:true });
+      }
+    } else {
+      chatThread(chatOpenJoNumber).push({ id:'sys-'+Date.now(), jo_number:chatOpenJoNumber, sender:currentUser.name, sender_role:currentUser.role, text:sysMsg.body, ts:new Date().toISOString(), read:true, system:true });
+    }
     renderChatMessages();
-    bumpChatCount(chatOpenJobId);
+    bumpChatCount(chatOpenJoNumber);
 
     var sb = document.getElementById('chatStatusBadge');
     sb.textContent = newStatus; sb.style.display=''; sb.className = 'mig-status '+statusBadgeClass(newStatus);
@@ -3827,7 +3883,7 @@
   function renderChatMessages() {
     var box = document.getElementById('chatMessages');
     if (!box) return;
-    var msgs = chatThread(chatOpenJobId);
+    var msgs = chatThread(chatOpenJoNumber);
     if (!msgs.length) {
       box.innerHTML = '<div style="text-align:center;color:#94a3b8;font-size:12px;padding:30px 0;">No messages yet. Start the conversation below.</div>';
       return;
@@ -3839,57 +3895,89 @@
           + '— '+(m.text||'').replace(/</g,'&lt;')+' · '+m.sender+', '+fmtChatTime(m.ts)+' —</div>';
       }
       var mine = currentUser && m.sender === currentUser.name;
+      /* tiny status note on my own bubbles while a send is in flight or if it failed */
+      var note = m.failed ? ' <span style="color:#ef4444;">· not sent</span>'
+               : m.pending ? ' <span style="color:#94a3b8;">· sending…</span>' : '';
       return '<div class="chat-msg'+(mine?' chat-msg-mine':'')+'">'
         + '<div class="chat-msg-head"><span class="chat-msg-sender">'+m.sender+'</span> · <span class="chat-msg-role">'+chatRoleLabel(m.sender_role)+'</span></div>'
         + '<div class="chat-msg-text">'+(m.text||'').replace(/</g,'&lt;')+'</div>'
-        + '<div class="chat-msg-time">'+fmtChatTime(m.ts)+'</div>'
+        + '<div class="chat-msg-time">'+fmtChatTime(m.ts)+note+'</div>'
         + '</div>';
     }).join('');
     box.scrollTop = box.scrollHeight;
   }
 
-  window.sendChatMessage = function() {
+  window.sendChatMessage = async function() {
     var input = document.getElementById('chatInput');
     if (!input) return;
     var text = input.value.trim();
     if (!text) return;
     if (!currentUser) { showToast('Please log in', 'warning'); return; }
-    var msg = {
-      id: 'm'+Date.now(),
-      job_id: chatOpenJobId,
-      sender: currentUser.name,
-      sender_role: currentUser.role,
-      text: text,
-      ts: new Date().toISOString(),
-      read: true
-    };
-    chatThread(chatOpenJobId).push(msg);
+    if (!chatOpenJoNumber) return;
+
+    /* Optimistic UI: show the message instantly with a temporary id, then confirm with the DB.
+       This is why typing feels immediate even though a network round-trip is happening — we
+       don't wait for the server to draw the bubble, we just reconcile afterwards. */
+    var tempId = 'temp-'+Date.now();
+    var local = { id: tempId, jo_number: chatOpenJoNumber, sender: currentUser.name,
+                  sender_role: currentUser.role, text: text, ts: new Date().toISOString(),
+                  read: true, pending: true };
+    chatThread(chatOpenJoNumber).push(local);
     input.value = '';
     renderChatMessages();
-    /* keep the table's chat badge count in sync */
-    bumpChatCount(chatOpenJobId);
-    /* with a real DB: await db.from('messages').insert(msg) */
+
+    if (db) {
+      try {
+        var row = { jo_number: chatOpenJoNumber, sender_name: currentUser.name,
+                    sender_role: currentUser.role, body: text, is_system: false, read: false };
+        var res = await db.from('messages').insert(row).select().single();
+        if (res.error) throw res.error;
+        /* swap the temporary bubble for the real DB row (real id + server timestamp) */
+        var thread = chatThread(chatOpenJoNumber);
+        var idx = thread.findIndex(function(m){ return m.id === tempId; });
+        if (idx > -1) thread[idx] = dbRowToMsg(res.data);
+        renderChatMessages();
+        bumpChatCount(chatOpenJoNumber);
+      } catch (err) {
+        console.error('sendChat', err);
+        /* mark the bubble as failed so the user knows it didn't save */
+        var t = chatThread(chatOpenJoNumber);
+        var i = t.findIndex(function(m){ return m.id === tempId; });
+        if (i > -1) { t[i].failed = true; t[i].pending = false; }
+        renderChatMessages();
+        showToast('Message not saved: '+err.message, 'error');
+      }
+    } else {
+      bumpChatCount(chatOpenJoNumber);
+    }
   };
 
-  /* Update the chat_count on the in-memory record so the table badge reflects it. */
-  function bumpChatCount(jobId) {
-    var rec = (allOrders||[]).find(function(o){return String(o.id)===String(jobId);})
-           || (migData||[]).find(function(o){return String(o.id)===String(jobId);});
-    if (rec) rec.chat_count = chatThread(jobId).length;
+  /* Keep the table/card chat badge in sync with the real message count for this thread. */
+  function bumpChatCount(joNumber) {
+    var n = chatThread(joNumber).length;
+    var rec = (allOrders||[]).find(function(o){return (o.jo_number||o.id)===joNumber;})
+           || (typeof migData!=='undefined' && (migData||[]).find(function(o){return (o.jo_number||o.id)===joNumber;}));
+    if (rec) rec.chat_count = n;
   }
 
-  /* For demo: give every record that shows a chat badge a sample opening message,
-     so the popup isn't empty. Runs once per record. */
-  function seedChatsForRecords(records) {
-    (records||[]).forEach(function(r){
-      if (r.chat_count > 0 && !CHAT_STORE[r.id]) {
-        CHAT_STORE[r.id] = [{
-          id:'seed-'+r.id, job_id:r.id, sender:'Lei', sender_role:'call_center',
-          text:'JUNE 13 PA SYA NAGPAPA INSTALL PASUYO PA URGENT',
-          ts:new Date(Date.now()-3600*1000*6).toISOString(), read:false
-        }];
-      }
-    });
+  /* Fetch the real message counts for the records currently on screen and update their
+     chat badges. One query for the whole page (rather than one per row), counted client-side.
+     This replaces the old demo seeder that injected a fake canned message into every badge. */
+  async function refreshChatCounts(records) {
+    if (!db || !records || !records.length) return;
+    var nums = records.map(function(r){ return r.jo_number || r.id; }).filter(Boolean);
+    if (!nums.length) return;
+    try {
+      var res = await db.from('messages').select('jo_number').in('jo_number', nums);
+      if (res.error) throw res.error;
+      var counts = {};
+      (res.data||[]).forEach(function(row){ counts[row.jo_number] = (counts[row.jo_number]||0) + 1; });
+      records.forEach(function(r){ r.chat_count = counts[r.jo_number||r.id] || 0; });
+      /* redraw so the new counts show; render() does NOT call us back, so no loop */
+      if (typeof render === 'function' && shown === records) render(records);
+    } catch (err) {
+      console.error('refreshChatCounts', err);
+    }
   }
 
   safeOn('chatOverlay', 'click', function(e){ if(e.target===this) closeChat(); });
