@@ -2931,16 +2931,23 @@
       return '<div class="form-field"><div class="form-label">'+lbl+'</div><input class="form-value editable" id="'+id+'" type="'+inputType+'" value="'+dsp+'" placeholder="—"></div>';
     }
 
+    /* Account fields are editable only for roles with edit_account; everyone else sees them read-only.
+       afld() picks the editable or display version per-field based on that capability. */
+    var canEditAcct = can('edit_account');
+    function afld(lbl, val, id, type) {
+      return canEditAcct ? efld(lbl, val, id, type) : fld(lbl, val);
+    }
+
     var detailsHtml =
       sec('Job Information',
         g3(fld('JO Number',r.jo_number),fld('Date',r.dispatch_date),fld('Team Number',tn))
       )+
       sec('',
-        g3(fld('Account Number',r.account_number),fld('Reference ID',r.reference_id),fld('Customer Name',r.customer_name))+
-        g3(fld('Mobile Number',r.mobile_number),fld('Alt Mobile Number',r.alt_mobile_number),fld('Address',r.address))
+        g3(afld('Account Number',r.account_number,'editAccountNumber'),afld('Reference ID',r.reference_id,'editReferenceId'),afld('Customer Name',r.customer_name,'editCustomerName'))+
+        g3(afld('Mobile Number',r.mobile_number,'editMobileNumber'),afld('Alt Mobile Number',r.alt_mobile_number,'editAltMobile'),afld('Address',r.address,'editAddress'))
       )+
       sec('',
-        g3(fld('Municipality',r.municipality),fld('Barangay',r.barangay),fld('Plan',r.plan))
+        g3(afld('Municipality',r.municipality,'editMunicipality'),afld('Barangay',r.barangay,'editBarangay'),afld('Plan',r.plan,'editPlan'))
       )+
       sec('',
         g3(
@@ -2950,7 +2957,7 @@
         )+
         g3(efld('Assigned TL',r.assigned_tl||r.tl_name,'editTL'),efld('Call Status',r.call_status,'editCallStatus'),efld('Call Remarks',r.call_remarks,'editCallRemarks'))+
         g3(efld('Time In',r.time_in,'editTimeIn','time'),efld('Time Out',r.time_out,'editTimeOut','time'),efld('NAP ID',r.nap_id,'editNapId'))+
-        g2(fld('Modem Serial Number',r.modem_serial),fld('IPTV Serial Number',r.iptv_serial))
+        g2(afld('Modem Serial Number',r.modem_serial,'editModemSerial'),afld('IPTV Serial Number',r.iptv_serial,'editIptvSerial'))
       );
 
     document.getElementById('panelDetails').innerHTML = detailsHtml;
@@ -3098,13 +3105,13 @@
   /* Which roles are allowed each capability. Edit this table to change the rules —
      it mirrors the permissions matrix in the checklist. */
   var ROLE_CAPABILITIES = {
-    developer:   ['view_dashboard','view_reports','edit_records','assign','update_status','import','manage_users','all_regions','edit_sales_remarks'],
-    manager:     ['view_dashboard','view_reports','edit_records','assign','update_status','import','edit_sales_remarks'],
-    dispatch:    ['view_dashboard','view_reports','assign','update_status'],
+    developer:   ['view_dashboard','view_reports','edit_records','edit_account','assign','update_status','import','manage_users','all_regions','edit_sales_remarks'],
+    manager:     ['view_dashboard','view_reports','edit_records','edit_account','assign','update_status','import','edit_sales_remarks'],
+    dispatch:    ['view_dashboard','view_reports','edit_account','assign','update_status'],
     /* Sales Admin: views everything (all regions) but cannot change operational data.
        Their only write power is leaving a Sales Admin Remark on a record. */
     sales_admin: ['view_dashboard','view_reports','edit_sales_remarks'],
-    encoder:     ['view_dashboard','edit_records','import'],
+    encoder:     ['view_dashboard','edit_records','edit_account','import'],
     tl:          ['view_dashboard','update_status'],
     agent:       ['view_dashboard','update_status'],
     subcon:      ['view_dashboard','update_status']
@@ -3252,19 +3259,61 @@
       var user = getCurrentUser();
       var now = new Date();
       var timeOut = now.getHours().toString().padStart(2,'0') + ':' + now.getMinutes().toString().padStart(2,'0');
-      var { error } = await db.from('job_orders').update({
+      var completeUpdates = {
         status: 'Completed',
         gofib_status: 'Active',
         time_out: timeOut,
         updated_by: user.name,
         updated_at: now.toISOString()
-      }).eq('id', currentJO.id);
+      };
+      var { error } = await db.from('job_orders').update(completeUpdates).eq('id', currentJO.id);
       if (error) throw error;
+      /* Log this as a 'complete' action — status went to Completed and account went Active/activated. */
+      await writeAudit(currentJO, diffChanges(currentJO, completeUpdates), 'complete');
       showToast('✓ Job Order marked as Completed!', 'success');
       closeModal();
       load();
     } catch(err) { showToast('Error: ' + err.message, 'error'); }
   });
+
+  /* Write an audit trail entry for each changed field.
+     `changes` is an array of {field, old, new}. `action` labels the kind of change
+     ('edit','complete','cancel','reschedule','activate') so you can later filter e.g.
+     "who marked jobs Completed". Logs to the real audit_log table; skipped only if no DB.
+     The log is append-only by design (no update/delete policy), so it's a permanent record. */
+  async function writeAudit(rec, changes, action) {
+    if (!db || !rec || !changes || !changes.length) return;
+    var user = getCurrentUser();
+    var rows = changes.map(function(c){
+      return {
+        job_order_id: (typeof rec.id==='string' && rec.id.indexOf('demo-')===0) ? null : rec.id,
+        jo_number: rec.jo_number || String(rec.id),
+        changed_by: user.name || 'Unknown',
+        changed_role: user.role || '',
+        field_name: c.field,
+        old_value: (c.old===null||c.old===undefined) ? '' : String(c.old),
+        new_value: (c.new===null||c.new===undefined) ? '' : String(c.new),
+        action: action || 'edit'
+      };
+    });
+    try {
+      var r = await db.from('audit_log').insert(rows);
+      if (r.error) console.error('writeAudit', r.error);
+    } catch (err) { console.error('writeAudit', err); }
+  }
+
+  /* Compare an object of proposed updates against the current record; return only the
+     fields that actually changed, as [{field, old, new}]. Prevents logging no-op saves. */
+  function diffChanges(rec, updates) {
+    var out = [];
+    Object.keys(updates).forEach(function(k){
+      if (k==='updated_by' || k==='updated_at') return;   /* housekeeping fields, not user edits */
+      var oldV = rec[k]===undefined||rec[k]===null ? '' : String(rec[k]);
+      var newV = updates[k]===undefined||updates[k]===null ? '' : String(updates[k]);
+      if (oldV !== newV) out.push({ field:k, old:rec[k], new:updates[k] });
+    });
+    return out;
+  }
 
   /* SAVE CHANGES */
   safeOnSel('.btn-save', 'click', async function() {
@@ -3282,8 +3331,24 @@
         updated_by:     user.name,
         updated_at:     new Date().toISOString()
       };
+      /* Account fields — only included if the user has edit_account AND the input exists on the form. */
+      if (can('edit_account')) {
+        var acctMap = {
+          customer_name:'editCustomerName', account_number:'editAccountNumber', reference_id:'editReferenceId',
+          mobile_number:'editMobileNumber', alt_mobile_number:'editAltMobile', address:'editAddress',
+          municipality:'editMunicipality', barangay:'editBarangay', plan:'editPlan',
+          modem_serial:'editModemSerial', iptv_serial:'editIptvSerial'
+        };
+        Object.keys(acctMap).forEach(function(field){
+          var el = document.getElementById(acctMap[field]);
+          if (el) updates[field] = el.value;
+        });
+      }
+      /* Work out what actually changed BEFORE saving, so we can log it accurately. */
+      var changes = diffChanges(currentJO, updates);
       var { error } = await db.from('job_orders').update(updates).eq('id', currentJO.id);
       if (error) throw error;
+      await writeAudit(currentJO, changes, 'edit');
       showToast('💾 Changes saved successfully!', 'success');
       closeModal();
       load();
@@ -3316,14 +3381,16 @@
       var fullReason = notes ? reason + ' - ' + notes : reason;
 
       /* Update job order */
-      var { error: e1 } = await db.from('job_orders').update({
+      var reschedUpdates = {
         status: 'Rescheduled',
         status_remarks: fullReason,
         reschedule_count: rc,
         updated_by: user.name,
         updated_at: new Date().toISOString()
-      }).eq('id', currentJO.id);
+      };
+      var { error: e1 } = await db.from('job_orders').update(reschedUpdates).eq('id', currentJO.id);
       if (e1) throw e1;
+      await writeAudit(currentJO, diffChanges(currentJO, reschedUpdates), 'reschedule');
 
       /* Insert reschedule history */
       var { error: e2 } = await db.from('reschedule_history').insert({
@@ -3362,13 +3429,15 @@
     try {
       var user = getCurrentUser();
       var fullReason = notes ? reason + ' - ' + notes : reason;
-      var { error } = await db.from('job_orders').update({
+      var cancelUpdates = {
         status: 'Cancelled',
         status_remarks: fullReason,
         updated_by: user.name,
         updated_at: new Date().toISOString()
-      }).eq('id', currentJO.id);
+      };
+      var { error } = await db.from('job_orders').update(cancelUpdates).eq('id', currentJO.id);
       if (error) throw error;
+      await writeAudit(currentJO, diffChanges(currentJO, cancelUpdates), 'cancel');
       showToast('✕ Job Order cancelled.', 'error');
       closeCancelModal();
       closeModal();
