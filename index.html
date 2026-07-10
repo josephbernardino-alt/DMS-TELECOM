@@ -2084,7 +2084,7 @@
       <button class="btn btn-reschedule">↺ Reschedule Job Order</button>
       <button class="btn btn-cancel-jo">✕ Cancel Job Order</button>
       <button class="btn btn-complete">✓ Complete Job Order</button>
-      <button class="btn btn-save">💾 Save Changes</button>
+      <button class="btn btn-save" id="btnSaveJO">💾 Save Changes</button>
     </div>
   </div>
 </div>
@@ -3316,7 +3316,7 @@
   }
 
   /* SAVE CHANGES */
-  safeOnSel('.btn-save', 'click', async function() {
+  safeOn('btnSaveJO', 'click', async function() {
     if (!currentJO) return;
     try {
       var user = getCurrentUser();
