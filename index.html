@@ -2146,26 +2146,49 @@
     function mobile(rand){ return '09'+Math.floor(100000000+rand()*899999999); }
     function napCode(rand){ var p=['MRK002','MAN033','PSG003','SJC001','MAN002']; return pick(rand,p)+' LP'+Math.floor(50+rand()*600)+' NP'+Math.floor(1+rand()*8); }
 
-    /* ----- JOB ORDERS: spread across June 1 → June 25, 2026 ----- */
+    /* Build a YYYY-MM-DD string for "N days from today" (negative = past, positive = future).
+       This is the key to making the demo never go empty: every date is computed relative to
+       whatever the real current date is, so "today" always has records no matter when the app
+       is opened. `offsetDay(0)` is today, `offsetDay(-1)` yesterday, `offsetDay(3)` three days out. */
+    function offsetDay(n){
+      var d = new Date();
+      d.setHours(0,0,0,0);
+      d.setDate(d.getDate() + n);
+      return d.getFullYear()+'-'+pad2(d.getMonth()+1)+'-'+pad2(d.getDate());
+    }
+
+    /* The demo window: how many days back and forward to populate.
+       PAST_DAYS of history + a few FUTURE_DAYS of upcoming scheduled work. */
+    var PAST_DAYS = 20, FUTURE_DAYS = 4;
+
+    /* ----- JOB ORDERS: spread across a window relative to TODAY ----- */
     function genJobs(){
       var rand=lcg(20260601);
       var out=[]; var jo=3530000; var acct=1878702275300;
-      for (var day=1; day<=25; day++){
-        var dateStr='2026-06-'+pad2(day);
-        var perDay=10+Math.floor(rand()*12);
+      for (var day = -PAST_DAYS; day <= FUTURE_DAYS; day++){
+        var dateStr = offsetDay(day);
+        var isFuture = day > 0;
+        /* future days are lighter (upcoming/scheduled), past/today are busy */
+        var perDay = isFuture ? (3+Math.floor(rand()*5)) : (10+Math.floor(rand()*12));
         for (var k=0;k<perDay;k++){
           var roll=rand();
           var status, remarks;
-          if (roll<0.42){ status='Pending'; remarks=pick(rand,['','ONGOING','Sent SMS','For scheduling']); }
-          else if (roll<0.68){ status='Completed'; remarks=pick(rand,['INSTALLED BY A2','DONE INSTALLATION','INSTALLED BY APEX','INSTALLED BY BALANGUE']); }
-          else if (roll<0.82){ status='Rescheduled'; remarks=pick(rand,['Needs permit from HOA','Requested by customer','Other reason - no access']); }
-          else { status='Cancelled'; remarks=pick(rand,['Full NAP - no port','Cancelled as per Call','Cancelled by Subs','Other reason']); }
+          if (isFuture) {
+            /* upcoming work hasn't happened yet — almost all Pending/scheduled */
+            if (roll<0.9){ status='Pending'; remarks=pick(rand,['For scheduling','Scheduled','Sent SMS','']); }
+            else { status='Rescheduled'; remarks=pick(rand,['Requested by customer','Moved to later date']); }
+          } else {
+            if (roll<0.42){ status='Pending'; remarks=pick(rand,['','ONGOING','Sent SMS','For scheduling']); }
+            else if (roll<0.68){ status='Completed'; remarks=pick(rand,['INSTALLED BY A2','DONE INSTALLATION','INSTALLED BY APEX','INSTALLED BY BALANGUE']); }
+            else if (roll<0.82){ status='Rescheduled'; remarks=pick(rand,['Needs permit from HOA','Requested by customer','Other reason - no access']); }
+            else { status='Cancelled'; remarks=pick(rand,['Full NAP - no port','Cancelled as per Call','Cancelled by Subs','Other reason']); }
+          }
           var hasTeam = status!=='Pending' ? true : rand()<0.35;
           var team = hasTeam ? pick(rand,TEAMS) : null;
           var cs = (status==='Pending'||status==='Rescheduled') ? pick(rand,CALLST) : '';
           var brgy=pick(rand,BRGYS);
           out.push({
-            id:'demo-jo-'+day+'-'+k,
+            id:'demo-jo-'+(day+PAST_DAYS)+'-'+k,
             dispatch_date:dateStr,
             jo_number:'R'+(jo++),
             account_number:String(acct++),
@@ -2192,7 +2215,7 @@
       return out;
     }
 
-    /* ----- MIGRATION ORDERS: date_endorsed spread June 1 → June 25 ----- */
+    /* ----- MIGRATION ORDERS: date_endorsed spread across a window relative to TODAY ----- */
     function genMig(){
       var rand=lcg(99887766);
       var out=[]; var acct=688000000;
@@ -2200,12 +2223,15 @@
       for (var i=0;i<260;i++){
         var brgy=pick(rand,BRGYS);
         var st=pick(rand,STAT);
-        var day=1+Math.floor(rand()*25);
-        var endorsed='2026-06-'+pad2(day);
+        /* endorsed somewhere in the past window (never future — you don't pre-endorse) */
+        var offset = -(1+Math.floor(rand()*PAST_DAYS));
+        var endorsed = offsetDay(offset);
         var hasTeam = (st==='Pending'||st==='Visited'||st==='Done'||st==='Completed') && rand()<0.5;
         var team = hasTeam?pick(rand,TEAMS):null;
         var done = (st==='Done'||st==='Completed'||st==='Visited'||st==='Called');
         var cs = (!st||st==='Pending') ? pick(rand,CALLST) : '';
+        /* visited/completed happen a few days AFTER endorsement, but never in the future */
+        var followOffset = Math.min(0, offset + Math.floor(rand()*4));
         out.push({
           id:'demo-mig-'+i,
           old_acct_no:String(acct++ + Math.floor(rand()*900)),
@@ -2226,8 +2252,8 @@
           personnel: team?pick(rand,PERS):'',
           contact_info:mobile(rand),
           mobile_number:mobile(rand),
-          date_visited: (hasTeam||done)?'2026-06-'+pad2(Math.min(25,day+Math.floor(rand()*4))):'',
-          date_completed: done?'2026-06-'+pad2(Math.min(25,day+Math.floor(rand()*4))):'',
+          date_visited: (hasTeam||done)?offsetDay(followOffset):'',
+          date_completed: done?offsetDay(followOffset):'',
           remarks: done?'Migration done':(st==='Cancelled'?'Cancelled':''),
           sales_remarks: rand()<0.25 ? pick(rand,['Customer prefers AM visit','VIP account — handle with care','Call before dispatch, gate code needed','Follow up on unpaid balance first','Customer requested specific technician']) : '',
           chat_count: rand()<0.1?Math.floor(1+rand()*3):0,
@@ -3709,23 +3735,72 @@
     return CHAT_STORE[joNumber];
   }
 
+  /* ---- DEMO CHAT SEEDING ----
+     In demo mode, generate believable conversation threads so the chat feature looks alive
+     during testing, WITHOUT writing anything to the real database. Threads are keyed by
+     jo_number and generated deterministically from that number, so the same job always shows
+     the same conversation. Real messages from Supabase are merged on top (see loadChatThread),
+     so if someone actually chats on a demo job, their real messages still appear. */
+  var DEMO_CHAT_SNIPPETS = [
+    {r:'office',      s:'Coordinator', t:'Pakischedule po ito bukas AM kung pwede.'},
+    {r:'tl',          s:'TL Cesar',    t:'Noted, assigning a team now.'},
+    {r:'call_center', s:'Lei',         t:'Customer confirmed available after 1PM.'},
+    {r:'agent',       s:'JBonaga',     t:'On the way na po sa site.'},
+    {r:'agent',       s:'JBonaga',     t:'No access, gate locked. Nag-text na sa customer.'},
+    {r:'tl',          s:'TL Flor',     t:'Reschedule na lang po, walang sagot customer.'},
+    {r:'office',      s:'Coordinator', t:'Ok, move to next available slot.'},
+    {r:'agent',       s:'MReyes',      t:'Done installation, signal ok. For QC na.'},
+    {r:'dispatch',    s:'Dispatch',    t:'Team BEST-0034 free na after lunch, pwede i-assign dito.'},
+    {r:'sales_admin', s:'Sales',       t:'VIP account po ito, please prioritize.'}
+  ];
+  function demoSeedChat(joNumber) {
+    if (!DEMO_MODE || !joNumber) return [];
+    /* deterministic pseudo-random from the JO number so the thread is stable */
+    var seed = 0; for (var i=0;i<joNumber.length;i++) seed = (seed*31 + joNumber.charCodeAt(i))>>>0;
+    var rand = (function(s){ return function(){ s=(s*1664525+1013904223)>>>0; return s/4294967296; }; })(seed);
+    var n = 1 + Math.floor(rand()*3);          /* 1–3 messages */
+    var start = DEMO_CHAT_SNIPPETS.length;
+    var msgs = [];
+    var baseTime = Date.now() - Math.floor(rand()*6*3600*1000); /* within last ~6h */
+    for (var m=0; m<n; m++){
+      var snip = DEMO_CHAT_SNIPPETS[Math.floor(rand()*DEMO_CHAT_SNIPPETS.length)];
+      msgs.push({
+        id: 'demo-msg-'+joNumber+'-'+m,
+        jo_number: joNumber,
+        sender: snip.s, sender_role: snip.r,
+        text: snip.t,
+        ts: new Date(baseTime + m*7*60000).toISOString(),
+        read: false, demo: true
+      });
+    }
+    return msgs;
+  }
+
   /* Pull a thread's messages fresh from the database into the cache.
      Called every time the popup opens, which is exactly what makes cross-device work:
      whatever the field agent sent on their phone is already in the table, so the office
      sees it the moment they open the same job. If the DB is unreachable we keep whatever
      is cached and show a small notice rather than blanking the conversation. */
   async function loadChatThread(joNumber) {
-    if (!db || !joNumber) return chatThread(joNumber);
-    try {
-      var res = await db.from('messages').select('*')
-        .eq('jo_number', joNumber)
-        .order('created_at', { ascending: true });
-      if (res.error) throw res.error;
-      CHAT_STORE[joNumber] = (res.data || []).map(dbRowToMsg);
-    } catch (err) {
-      console.error('loadChatThread', err);
-      showToast('Could not load messages (offline?) — showing cached', 'warning');
+    if (!joNumber) return chatThread(joNumber);
+    var real = [];
+    if (db) {
+      try {
+        var res = await db.from('messages').select('*')
+          .eq('jo_number', joNumber)
+          .order('created_at', { ascending: true });
+        if (res.error) throw res.error;
+        real = (res.data || []).map(dbRowToMsg);
+      } catch (err) {
+        console.error('loadChatThread', err);
+        showToast('Could not load messages (offline?) — showing cached', 'warning');
+      }
     }
+    /* In demo mode, blend the deterministic demo thread with any real messages, ordered by time.
+       Real messages a tester actually sends will appear alongside the demo ones. */
+    var demo = demoSeedChat(joNumber);
+    var merged = demo.concat(real).sort(function(a,b){ return new Date(a.ts) - new Date(b.ts); });
+    CHAT_STORE[joNumber] = merged.length ? merged : real;
     return chatThread(joNumber);
   }
 
@@ -3964,20 +4039,24 @@
      chat badges. One query for the whole page (rather than one per row), counted client-side.
      This replaces the old demo seeder that injected a fake canned message into every badge. */
   async function refreshChatCounts(records) {
-    if (!db || !records || !records.length) return;
+    if (!records || !records.length) return;
     var nums = records.map(function(r){ return r.jo_number || r.id; }).filter(Boolean);
     if (!nums.length) return;
-    try {
-      var res = await db.from('messages').select('jo_number').in('jo_number', nums);
-      if (res.error) throw res.error;
-      var counts = {};
-      (res.data||[]).forEach(function(row){ counts[row.jo_number] = (counts[row.jo_number]||0) + 1; });
-      records.forEach(function(r){ r.chat_count = counts[r.jo_number||r.id] || 0; });
-      /* redraw so the new counts show; render() does NOT call us back, so no loop */
-      if (typeof render === 'function' && shown === records) render(records);
-    } catch (err) {
-      console.error('refreshChatCounts', err);
+    var counts = {};
+    /* real message counts from the DB (if connected) */
+    if (db) {
+      try {
+        var res = await db.from('messages').select('jo_number').in('jo_number', nums);
+        if (!res.error) (res.data||[]).forEach(function(row){ counts[row.jo_number] = (counts[row.jo_number]||0) + 1; });
+      } catch (err) { console.error('refreshChatCounts', err); }
     }
+    /* add demo-seeded thread lengths so the badge matches what actually opens */
+    records.forEach(function(r){
+      var key = r.jo_number || r.id;
+      var demoN = demoSeedChat(key).length;
+      r.chat_count = (counts[key] || 0) + demoN;
+    });
+    if (typeof render === 'function' && shown === records) render(records);
   }
 
   safeOn('chatOverlay', 'click', function(e){ if(e.target===this) closeChat(); });
