@@ -2709,9 +2709,10 @@
   function teamClass(tn) { return tn&&tn.indexOf('BEST')===0?'best':'ats'; }
 
   /* ── RENDER ── */
+  var _skipChatCountRefresh = false;   /* guard: prevents render→refreshChatCounts→render loop */
   function render(data) {
     shown = data;
-    if (typeof refreshChatCounts === 'function') refreshChatCounts(data);
+    if (!_skipChatCountRefresh && typeof refreshChatCounts === 'function') refreshChatCounts(data);
     if (currentUser && currentUser.role === 'tl') renderTlCards(data);
     var tbody = document.getElementById('tableBody');
     if (!data.length) {
@@ -4036,9 +4037,11 @@
 
   /* Fetch the real message counts for the records currently on screen and update their
      chat badges. One query for the whole page (rather than one per row), counted client-side.
-     This replaces the old demo seeder that injected a fake canned message into every badge. */
+     Runs at most ONCE per data array (marked with _chatCounted) so it can never loop with render. */
   async function refreshChatCounts(records) {
     if (!records || !records.length) return;
+    if (records._chatCounted) return;      /* already processed this dataset — do nothing */
+    records._chatCounted = true;
     var nums = records.map(function(r){ return r.jo_number || r.id; }).filter(Boolean);
     if (!nums.length) return;
     var counts = {};
@@ -4055,7 +4058,12 @@
       var demoN = demoSeedChat(key).length;
       r.chat_count = (counts[key] || 0) + demoN;
     });
-    if (typeof render === 'function' && shown === records) render(records);
+    /* redraw ONCE with updated counts; the guard stops this render from calling us again */
+    if (typeof render === 'function' && shown === records) {
+      _skipChatCountRefresh = true;
+      render(records);
+      _skipChatCountRefresh = false;
+    }
   }
 
   safeOn('chatOverlay', 'click', function(e){ if(e.target===this) closeChat(); });
