@@ -2157,7 +2157,7 @@
      query returns 0 rows or the DB is unreachable. Set DEMO_MODE = false
      (or delete this whole block) once real data is migrated in.
      ════════════════════════════════════════════════════════════════════ */
-  var DEMO_MODE = true;
+  var DEMO_MODE = false;
   var DEMO = (function(){
     function lcg(seed){ var s=seed>>>0; return function(){ s=(s*1664525+1013904223)>>>0; return s/4294967296; }; }
     function pick(rand,arr){ return arr[Math.floor(rand()*arr.length)]; }
@@ -2688,6 +2688,13 @@
       '<tr class="loading-row"><td colspan="18"><span class="spinner"></span>Loading job orders for '+fmtDate(dateFrom)+'...</td></tr>';
     if (!db) {
       if (DEMO_MODE) { seedDemoTeams(); allOrders = scopeRecords(demoJobsForRange(dateFrom,dateTo)); shown = allOrders; render(shown); summary(shown); updateDateLabel(); }
+      else {
+        /* No database connection and no demo fallback — say so plainly instead of
+           leaving a spinner running forever, which looks like the app has hung. */
+        document.getElementById('tableBody').innerHTML =
+          '<tr class="loading-row"><td colspan="18" style="color:#ef4444;">⚠ Cannot reach the database. Check your connection, then refresh.</td></tr>';
+        updateDateLabel();
+      }
       return;
     }
     try {
