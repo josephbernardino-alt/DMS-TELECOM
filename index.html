@@ -2700,6 +2700,12 @@
         .limit(1000);
       if (r1.error) throw r1.error;
       allOrders = r1.data||[];
+      /* Real database rows only carry team_id (a link to the teams table), but the rest of
+         the app — team filtering, TL cards, reports — reads team_number. Resolve it once
+         here so every downstream reader works unchanged. Demo rows already had it. */
+      allOrders.forEach(function(o){
+        if (!o.team_number && o.team_id) o.team_number = teamNum(o.team_id);
+      });
       if (DEMO_MODE && !allOrders.length) { seedDemoTeams(); allOrders = demoJobsForRange(dateFrom,dateTo); }
       allOrders = scopeRecords(allOrders);   /* scope to the user's office/region */
       shown = allOrders;
@@ -3068,6 +3074,10 @@
     document.getElementById('loginOverlay').style.display = 'none';
     document.querySelector('.nav-avatar').textContent = user.initials;
     applyAccessControl();               /* gate the UI for this user's role/region */
+    /* Always land a fresh session on the dashboard. Without this, whatever page the
+       previous user had open stays open — so logging out of the Activity Log and back
+       in as a Team Leader would leave them sitting on a supervisor-only page. */
+    switchPage('dashboard');
   }
 
   var savedUser = sessionStorage.getItem('bestdms_user');
@@ -3256,6 +3266,17 @@
     }
     /* Team Leaders get a lean, phone-friendly view (collapsed KPIs + client cards). */
     document.body.classList.toggle('tl-view', currentUser.role === 'tl');
+
+    /* Backstop: if the page currently on screen needs a capability this user doesn't
+       have, send them to the dashboard. Hiding the nav button alone isn't enough —
+       the page could already be open (e.g. after a logout/login swap). */
+    var PAGE_CAPS = { 'page-audit': 'view_audit', 'page-reports': 'view_reports' };
+    var active = document.querySelector('.page-view.active');
+    if (active) {
+      var needed = PAGE_CAPS[active.id];
+      var tlOffLimits = (currentUser.role === 'tl' && active.id !== 'page-dashboard');
+      if ((needed && !can(needed)) || tlOffLimits) switchPage('dashboard');
+    }
   }
 
 
