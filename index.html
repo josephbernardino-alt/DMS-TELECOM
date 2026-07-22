@@ -2105,10 +2105,10 @@
     </div>
     <div class="modal-footer">
       <button class="btn btn-close" id="btnClose2">Close</button>
-      <button class="btn btn-reschedule">↺ Reschedule Job Order</button>
-      <button class="btn btn-cancel-jo">✕ Cancel Job Order</button>
-      <button class="btn btn-complete">✓ Complete Job Order</button>
-      <button class="btn btn-save" id="btnSaveJO">💾 Save Changes</button>
+      <button class="btn btn-reschedule" data-cap="edit_jo">↺ Reschedule Job Order</button>
+      <button class="btn btn-cancel-jo" data-cap="edit_jo">✕ Cancel Job Order</button>
+      <button class="btn btn-complete" data-cap="edit_jo">✓ Complete Job Order</button>
+      <button class="btn btn-save" id="btnSaveJO" data-cap="edit_jo">💾 Save Changes</button>
     </div>
   </div>
 </div>
@@ -2971,8 +2971,15 @@
     /* Account fields are editable only for roles with edit_account; everyone else sees them read-only.
        afld() picks the editable or display version per-field based on that capability. */
     var canEditAcct = can('edit_account');
+    var canEditJO   = can('edit_jo');
     function afld(lbl, val, id, type) {
       return canEditAcct ? efld(lbl, val, id, type) : fld(lbl, val);
+    }
+    /* Operational fields (TL, call status, times, NAP). Editable only for roles with
+       edit_jo — field roles like TL and Sales Admin see the whole record read-only and
+       make their status changes through the chat popup instead. */
+    function ofld(lbl, val, id, type) {
+      return canEditJO ? efld(lbl, val, id, type) : fld(lbl, val);
     }
 
     var detailsHtml =
@@ -2989,11 +2996,11 @@
       sec('',
         g3(
           fld('JO Status',r.status?'<span class="status-badge '+sBadge(r.status)+'">'+r.status+'</span>':'—',true),
-          efld('JO Status Remarks',r.jo_status_remarks||r.status_remarks,'editRemarks'),
-          efld('Sales Agent',r.sales_agent,'editSalesAgent')
+          ofld('JO Status Remarks',r.jo_status_remarks||r.status_remarks,'editRemarks'),
+          ofld('Sales Agent',r.sales_agent,'editSalesAgent')
         )+
-        g3(efld('Assigned TL',r.assigned_tl||r.tl_name,'editTL'),efld('Call Status',r.call_status,'editCallStatus'),efld('Call Remarks',r.call_remarks,'editCallRemarks'))+
-        g3(efld('Time In',r.time_in,'editTimeIn','time'),efld('Time Out',r.time_out,'editTimeOut','time'),efld('NAP ID',r.nap_id,'editNapId'))+
+        g3(ofld('Assigned TL',r.assigned_tl||r.tl_name,'editTL'),ofld('Call Status',r.call_status,'editCallStatus'),ofld('Call Remarks',r.call_remarks,'editCallRemarks'))+
+        g3(ofld('Time In',r.time_in,'editTimeIn','time'),ofld('Time Out',r.time_out,'editTimeOut','time'),ofld('NAP ID',r.nap_id,'editNapId'))+
         g2(afld('Modem Serial Number',r.modem_serial,'editModemSerial'),afld('IPTV Serial Number',r.iptv_serial,'editIptvSerial'))
       );
 
@@ -3138,13 +3145,15 @@
   /* Which roles are allowed each capability. Edit this table to change the rules —
      it mirrors the permissions matrix in the checklist. */
   var ROLE_CAPABILITIES = {
-    developer:   ['view_dashboard','view_reports','view_audit','edit_records','edit_account','assign','update_status','import','manage_users','all_regions','edit_sales_remarks'],
-    manager:     ['view_dashboard','view_reports','view_audit','edit_records','edit_account','assign','update_status','import','edit_sales_remarks'],
-    dispatch:    ['view_dashboard','view_reports','view_audit','edit_account','assign','update_status'],
+    developer:   ['view_dashboard','view_reports','view_audit','edit_records','edit_account','edit_jo','assign','update_status','import','manage_users','all_regions','edit_sales_remarks'],
+    manager:     ['view_dashboard','view_reports','view_audit','edit_records','edit_account','edit_jo','assign','update_status','import','edit_sales_remarks'],
+    dispatch:    ['view_dashboard','view_reports','view_audit','edit_account','edit_jo','assign','update_status'],
     /* Sales Admin: views everything (all regions) but cannot change operational data.
        Their only write power is leaving a Sales Admin Remark on a record. */
     sales_admin: ['view_dashboard','view_reports','edit_sales_remarks'],
-    encoder:     ['view_dashboard','edit_records','edit_account','import'],
+    encoder:     ['view_dashboard','edit_records','edit_account','edit_jo','import'],
+    /* Field roles: search, view job order details (read-only), and chat.
+       Status changes happen through the chat popup (update_status), not the detail modal. */
     tl:          ['view_dashboard','update_status'],
     agent:       ['view_dashboard','update_status'],
     subcon:      ['view_dashboard','update_status']
@@ -3298,6 +3307,7 @@
   /* COMPLETE JO */
   safeOnSel('.btn-complete', 'click', async function() {
     if (!currentJO) return;
+    if (!can('edit_jo')) { showToast('You do not have permission to do that', 'warning'); return; }
     if (!confirm('Mark "' + currentJO.customer_name + '" as Completed?')) return;
     try {
       var user = getCurrentUser();
@@ -3362,6 +3372,7 @@
   /* SAVE CHANGES */
   safeOn('btnSaveJO', 'click', async function() {
     if (!currentJO) return;
+    if (!can('edit_jo')) { showToast('You do not have permission to do that', 'warning'); return; }
     try {
       var user = getCurrentUser();
       var updates = {
@@ -3402,6 +3413,7 @@
   /* RESCHEDULE - Open sub-modal */
   safeOnSel('.btn-reschedule', 'click', function() {
     if (!currentJO) return;
+    if (!can('edit_jo')) { showToast('You do not have permission to do that', 'warning'); return; }
     document.getElementById('reschedJO').value = currentJO.jo_number;
     var tomorrow = new Date();
     tomorrow.setDate(tomorrow.getDate() + 1);
@@ -3458,6 +3470,7 @@
   /* CANCEL - Open sub-modal */
   safeOnSel('.btn-cancel-jo', 'click', function() {
     if (!currentJO) return;
+    if (!can('edit_jo')) { showToast('You do not have permission to do that', 'warning'); return; }
     document.getElementById('cancelJO').value = currentJO.jo_number;
     document.getElementById('cancelReason').value = '';
     document.getElementById('cancelNotes').value = '';
