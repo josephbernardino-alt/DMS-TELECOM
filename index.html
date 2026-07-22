@@ -1005,6 +1005,7 @@
     </div>
   </div>
   <button class="nav-btn" id="reportsBtn" data-cap="view_reports">Reports</button>
+  <button class="nav-btn tl-hide" id="auditBtn" data-cap="view_audit">📋 Activity Log</button>
   <button class="nav-btn tl-hide" id="napLocatorBtn">NAP Locator</button>
   <div style="position:relative;">
     <button class="nav-btn" id="notifBtn" style="position:relative;">🔔 <span class="notif-badge" id="notifBadge">0</span></button>
@@ -1389,6 +1390,45 @@
       <div class="report-card-desc">Weekly scorecard of individual FST/Team performance based on Done, Cancelled, Rescheduled, and Attachment Compliance.</div>
     </div>
 
+  </div>
+</div>
+
+<!-- ============ AUDIT / ACTIVITY LOG PAGE ============ -->
+<div class="page-view" id="page-audit">
+  <div class="filterbar sticky-top">
+    <div class="reports-page-title" style="margin:0;">Activity Log — Who Changed What</div>
+    <div class="filter-spacer"></div>
+    <input class="search-input" id="auditSearch" type="text" placeholder="Search JO#, name, field..." style="max-width:300px;">
+    <select id="auditActionFilter" style="border:1px solid #cbd5e1;border-radius:7px;padding:8px 10px;font-size:12px;">
+      <option value="">All actions</option>
+      <option value="edit">Edits</option>
+      <option value="complete">Completed / Activated</option>
+      <option value="cancel">Cancelled</option>
+      <option value="reschedule">Rescheduled</option>
+    </select>
+    <button class="view-btn" id="auditRefreshBtn">↻ Refresh</button>
+  </div>
+  <div class="mig-body-wrap" id="auditBodyWrap" style="padding:0 8px;">
+    <table class="mig-body-table" style="width:100%;">
+      <thead>
+        <tr style="position:sticky;top:0;background:#1e3a5f;color:#fff;z-index:2;">
+          <th style="text-align:left;padding:10px;font-size:11px;">Date &amp; Time</th>
+          <th style="text-align:left;padding:10px;font-size:11px;">Who</th>
+          <th style="text-align:left;padding:10px;font-size:11px;">Role</th>
+          <th style="text-align:left;padding:10px;font-size:11px;">JO Number</th>
+          <th style="text-align:left;padding:10px;font-size:11px;">Action</th>
+          <th style="text-align:left;padding:10px;font-size:11px;">Field</th>
+          <th style="text-align:left;padding:10px;font-size:11px;">From</th>
+          <th style="text-align:left;padding:10px;font-size:11px;">To</th>
+        </tr>
+      </thead>
+      <tbody id="auditBody">
+        <tr class="loading-row"><td colspan="8" style="padding:30px;text-align:center;color:#94a3b8;">Loading activity…</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="mig-footer" style="display:flex;justify-content:space-between;align-items:center;padding:8px 12px;">
+    <span id="auditShowingLabel">Showing 0 entries</span>
   </div>
 </div>
 
@@ -3105,9 +3145,9 @@
   /* Which roles are allowed each capability. Edit this table to change the rules —
      it mirrors the permissions matrix in the checklist. */
   var ROLE_CAPABILITIES = {
-    developer:   ['view_dashboard','view_reports','edit_records','edit_account','assign','update_status','import','manage_users','all_regions','edit_sales_remarks'],
-    manager:     ['view_dashboard','view_reports','edit_records','edit_account','assign','update_status','import','edit_sales_remarks'],
-    dispatch:    ['view_dashboard','view_reports','edit_account','assign','update_status'],
+    developer:   ['view_dashboard','view_reports','view_audit','edit_records','edit_account','assign','update_status','import','manage_users','all_regions','edit_sales_remarks'],
+    manager:     ['view_dashboard','view_reports','view_audit','edit_records','edit_account','assign','update_status','import','edit_sales_remarks'],
+    dispatch:    ['view_dashboard','view_reports','view_audit','edit_account','assign','update_status'],
     /* Sales Admin: views everything (all regions) but cannot change operational data.
        Their only write power is leaving a Sales Admin Remark on a record. */
     sales_admin: ['view_dashboard','view_reports','edit_sales_remarks'],
@@ -3485,6 +3525,9 @@
       if(mb) { mb.classList.remove('active'); }
     } else if (page === 'reports') {
       document.getElementById('page-reports').classList.add('active');
+    } else if (page === 'audit') {
+      document.getElementById('page-audit').classList.add('active');
+      loadAuditLog();
     } else if (page === 'nap') {
       document.getElementById('page-nap').classList.add('active');
       loadNapData();
@@ -3541,6 +3584,90 @@
   safeOn('reportsBtn', 'click', function(){
     switchPage('reports');
   });
+
+  /* ── ACTIVITY / AUDIT LOG ──
+     Supervisor view (Manager/Dispatch/Developer) of who changed what, from the audit_log table.
+     Read-only; the table itself is append-only in the database, so this can only show history. */
+  var auditRows = [];
+  safeOn('auditBtn', 'click', function(){ switchPage('audit'); });
+  safeOn('auditRefreshBtn', 'click', function(){ loadAuditLog(); });
+  safeOn('auditSearch', 'input', renderAuditRows);
+  safeOn('auditActionFilter', 'change', renderAuditRows);
+
+  async function loadAuditLog() {
+    if (!can('view_audit')) { switchPage('dashboard'); return; }   /* extra guard */
+    var body = document.getElementById('auditBody');
+    body.innerHTML = '<tr class="loading-row"><td colspan="8" style="padding:30px;text-align:center;color:#94a3b8;"><span class="spinner"></span> Loading activity…</td></tr>';
+    if (!db) { body.innerHTML = '<tr><td colspan="8" style="padding:30px;text-align:center;color:#94a3b8;">No database connection.</td></tr>'; return; }
+    try {
+      var res = await db.from('audit_log').select('*')
+        .order('created_at', { ascending: false })
+        .limit(500);
+      if (res.error) throw res.error;
+      auditRows = res.data || [];
+      renderAuditRows();
+    } catch (err) {
+      body.innerHTML = '<tr><td colspan="8" style="padding:30px;text-align:center;color:#ef4444;">Error loading log: '+err.message+'</td></tr>';
+    }
+  }
+
+  function fmtAuditTime(iso) {
+    var d = new Date(iso);
+    if (isNaN(d)) return iso || '—';
+    var mons = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+    var h = d.getHours(), m = d.getMinutes();
+    var ap = h>=12?'PM':'AM'; h = h%12; if(h===0) h=12;
+    return mons[d.getMonth()]+' '+d.getDate()+', '+d.getFullYear()+'  '+(h<10?'0'+h:h)+':'+(m<10?'0'+m:m)+' '+ap;
+  }
+  /* Color-code the action so completions/cancellations stand out at a glance. */
+  function auditActionBadge(a) {
+    var map = { edit:'#475569', complete:'#15803d', cancel:'#b91c1c', reschedule:'#1d4ed8', activate:'#15803d' };
+    var color = map[a] || '#475569';
+    var label = ({ edit:'Edited', complete:'Completed', cancel:'Cancelled', reschedule:'Rescheduled', activate:'Activated' })[a] || (a||'—');
+    return '<span style="background:'+color+'22;color:'+color+';padding:2px 8px;border-radius:5px;font-size:11px;font-weight:700;">'+label+'</span>';
+  }
+  /* Make field names human-friendly instead of raw column names. */
+  function prettyField(f) {
+    return ({
+      customer_name:'Customer Name', account_number:'Account Number', reference_id:'Reference ID',
+      mobile_number:'Mobile Number', alt_mobile_number:'Alt Mobile', address:'Address',
+      municipality:'Municipality', barangay:'Barangay', plan:'Plan', modem_serial:'Modem Serial',
+      iptv_serial:'IPTV Serial', status:'Status', gofib_status:'GoFiber Status',
+      status_remarks:'Status Remarks', call_status:'Call Status', call_remarks:'Call Remarks',
+      tl_name:'Assigned TL', time_in:'Time In', time_out:'Time Out', nap_id:'NAP ID',
+      reschedule_count:'Reschedule Count', sales_agent:'Sales Agent'
+    })[f] || f || '—';
+  }
+
+  function renderAuditRows() {
+    var body = document.getElementById('auditBody');
+    if (!body) return;
+    var q = (document.getElementById('auditSearch').value || '').toLowerCase().trim();
+    var actionF = document.getElementById('auditActionFilter').value;
+    var rows = auditRows.filter(function(r){
+      if (actionF && r.action !== actionF) return false;
+      if (!q) return true;
+      return ((r.jo_number||'')+' '+(r.changed_by||'')+' '+prettyField(r.field_name)+' '+(r.old_value||'')+' '+(r.new_value||'')).toLowerCase().indexOf(q) >= 0;
+    });
+    if (!rows.length) {
+      body.innerHTML = '<tr><td colspan="8" style="padding:30px;text-align:center;color:#94a3b8;">No activity found.</td></tr>';
+      document.getElementById('auditShowingLabel').textContent = 'Showing 0 entries';
+      return;
+    }
+    body.innerHTML = rows.map(function(r){
+      return '<tr style="border-bottom:1px solid #f1f5f9;">'
+        + '<td style="padding:9px 10px;font-size:11px;white-space:nowrap;color:#64748b;">'+fmtAuditTime(r.created_at)+'</td>'
+        + '<td style="padding:9px 10px;font-size:12px;font-weight:600;">'+(r.changed_by||'—')+'</td>'
+        + '<td style="padding:9px 10px;font-size:11px;color:#64748b;">'+(chatRoleLabel(r.changed_role)||'—')+'</td>'
+        + '<td style="padding:9px 10px;font-size:12px;font-weight:600;color:#1d4ed8;">'+(r.jo_number||'—')+'</td>'
+        + '<td style="padding:9px 10px;">'+auditActionBadge(r.action)+'</td>'
+        + '<td style="padding:9px 10px;font-size:12px;">'+prettyField(r.field_name)+'</td>'
+        + '<td style="padding:9px 10px;font-size:11px;color:#94a3b8;max-width:140px;overflow:hidden;text-overflow:ellipsis;">'+((r.old_value||'').replace(/</g,'&lt;')||'—')+'</td>'
+        + '<td style="padding:9px 10px;font-size:11px;color:#15803d;font-weight:600;max-width:140px;overflow:hidden;text-overflow:ellipsis;">'+((r.new_value||'').replace(/</g,'&lt;')||'—')+'</td>'
+        + '</tr>';
+    }).join('');
+    document.getElementById('auditShowingLabel').textContent = 'Showing '+rows.length+' of '+auditRows.length+' entries';
+  }
   document.querySelectorAll('.report-card').forEach(function(card){
     card.addEventListener('click', function(){
       openReport(this.getAttribute('data-report'), this.querySelector('.report-card-title').textContent, this.querySelector('.report-card-desc').textContent);
