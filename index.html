@@ -387,8 +387,6 @@
     transition: all 0.2s;
     box-shadow: 0 4px 12px rgba(13,148,136,0.3);
   }
-  .demo-login-pick { background: #eff6ff; color: #1d4ed8; border: 1px solid #bfdbfe; border-radius: 6px; padding: 5px 10px; font-size: 11px; font-weight: 600; cursor: pointer; }
-  .demo-login-pick:hover { background: #1d4ed8; color: white; border-color: #1d4ed8; }
 
   .login-btn:hover {
     transform: translateY(-1px);
@@ -663,7 +661,6 @@
 
     /* Bigger tap targets for thumbs */
     .view-btn, .today-btn, .date-nav { min-height: 38px; }
-    #demoQuickLogin .demo-login-pick { font-size: 12px; padding: 8px 12px; }
   }
 
 
@@ -954,19 +951,6 @@
     </div>
 
     <button class="login-btn" id="loginBtn">Sign In</button>
-
-    <!-- DEMO QUICK-LOGIN — remove this block for production -->
-    <div id="demoQuickLogin" style="margin-top:16px;border-top:1px dashed #cbd5e1;padding-top:12px;">
-      <div style="font-size:10px;color:#94a3b8;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:8px;text-align:center;">Demo: tap to log in as…</div>
-      <div style="display:flex;flex-wrap:wrap;gap:6px;justify-content:center;">
-        <button class="demo-login-pick" data-u="fborja">Manager · All</button>
-        <button class="demo-login-pick" data-u="ncrdisp">Dispatch · NCR</button>
-        <button class="demo-login-pick" data-u="cavenc">Encoder · Cavite</button>
-        <button class="demo-login-pick" data-u="salesadm">Sales Admin · All</button>
-        <button class="demo-login-pick" data-u="developer">Developer</button>
-      </div>
-    </div>
-    <!-- END DEMO QUICK-LOGIN -->
 
   </div>
   <div class="login-copyright">© 2026 BEST Inc. All rights reserved.</div>
@@ -3132,14 +3116,6 @@
   safeOn('loginBtn', 'click', doLogin);
   safeOn('loginPassword', 'keydown', function(e) { if (e.key === 'Enter') doLogin(); });
   safeOn('loginUsername', 'keydown', function(e) { if (e.key === 'Enter') document.getElementById('loginPassword').focus(); });
-
-  /* DEMO quick-login: tap a role button to sign in instantly (remove for production). */
-  document.querySelectorAll('.demo-login-pick').forEach(function(btn){
-    btn.addEventListener('click', function(){
-      var u = USERS.find(function(x){ return x.username === btn.getAttribute('data-u'); });
-      if (u) { sessionStorage.setItem('bestdms_user', JSON.stringify(u)); showApp(u); load(); }
-    });
-  });
 
   /* ════════════ ACCESS CONTROL ════════════
      Two helpers the whole app uses:
