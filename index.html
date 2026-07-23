@@ -1390,6 +1390,7 @@
       <option value="complete">Completed / Activated</option>
       <option value="cancel">Cancelled</option>
       <option value="reschedule">Rescheduled</option>
+      <option value="assign">Assigned</option>
     </select>
     <button class="view-btn" id="auditRefreshBtn">↻ Refresh</button>
   </div>
@@ -2137,6 +2138,7 @@
     </div>
     <div class="modal-footer">
       <button class="btn btn-close" id="btnClose2">Close</button>
+      <button class="btn btn-reschedule" id="btnAssignJO" data-cap="assign" style="color:#1d4ed8;border-color:#1d4ed8;">⚑ Assign Team</button>
       <button class="btn btn-reschedule" data-cap="edit_jo">↺ Reschedule Job Order</button>
       <button class="btn btn-cancel-jo" data-cap="edit_jo">✕ Cancel Job Order</button>
       <button class="btn btn-complete" data-cap="edit_jo">✓ Complete Job Order</button>
@@ -2779,6 +2781,38 @@
   function teamClass(tn) { return tn&&tn.indexOf('BEST')===0?'best':'ats'; }
 
   /* ── RENDER ── */
+  /* ── BULK SELECTION ──
+     Mirrors the old spreadsheet workflow: dispatch used to copy a whole block of rows
+     from the selling sheet into a subcon's sheet at once. Here: tick rows, hit Assign,
+     the whole batch goes to one team in a single database update. */
+  var bulkSelected = new Set();
+
+  safeOn('tableBody', 'change', function(e){
+    if (!e.target.classList || !e.target.classList.contains('row-sel')) return;
+    var id = String(e.target.getAttribute('data-id'));
+    if (e.target.checked) bulkSelected.add(id); else bulkSelected.delete(id);
+    updateBulkBar();
+  });
+
+  function updateBulkBar() {
+    var bar = document.getElementById('bulkBar');
+    if (!bar) return;
+    if (!bulkSelected.size) { bar.style.display = 'none'; return; }
+    document.getElementById('bulkCount').textContent = bulkSelected.size;
+    bar.style.display = 'flex';
+  }
+
+  window.bulkSelectAllShown = function() {
+    shown.forEach(function(r){ bulkSelected.add(String(r.id)); });
+    document.querySelectorAll('.row-sel').forEach(function(cb){ cb.checked = true; });
+    updateBulkBar();
+  };
+  window.bulkClear = function() {
+    bulkSelected.clear();
+    document.querySelectorAll('.row-sel').forEach(function(cb){ cb.checked = false; });
+    updateBulkBar();
+  };
+
   var _skipChatCountRefresh = false;   /* guard: prevents render→refreshChatCounts→render loop */
   function render(data) {
     shown = data;
@@ -2790,6 +2824,7 @@
       document.getElementById('rowCount').textContent = '0'; return;
     }
     var html = '';
+    var canAssign = can('assign');
     for (var i=0; i<data.length; i++) {
       var r = data[i];
       var tn = teamNum(r.team_id);
@@ -2798,7 +2833,9 @@
         ? '<span class="status-badge s-pending">Pending<sup class="resched-count">'+rc+'</sup></span>'
         : (r.status?'<span class="status-badge '+sBadge(r.status)+'">'+r.status+'</span>':'—');
       html += '<tr data-idx="'+i+'">'
-        +'<td class="count-cell">'+(i+1)+'</td>'
+        +'<td class="count-cell">'
+          +(canAssign ? '<input type="checkbox" class="row-sel" data-id="'+r.id+'"'+(bulkSelected.has(String(r.id))?' checked':'')+'> ' : '')
+          +(i+1)+'</td>'
         /* The whole cell is the tap target (class chat-cell + generous padding), not just the
            tiny number/badge — on a phone a fingertip is far bigger than a 20px circle, so taps
            used to land on the bare <td> and fall through to the row's detail modal. Putting the
@@ -2958,6 +2995,7 @@
        don't also open the job-order detail modal. (Event bubbling would otherwise
        fire both: the bubble's onclick AND this row handler.) */
     if (e.target.closest('.chat-cell') || e.target.closest('.chat-badge') || e.target.closest('.chat-zero')) return;
+    if (e.target.classList && e.target.classList.contains('row-sel')) return;
     var tr=e.target.closest('tr');
     if(!tr||!tr.dataset.idx)return;
     var idx=parseInt(tr.dataset.idx,10);
@@ -3411,6 +3449,14 @@
   }
 
   /* COMPLETE JO */
+  safeOn('btnAssignJO', 'click', function() {
+    if (!currentJO) return;
+    if (!can('assign')) { showToast('You do not have permission to assign teams', 'warning'); return; }
+    var id = currentJO.id;
+    closeModal();
+    openAssignTeamModal(id, 'ni');
+  });
+
   safeOnSel('.btn-complete', 'click', async function() {
     if (!currentJO) return;
     if (!can('edit_jo')) { showToast('You do not have permission to do that', 'warning'); return; }
@@ -3744,9 +3790,9 @@
   }
   /* Color-code the action so completions/cancellations stand out at a glance. */
   function auditActionBadge(a) {
-    var map = { edit:'#475569', complete:'#15803d', cancel:'#b91c1c', reschedule:'#1d4ed8', activate:'#15803d' };
+    var map = { edit:'#475569', complete:'#15803d', cancel:'#b91c1c', reschedule:'#1d4ed8', activate:'#15803d', assign:'#7c3aed' };
     var color = map[a] || '#475569';
-    var label = ({ edit:'Edited', complete:'Completed', cancel:'Cancelled', reschedule:'Rescheduled', activate:'Activated' })[a] || (a||'—');
+    var label = ({ edit:'Edited', complete:'Completed', cancel:'Cancelled', reschedule:'Rescheduled', activate:'Activated', assign:'Assigned' })[a] || (a||'—');
     return '<span style="background:'+color+'22;color:'+color+';padding:2px 8px;border-radius:5px;font-size:11px;font-weight:700;">'+label+'</span>';
   }
   /* Make field names human-friendly instead of raw column names. */
@@ -6821,16 +6867,29 @@
   });
 
   var assignContext = 'mig';
-  window.openAssignTeamModal = function(recordId, ctx) {
-    assignContext = ctx || 'mig';
-    var pool = assignContext === 'ni' ? allOrders : migData;
-    pendingAssignRecord = pool.find(function(r){ return String(r.id) === String(recordId); });
-    if (!pendingAssignRecord) return;
+  var pendingAssignIds = null;   /* set when assigning a batch instead of one record */
 
+  window.openBulkAssign = function() {
+    if (!can('assign')) { showToast('You do not have permission to assign teams', 'warning'); return; }
+    if (!bulkSelected.size) return;
+    assignContext = 'ni-bulk';
+    pendingAssignIds = Array.from(bulkSelected);
+    fillAssignSelects();
+    var label = document.getElementById('assignCustomerName');
+    label.textContent = 'Assigning ' + pendingAssignIds.length + ' job order' + (pendingAssignIds.length>1?'s':'') + ' to one team';
+    label.style.display = 'block';
+    label.style.cssText += ';background:#eff6ff;color:#1d4ed8;border-radius:7px;padding:8px 10px;font-size:12px;font-weight:700;margin-bottom:10px;';
+    document.getElementById('assignTeamOverlay').style.display = 'flex';
+  };
+
+  function fillAssignSelects() {
     var teamSelect = document.getElementById('assignTeamSelect');
     teamSelect.innerHTML = '<option value="">— Select Team —</option>' +
-      allTeams.map(function(t){ return '<option value="'+t.team_number+'">'+t.team_number+'</option>'; }).join('');
-
+      allTeams.map(function(t){
+        /* Show the contractor next to the team so dispatch can see who they're handing work to. */
+        var co = t.company ? '  ·  ' + t.company : '';
+        return '<option value="'+t.team_number+'">'+t.team_number+co+'</option>';
+      }).join('');
     var p1 = document.getElementById('assignPersonnel1Select');
     var p2 = document.getElementById('assignPersonnel2Select');
     var personnelOptions = allPersonnel.map(function(p){
@@ -6838,7 +6897,17 @@
     }).join('');
     p1.innerHTML = '<option value="">— Select Personnel 1 —</option>' + personnelOptions;
     p2.innerHTML = '<option value="">None</option>' + personnelOptions;
+  }
 
+  window.openAssignTeamModal = function(recordId, ctx) {
+    assignContext = ctx || 'mig';
+    pendingAssignIds = null;
+    var pool = assignContext === 'ni' ? allOrders : migData;
+    pendingAssignRecord = pool.find(function(r){ return String(r.id) === String(recordId); });
+    if (!pendingAssignRecord) return;
+    fillAssignSelects();
+    var label = document.getElementById('assignCustomerName');
+    label.style.display = 'none';
     document.getElementById('assignTeamOverlay').style.display = 'flex';
   };
 
@@ -6854,9 +6923,42 @@
 
     if (!teamVal) { showToast('Team Number is required', 'warning'); return; }
     if (!p1Val)   { showToast('Personnel 1 is required', 'warning'); return; }
-    if (!pendingAssignRecord) return;
 
     var personnelStr = p1Val + (p2Val ? ', '+p2Val : '');
+
+    /* ---- BULK: one team applied to every ticked job order, in a single update ---- */
+    if (assignContext === 'ni-bulk') {
+      if (!pendingAssignIds || !pendingAssignIds.length) return;
+      var teamObjB = allTeams.find(function(t){ return t.team_number === teamVal; });
+      if (!teamObjB) { showToast('Unknown team', 'error'); return; }
+      try {
+        var updB = { team_id: teamObjB.id, personnel: personnelStr };
+        var rB = await db.from('job_orders').update(updB).in('id', pendingAssignIds);
+        if (rB.error) throw rB.error;
+        /* One audit row per job order, inserted in one call — the trail shows exactly
+           which dispatcher handed which jobs to which contractor's team, and when. */
+        var user = getCurrentUser();
+        var auditRows = pendingAssignIds.map(function(id){
+          var rec = allOrders.find(function(o){ return String(o.id)===String(id); }) || {};
+          return {
+            job_order_id: id, jo_number: rec.jo_number || String(id),
+            changed_by: user.name || 'Unknown', changed_role: user.role || '',
+            field_name: 'team_number', old_value: rec.team_number || '',
+            new_value: teamVal, action: 'assign'
+          };
+        });
+        var rA = await db.from('audit_log').insert(auditRows);
+        if (rA.error) console.error('bulk audit', rA.error);
+        showToast('✓ '+pendingAssignIds.length+' job orders → '+teamVal + (teamObjB.company? ' ('+teamObjB.company+')':''), 'success');
+        bulkClear();
+        pendingAssignIds = null;
+        closeAssignTeamModal();
+        load();
+      } catch(err) { showToast('Error: '+err.message, 'error'); }
+      return;
+    }
+
+    if (!pendingAssignRecord) return;
     var recId = pendingAssignRecord.id;
 
     if (assignContext === 'ni') {
@@ -6877,6 +6979,9 @@
         if (teamObj) upd.team_id = teamObj.id; else upd.team_number = teamVal;
         var r1 = await db.from('job_orders').update(upd).eq('id', recId);
         if (r1.error) throw r1.error;
+        await writeAudit(pendingAssignRecord,
+          [{field:'team_number', old: pendingAssignRecord.team_number, new: teamVal},
+           {field:'personnel',   old: pendingAssignRecord.personnel,   new: personnelStr}], 'assign');
         showToast('✓ Team '+teamVal+' assigned!', 'success');
         closeAssignTeamModal();
         load();
@@ -6981,6 +7086,16 @@
 </script>
 
 <!-- TOAST NOTIFICATION -->
+<!-- BULK ASSIGN BAR — appears when rows are ticked -->
+<div id="bulkBar" style="display:none;position:fixed;bottom:18px;left:50%;transform:translateX(-50%);z-index:900;
+     background:#0f2744;color:#fff;border-radius:12px;padding:10px 16px;align-items:center;gap:12px;
+     box-shadow:0 8px 24px rgba(15,39,68,.35);font-size:13px;">
+  <span><b id="bulkCount">0</b> selected</span>
+  <button onclick="bulkSelectAllShown()" style="background:none;border:1px solid #3b5a82;color:#bfdbfe;border-radius:7px;padding:6px 10px;font-size:12px;cursor:pointer;">All shown</button>
+  <button onclick="openBulkAssign()" style="background:#1d4ed8;border:none;color:#fff;border-radius:7px;padding:7px 14px;font-size:12px;font-weight:700;cursor:pointer;">⚑ Assign Team</button>
+  <button onclick="bulkClear()" style="background:none;border:none;color:#94a3b8;font-size:12px;cursor:pointer;">Clear</button>
+</div>
+
 <div class="toast" id="toast"></div>
 
 <!-- RESCHEDULE SUB-MODAL -->
