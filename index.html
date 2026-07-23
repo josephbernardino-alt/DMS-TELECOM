@@ -3055,15 +3055,19 @@
        • role   — what they're allowed to do (admin/manager/dispatch/sales_admin/encoder/tl/agent/subcon)
      The rest of the app reads `currentUser` to filter data (by region) and gate UI (by role).
      These are in-memory demo users for now; later they come from a Supabase `users` table + RLS. */
-  var USERS = [
-    { username: 'developer', password: 'best2026', name: 'Developer',    initials: 'DV', region: 'ALL',       role: 'developer' },
-    { username: 'fborja',  password: 'best2026', name: 'F. Borja',     initials: 'FB', region: 'ALL',       role: 'manager' },
-    { username: 'ncrdisp', password: 'best2026', name: 'NCR Dispatch', initials: 'ND', region: 'NCR_RIZAL', role: 'dispatch' },
-    { username: 'cavenc',  password: 'best2026', name: 'Cavite Encoder', initials: 'CE', region: 'CAVITE',  role: 'encoder' },
-    { username: 'salesadm', password: 'best2026', name: 'Sales Admin', initials: 'SA', region: 'ALL',       role: 'sales_admin' },
-    { username: 'tlcesar', password: 'best2026', name: 'TL Cesar',    initials: 'TC', region: 'NCR_RIZAL', role: 'tl', team: 'BEST-0034' },
-    { username: 'joseph',  password: 'best2026', name: 'Joseph',       initials: 'JO', region: 'ALL',       role: 'developer' }
-  ];
+  /* ════════════ AUTHENTICATION ════════════
+     Real sign-in via Supabase Auth. There is deliberately NO list of users or passwords
+     in this file any more — the database is the only place credentials live, and it only
+     ever sees a hashed password, never the real one.
+
+     Accounts use synthetic addresses (<username>@jfdms.com) so staff can type a short
+     username. Typing a full address with an "@" is also accepted, so accounts can be
+     switched to real staff emails later without touching this code. */
+  var AUTH_DOMAIN = '@jfdms.com';
+  function toEmail(input) {
+    var v = (input || '').trim().toLowerCase();
+    return v.indexOf('@') >= 0 ? v : v + AUTH_DOMAIN;
+  }
 
   /* Human-readable labels for regions and roles (used in the UI). */
   var REGION_LABELS = { ALL: 'All Regions', NCR_RIZAL: 'NCR / Rizal', CAVITE: 'Cavite', PANAY: 'Panay' };
@@ -3087,47 +3091,86 @@
     switchPage('dashboard');
   }
 
-  var savedUser = sessionStorage.getItem('bestdms_user');
-  if (savedUser) {
-    try { showApp(JSON.parse(savedUser)); } catch(e) { showLogin(); }
-  } else {
-    showLogin();
+  /* Fetch the signed-in person's profile — their role, region and team. This lives in the
+     database, not in this file, so permissions can be changed without redeploying the app.
+     The `active` flag lets you cut someone off instantly without deleting their account. */
+  async function loadProfile(authUser) {
+    var res = await db.from('profiles').select('*').eq('id', authUser.id).single();
+    if (res.error) throw new Error('No profile found for this account. Contact your administrator.');
+    var p = res.data;
+    if (p.active === false) throw new Error('This account has been deactivated.');
+    return {
+      id: p.id, username: p.username, name: p.name,
+      initials: p.initials || (p.name || '?').slice(0,2).toUpperCase(),
+      role: p.role, region: p.region || 'ALL', team: p.team || null
+    };
   }
+
+  /* On page load, ask Supabase whether there's already a valid session. This is what makes
+     a refresh keep you signed in — the session lives in a token Supabase manages, not in
+     something this page sets for itself. */
+  (async function restoreSession() {
+    if (!db) { showLogin(); return; }
+    try {
+      var { data } = await db.auth.getSession();
+      if (data && data.session && data.session.user) {
+        showApp(await loadProfile(data.session.user));
+        load();
+      } else {
+        showLogin();
+      }
+    } catch (e) {
+      console.error('restoreSession', e);
+      showLogin();
+    }
+  })();
 
   safeOn('togglePw', 'click', function() {
     var inp = document.getElementById('loginPassword');
     inp.type = inp.type === 'password' ? 'text' : 'password';
   });
 
-  function doLogin() {
-    var username = document.getElementById('loginUsername').value.trim().toLowerCase();
+  async function doLogin() {
+    var username = document.getElementById('loginUsername').value;
     var password = document.getElementById('loginPassword').value;
     var btn = document.getElementById('loginBtn');
     var err = document.getElementById('loginError');
     err.style.display = 'none';
-    if (!username || !password) {
+
+    if (!username.trim() || !password) {
       err.textContent = 'Please enter your username and password.';
       err.style.display = 'block';
       return;
     }
+    if (!db) {
+      err.textContent = 'Cannot reach the server. Check your connection and try again.';
+      err.style.display = 'block';
+      return;
+    }
+
     btn.textContent = 'Signing in...';
     btn.disabled = true;
-    setTimeout(function() {
-      var user = USERS.find(function(u) {
-        return u.username === username && u.password === password;
+    try {
+      var res = await db.auth.signInWithPassword({
+        email: toEmail(username),
+        password: password
       });
-      if (user) {
-        sessionStorage.setItem('bestdms_user', JSON.stringify(user));
-        showApp(user);
-        load();
-      } else {
-        err.textContent = 'Invalid username or password. Please try again.';
-        err.style.display = 'block';
-        document.getElementById('loginPassword').value = '';
-      }
+      if (res.error) throw new Error('Invalid username or password. Please try again.');
+
+      var profile = await loadProfile(res.data.user);
+      showApp(profile);
+      load();
+    } catch (e) {
+      /* If sign-in succeeded but the profile is missing or deactivated, don't leave a
+         half-open session behind — sign back out so the app can't be used in limbo. */
+      try { if (db.auth) await db.auth.signOut(); } catch (ignore) {}
+      err.textContent = e.message || 'Sign in failed. Please try again.';
+      err.style.display = 'block';
+      document.getElementById('loginPassword').value = '';
+    } finally {
       btn.textContent = 'Sign In';
       btn.disabled = false;
-    }, 500);
+    }
   }
 
   safeOn('loginBtn', 'click', doLogin);
@@ -3301,7 +3344,8 @@
   }
 
   function getCurrentUser() {
-    try { return JSON.parse(sessionStorage.getItem('bestdms_user')) || { name: 'Unknown', initials: 'UN' }; } catch(e) { return { name: 'Unknown', initials: 'UN' }; }
+    /* currentUser is set by showApp() from the database profile after sign-in. */
+    return currentUser || { name: 'Unknown', initials: 'UN' };
   }
 
   /* COMPLETE JO */
@@ -4490,14 +4534,17 @@
     document.getElementById('userMenu').classList.remove('open');
     showToast('Change Password coming soon', 'warning');
   });
-  safeOn('logoutBtn', 'click', function(e){
+  safeOn('logoutBtn', 'click', async function(e){
     e.stopPropagation();
-    sessionStorage.removeItem('bestdms_user');
+    /* End the real session, not just the on-screen state — otherwise the token stays
+       valid and a refresh would silently sign the person back in. */
+    try { if (db && db.auth) await db.auth.signOut(); } catch (err) { console.error('signOut', err); }
+    currentUser = null;
     document.getElementById('userMenu').classList.remove('open');
     document.getElementById('loginUsername').value = '';
     document.getElementById('loginPassword').value = '';
-    var err = document.getElementById('loginError');
-    if (err) err.style.display = 'none';
+    var errEl = document.getElementById('loginError');
+    if (errEl) errEl.style.display = 'none';
     showLogin();
   });
   document.querySelectorAll('#niMenu .nav-menu-item').forEach(function(item){
