@@ -3045,7 +3045,17 @@
   });
 
   /* ── ROW CLICK ── */
+  /* True while the user has text highlighted. A select-drag-release fires a normal
+     'click' on the row underneath, which used to pop the detail modal open right as
+     you tried to copy a name or account number. A plain click collapses any selection
+     on mousedown, so this only blocks the highlight case, never normal clicking. */
+  function textIsSelected(){
+    var sel = window.getSelection && window.getSelection();
+    return !!(sel && sel.toString().length);
+  }
+
   safeOn('tableBody', 'click', function(e){
+    if (textIsSelected()) return;
     /* If the click came from the chat bubble/cell, let openChat handle it alone —
        don't also open the job-order detail modal. (Event bubbling would otherwise
        fire both: the bubble's onclick AND this row handler.) */
@@ -5512,6 +5522,7 @@
   var currentBORecord = null;
 
   window.openStagingModal = function(idx) {
+    if (textIsSelected()) return;
     var r = boData[idx];
     if (!r) return;
     currentBORecord = r;
@@ -6729,6 +6740,7 @@
   var currentMigRecord = null;
 
   window.openMigRecordModal = function(recordId) {
+    if (textIsSelected()) return;
     var r = migData.find(function(rec){ return String(rec.id) === String(recordId); });
     if (!r) return;
     currentMigRecord = r;
