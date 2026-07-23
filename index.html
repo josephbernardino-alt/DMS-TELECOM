@@ -35,14 +35,15 @@
   .table-body-table td:nth-child(8)  { min-width: 92px; }   /* TL */
   .table-body-table td:nth-child(9)  { min-width: 132px; }  /* Account No. */
   .table-body-table td:nth-child(10) { min-width: 124px; }  /* Barangay */
-  .table-body-table td:nth-child(11) { min-width: 210px; }  /* Customer Name */
-  .table-body-table td:nth-child(12) { min-width: 96px; }   /* Status */
-  .table-body-table td:nth-child(13) { min-width: 160px; max-width: 200px; overflow: hidden; text-overflow: ellipsis; }  /* Status Remarks */
-  .table-body-table td:nth-child(14) { min-width: 150px; }  /* NAP Code */
-  .table-body-table td:nth-child(15) { min-width: 132px; }  /* Call Status */
-  .table-body-table td:nth-child(16) { min-width: 150px; max-width: 200px; overflow: hidden; text-overflow: ellipsis; }  /* Call Remarks */
-  .table-body-table td:nth-child(17) { min-width: 150px; }  /* Mobile No. */
-  .table-body-table td:nth-child(18) { min-width: 104px; }  /* Updated By */
+  .table-body-table td:nth-child(11) { min-width: 120px; }  /* Municipality */
+  .table-body-table td:nth-child(12) { min-width: 210px; }  /* Customer Name */
+  .table-body-table td:nth-child(13) { min-width: 96px; }   /* Status */
+  .table-body-table td:nth-child(14) { min-width: 160px; max-width: 200px; overflow: hidden; text-overflow: ellipsis; }  /* Status Remarks */
+  .table-body-table td:nth-child(15) { min-width: 150px; }  /* NAP Code */
+  .table-body-table td:nth-child(16) { min-width: 132px; }  /* Call Status */
+  .table-body-table td:nth-child(17) { min-width: 150px; max-width: 200px; overflow: hidden; text-overflow: ellipsis; }  /* Call Remarks */
+  .table-body-table td:nth-child(18) { min-width: 150px; }  /* Mobile No. */
+  .table-body-table td:nth-child(19) { min-width: 104px; }  /* Updated By */
   thead th { background: #f1f5f9; white-space: nowrap; }
 
   /* NAVBAR */
@@ -1044,7 +1045,13 @@
 
 <!-- FILTER BAR -->
 <div class="filterbar sticky-top">
-  <span class="search-wrap"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg><input class="search-input" id="searchInput" type="text" placeholder="Search JO#, name, account..."></span>
+  <span class="search-wrap"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg><input class="search-input" id="searchInput" type="text" placeholder="Search JO#, name, brgy, muni..."></span>
+  <select id="provFilter" class="tl-hide" style="border:1px solid #cbd5e1;border-radius:8px;padding:8px 10px;font-size:12px;background:#fff;">
+    <option value="">All Provinces</option>
+    <option value="NCR_RIZAL">NCR / Rizal</option>
+    <option value="CAVITE">Cavite</option>
+    <option value="PANAY">Panay</option>
+  </select>
   <select id="muniFilter" class="tl-hide" style="border:1px solid #cbd5e1;border-radius:8px;padding:8px 10px;font-size:12px;background:#fff;max-width:170px;">
     <option value="">All Municipalities</option>
   </select>
@@ -1066,6 +1073,7 @@
       <div class="col-item"><input type="checkbox" id="col-tl" checked> TL</div>
       <div class="col-item"><input type="checkbox" id="col-account" checked> Account Number</div>
       <div class="col-item"><input type="checkbox" id="col-barangay" checked> Barangay</div>
+      <div class="col-item"><input type="checkbox" id="col-muni" checked> Municipality</div>
       <div class="col-item"><input type="checkbox" id="col-customer" checked> Customer Name</div>
       <div class="col-item"><input type="checkbox" id="col-status" checked> Status</div>
       <div class="col-item"><input type="checkbox" id="col-remarks" checked> Status Remarks</div>
@@ -1150,7 +1158,7 @@
       <tbody><tr id="tableHeadRow">
         <td id="hth0">Count</td><td id="hth1">Chat</td><td id="hth2">Dispatch Date</td><td id="hth3">GoFiber Status</td>
         <td id="hth4">JO Number</td><td id="hth5">Installation Team</td><td id="hth6">Personnel</td><td id="hth7">TL</td>
-        <td id="hth8">Account No.</td><td id="hth9">Barangay / Municipality</td><td id="hth10">Customer Name</td><td id="hth11">Status</td>
+        <td id="hth8">Account No.</td><td id="hth9">Barangay</td><td id="hth9m">Municipality</td><td id="hth10">Customer Name</td><td id="hth11">Status</td>
         <td id="hth12">Status Remarks</td><td id="hth13">NAP ID</td><td id="hth14">Call Status</td>
         <td id="hth15">Call Remarks</td><td id="hth16">Mobile No.</td><td id="hth17">Updated By</td>
       </tr></tbody>
@@ -1160,7 +1168,7 @@
   <div class="table-body-wrap" id="tableBodyWrap">
     <table class="table-body-table" id="tableBodyTable">
       <tbody id="tableBody">
-        <tr class="loading-row"><td colspan="18"><span class="spinner"></span>Loading today's job orders...</td></tr>
+        <tr class="loading-row"><td colspan="19"><span class="spinner"></span>Loading today's job orders...</td></tr>
       </tbody>
     </table>
   </div>
@@ -1179,7 +1187,7 @@
 <!-- ============ BO IMPORTS PAGE ============ -->
 <div class="page-view" id="page-bo">
   <div class="filterbar sticky-top">
-    <input class="search-input" id="boSearch" type="text" placeholder="Search JO#, name, account...">
+    <input class="search-input" id="boSearch" type="text" placeholder="Search JO#, name, brgy, muni...">
     <button class="date-nav" id="boPrev">‹</button>
     <button class="date-nav" id="boNext">›</button>
     <span class="date-label">Date from:</span>
@@ -1212,7 +1220,7 @@
 <div class="page-view" id="page-map">
   <!-- MAP FILTER BAR -->
   <div class="filterbar sticky-top">
-    <input class="search-input" id="mapSearch" type="text" placeholder="Search JO#, name, account...">
+    <input class="search-input" id="mapSearch" type="text" placeholder="Search JO#, name, brgy, muni...">
     <button class="date-nav" id="mapPrev">‹</button>
     <button class="date-nav" id="mapNext">›</button>
     <span class="date-label">Date from:</span>
@@ -2531,9 +2539,9 @@
   var colMap = {
     'col-dispatch':2, 'col-gofiber':3, 'col-team':5,
     'col-personnel':6, 'col-tl':7, 'col-account':8,
-    'col-barangay':9, 'col-customer':10, 'col-status':11,
-    'col-remarks':12, 'col-nap':13, 'col-callstatus':14,
-    'col-callremarks':15, 'col-mobile':16, 'col-updated':17
+    'col-barangay':9, 'col-muni':10, 'col-customer':11, 'col-status':12,
+    'col-remarks':13, 'col-nap':14, 'col-callstatus':15,
+    'col-callremarks':16, 'col-mobile':17, 'col-updated':18
   };
 
   function applyColumnVisibility() {
@@ -2706,14 +2714,14 @@
       var el = document.getElementById(id); if(el) el.classList.remove('active-filter');
     });
     document.getElementById('tableBody').innerHTML =
-      '<tr class="loading-row"><td colspan="18"><span class="spinner"></span>Loading job orders for '+fmtDate(dateFrom)+'...</td></tr>';
+      '<tr class="loading-row"><td colspan="19"><span class="spinner"></span>Loading job orders for '+fmtDate(dateFrom)+'...</td></tr>';
     if (!db) {
       if (DEMO_MODE) { seedDemoTeams(); allOrders = scopeRecords(demoJobsForRange(dateFrom,dateTo)); shown = allOrders; render(shown); summary(shown); updateDateLabel(); }
       else {
         /* No database connection and no demo fallback — say so plainly instead of
            leaving a spinner running forever, which looks like the app has hung. */
         document.getElementById('tableBody').innerHTML =
-          '<tr class="loading-row"><td colspan="18" style="color:#ef4444;">⚠ Cannot reach the database. Check your connection, then refresh.</td></tr>';
+          '<tr class="loading-row"><td colspan="19" style="color:#ef4444;">⚠ Cannot reach the database. Check your connection, then refresh.</td></tr>';
         updateDateLabel();
       }
       return;
@@ -2756,7 +2764,7 @@
         render(shown); summary(shown); updateDateLabel();
       } else {
         document.getElementById('tableBody').innerHTML =
-          '<tr class="loading-row"><td colspan="18" style="color:#ef4444;">⚠ Error: '+err.message+'</td></tr>';
+          '<tr class="loading-row"><td colspan="19" style="color:#ef4444;">⚠ Error: '+err.message+'</td></tr>';
       }
     }
   }
@@ -2872,7 +2880,7 @@
     if (currentUser && currentUser.role === 'tl') renderTlCards(data);
     var tbody = document.getElementById('tableBody');
     if (!data.length) {
-      tbody.innerHTML = '<tr class="loading-row"><td colspan="18">No job orders found for '+fmtDate(dateFrom)+'</td></tr>';
+      tbody.innerHTML = '<tr class="loading-row"><td colspan="19">No job orders found for '+fmtDate(dateFrom)+'</td></tr>';
       document.getElementById('rowCount').textContent = '0'; return;
     }
     var html = '';
@@ -2901,7 +2909,8 @@
         +'<td style="font-size:11px;white-space:nowrap">'+v(r.personnel)+'</td>'
         +'<td style="white-space:nowrap">'+v(r.tl_name)+'</td>'
         +'<td style="font-size:11px">'+v(r.account_number)+'</td>'
-        +'<td style="white-space:nowrap">'+v(r.barangay)+(r.municipality?'<div style="font-size:10px;color:#94a3b8;">'+r.municipality+'</div>':'')+'</td>'
+        +'<td style="white-space:nowrap">'+v(r.barangay)+'</td>'
+        +'<td style="white-space:nowrap">'+v(r.municipality)+'</td>'
         +'<td><span class="cust-link">'+v(r.customer_name)+'</span></td>'
         +'<td>'+pendingHtml+'</td>'
         +'<td style="font-size:11px;max-width:130px;overflow:hidden;text-overflow:ellipsis">'+v(r.status_remarks)+'</td>'
@@ -3040,7 +3049,7 @@
   var sortState = { key: null, dir: 1 };
   var SORT_KEYS = {   /* header cell id → record field */
     hth2:'dispatch_date', hth3:'gofib_status', hth4:'jo_number', hth5:'team_number',
-    hth6:'personnel', hth7:'tl_name', hth8:'account_number', hth9:'barangay',
+    hth6:'personnel', hth7:'tl_name', hth8:'account_number', hth9:'barangay', hth9m:'municipality',
     hth10:'customer_name', hth11:'status', hth14:'call_status', hth17:'updated_by'
   };
   var HEADER_LABELS = {};   /* remembered so sort arrows can be redrawn cleanly */
@@ -3059,7 +3068,9 @@
   function applyFilters() {
     var q = (document.getElementById('searchInput').value||'').toLowerCase().trim();
     var muni = document.getElementById('muniFilter') ? document.getElementById('muniFilter').value : '';
+    var prov = document.getElementById('provFilter') ? document.getElementById('provFilter').value : '';
     var f = (allOrders||[]).filter(function(r){
+      if (prov && regionOf(r) !== prov) return false;
       if (muni && r.municipality !== muni) return false;
       if (!q) return true;
       return (r.jo_number&&r.jo_number.toLowerCase().includes(q))||(r.customer_name&&r.customer_name.toLowerCase().includes(q))||(r.account_number&&r.account_number.toLowerCase().includes(q))||(r.barangay&&r.barangay.toLowerCase().includes(q))||(r.municipality&&r.municipality.toLowerCase().includes(q))||(r.personnel&&r.personnel.toLowerCase().includes(q))||(r.mobile_number&&r.mobile_number.includes(q));
@@ -3076,6 +3087,7 @@
 
   safeOn('searchInput', 'input', applyFilters);
   safeOn('muniFilter', 'change', applyFilters);
+  safeOn('provFilter', 'change', applyFilters);
 
   /* Header click = sort by that column; click again = flip direction. ▲▼ shows where. */
   safeOn('tableHeadRow', 'click', function(e){
