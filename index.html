@@ -568,6 +568,17 @@
 
   /* REPORTS PAGE */
   .reports-page-title { font-size: 22px; font-weight: 700; color: #1e293b; padding: 20px 24px 16px; }
+  .an-card { background:#fff; border:1px solid #e8eef5; border-radius:12px; padding:14px 16px; }
+  .an-title { font-size:12px; font-weight:700; color:#1e3a5f; margin-bottom:12px; }
+  .an-kpi { background:#fff; border:1px solid #e8eef5; border-radius:12px; padding:12px 14px; }
+  .an-kpi .n { font-size:24px; font-weight:800; color:#0f2744; line-height:1.1; }
+  .an-kpi .l { font-size:11px; color:#64748b; font-weight:600; text-transform:uppercase; letter-spacing:.3px; }
+  .an-bar-row { display:flex; align-items:center; gap:8px; margin-bottom:7px; font-size:11px; }
+  .an-bar-label { width:96px; text-align:right; color:#475569; font-weight:600; flex-shrink:0; }
+  .an-bar-track { flex:1; background:#f1f5f9; border-radius:4px; height:18px; overflow:hidden; }
+  .an-bar-fill { height:100%; border-radius:4px; }
+  .an-bar-val { width:64px; color:#0f2744; font-weight:700; flex-shrink:0; }
+  @media (max-width: 1100px) { #anKpis { grid-template-columns: repeat(2,1fr) !important; } }
   .reports-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; padding: 0 24px 24px; }
   .report-card { background: white; border: 1px solid #e5eaf2; border-radius: 10px; padding: 18px; cursor: pointer; transition: box-shadow 0.15s, transform 0.1s; }
   .report-card:hover { box-shadow: 0 4px 16px rgba(0,0,0,0.08); transform: translateY(-2px); }
@@ -1028,6 +1039,7 @@
       <div class="nav-menu-item" data-migpage="overall">Overall Migration Progress</div>
     </div>
   </div>
+  <button class="nav-btn" id="analyticsBtn" data-cap="view_reports">📊 Analytics</button>
   <button class="nav-btn" id="reportsBtn" data-cap="view_reports">Reports</button>
   <button class="nav-btn tl-hide" id="auditBtn" data-cap="view_audit">📋 Activity Log</button>
   <button class="nav-btn tl-hide" id="napLocatorBtn">NAP Locator</button>
@@ -1386,6 +1398,30 @@
 </div>
 
 <!-- ============ REPORTS PAGE ============ -->
+<!-- ============ ANALYTICS PAGE ============ -->
+<div class="page-view" id="page-analytics">
+  <div class="filterbar sticky-top">
+    <div class="reports-page-title" style="margin:0;">Analytics</div>
+    <div class="filter-spacer"></div>
+    <span style="font-size:11px;color:#64748b;">FROM:</span>
+    <input type="date" id="anFrom" style="border:1px solid #cbd5e1;border-radius:8px;padding:7px 9px;font-size:12px;">
+    <span style="font-size:11px;color:#64748b;">TO:</span>
+    <input type="date" id="anTo" style="border:1px solid #cbd5e1;border-radius:8px;padding:7px 9px;font-size:12px;">
+    <button class="view-btn" onclick="anPreset(30)">Last 30 days</button>
+    <button class="view-btn" onclick="anPreset(90)">Last 90 days</button>
+    <button class="view-btn" id="anRefresh">↻ Apply</button>
+  </div>
+  <div style="padding:14px 20px 30px;">
+    <div id="anKpis" style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:16px;"></div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
+      <div class="an-card"><div class="an-title">Where the applications came from</div><div id="anSourceChart"></div></div>
+      <div class="an-card"><div class="an-title">Job status</div><div id="anStatusChart"></div></div>
+      <div class="an-card"><div class="an-title">Sales by company (MSA)</div><div id="anMsaChart"></div></div>
+      <div class="an-card"><div class="an-title">Installs by contractor</div><div id="anInstallChart"></div></div>
+    </div>
+  </div>
+</div>
+
 <div class="page-view" id="page-reports">
   <div class="reports-page-title">Reports</div>
   <div class="reports-grid">
@@ -3690,7 +3726,7 @@
     /* Backstop: if the page currently on screen needs a capability this user doesn't
        have, send them to the dashboard. Hiding the nav button alone isn't enough —
        the page could already be open (e.g. after a logout/login swap). */
-    var PAGE_CAPS = { 'page-audit': 'view_audit', 'page-reports': 'view_reports' };
+    var PAGE_CAPS = { 'page-audit': 'view_audit', 'page-reports': 'view_reports', 'page-analytics': 'view_reports' };
     var active = document.querySelector('.page-view.active');
     if (active) {
       var needed = PAGE_CAPS[active.id];
@@ -3963,6 +3999,9 @@
       if(mb) { mb.classList.remove('active'); }
     } else if (page === 'reports') {
       document.getElementById('page-reports').classList.add('active');
+    } else if (page === 'analytics') {
+      document.getElementById('page-analytics').classList.add('active');
+      initAnalytics();
     } else if (page === 'audit') {
       document.getElementById('page-audit').classList.add('active');
       loadAuditLog();
@@ -4022,6 +4061,143 @@
   safeOn('reportsBtn', 'click', function(){
     switchPage('reports');
   });
+
+  /* ── ANALYTICS ──
+     Charts are drawn as plain HTML bars and an SVG donut rather than pulling in a
+     charting library: no extra dependency, no CDN to fail, and it renders instantly.
+     Everything is computed from job_orders over the chosen date range. */
+  var anRows = [];
+
+  safeOn('analyticsBtn', 'click', function(){ switchPage('analytics'); });
+  safeOn('anRefresh', 'click', loadAnalytics);
+
+  window.anPreset = function(days){
+    var to = new Date(), from = new Date();
+    from.setDate(from.getDate() - days);
+    document.getElementById('anFrom').value = from.toISOString().slice(0,10);
+    document.getElementById('anTo').value   = to.toISOString().slice(0,10);
+    loadAnalytics();
+  };
+
+  function initAnalytics(){
+    if (!document.getElementById('anFrom').value) { anPreset(30); return; }
+    loadAnalytics();
+  }
+
+  async function loadAnalytics(){
+    if (!db) return;
+    var from = document.getElementById('anFrom').value;
+    var to   = document.getElementById('anTo').value;
+    if (!from || !to) return;
+    document.getElementById('anKpis').innerHTML = '<div class="an-kpi"><div class="l">Loading…</div></div>';
+    try {
+      var res = await db.from('job_orders').select('*')
+        .gte('dispatch_date', from).lte('dispatch_date', to);
+      if (res.error) throw res.error;
+      /* Scope it the same way the dashboard does, so a subcon or MSA opening this
+         page sees analytics for their own work only — not the whole operation. */
+      anRows = scopeRecords(res.data || []);
+      renderAnalytics();
+    } catch(err){
+      document.getElementById('anKpis').innerHTML =
+        '<div class="an-kpi"><div class="l" style="color:#ef4444;">Error: '+err.message+'</div></div>';
+    }
+  }
+
+  function anBars(rows, colors){
+    if (!rows.length) return '<div style="color:#94a3b8;font-size:12px;padding:8px 0;">No data in this range.</div>';
+    var max = Math.max.apply(null, rows.map(function(r){ return r.value; })) || 1;
+    var total = rows.reduce(function(a,r){ return a + r.value; }, 0) || 1;
+    return rows.map(function(r,i){
+      var pct = Math.round(r.value / total * 100);
+      return '<div class="an-bar-row">'
+        + '<div class="an-bar-label" title="'+r.label+'">'+r.label+'</div>'
+        + '<div class="an-bar-track"><div class="an-bar-fill" style="width:'+Math.max(2, r.value/max*100)+'%;background:'+(colors[i%colors.length])+';"></div></div>'
+        + '<div class="an-bar-val">'+r.value+' <span style="color:#94a3b8;font-weight:500;">'+pct+'%</span></div>'
+        + '</div>';
+    }).join('');
+  }
+
+  function anDonut(parts, colors){
+    var total = parts.reduce(function(a,p){ return a + p.value; }, 0);
+    if (!total) return '<div style="color:#94a3b8;font-size:12px;">No data in this range.</div>';
+    var r = 54, c = 2 * Math.PI * r, offset = 0;
+    var segs = parts.map(function(p,i){
+      var len = p.value / total * c;
+      var seg = '<circle cx="70" cy="70" r="'+r+'" fill="none" stroke="'+colors[i%colors.length]+'" stroke-width="22"'
+              + ' stroke-dasharray="'+len+' '+(c-len)+'" stroke-dashoffset="'+(-offset)+'" transform="rotate(-90 70 70)"/>';
+      offset += len; return seg;
+    }).join('');
+    var legend = parts.map(function(p,i){
+      return '<div style="display:flex;align-items:center;gap:6px;font-size:11px;margin-bottom:5px;">'
+        + '<span style="width:10px;height:10px;border-radius:3px;background:'+colors[i%colors.length]+';"></span>'
+        + '<span style="color:#475569;flex:1;">'+p.label+'</span>'
+        + '<b style="color:#0f2744;">'+p.value+'</b>'
+        + '<span style="color:#94a3b8;">'+Math.round(p.value/total*100)+'%</span></div>';
+    }).join('');
+    return '<div style="display:flex;align-items:center;gap:16px;">'
+      + '<svg width="140" height="140" viewBox="0 0 140 140">'+segs
+      + '<text x="70" y="66" text-anchor="middle" font-size="22" font-weight="800" fill="#0f2744">'+total+'</text>'
+      + '<text x="70" y="84" text-anchor="middle" font-size="10" fill="#94a3b8">JOB ORDERS</text></svg>'
+      + '<div style="flex:1;">'+legend+'</div></div>';
+  }
+
+  function renderAnalytics(){
+    var rows = anRows;
+    var completed = rows.filter(function(r){ return r.status === 'Completed'; }).length;
+    var pending   = rows.filter(function(r){ return r.status === 'Pending'; }).length;
+    var cancelled = rows.filter(function(r){ return r.status === 'Cancelled'; }).length;
+
+    document.getElementById('anKpis').innerHTML =
+        '<div class="an-kpi"><div class="n">'+rows.length+'</div><div class="l">Job Orders</div></div>'
+      + '<div class="an-kpi"><div class="n" style="color:#15803d;">'+completed+'</div><div class="l">Completed</div></div>'
+      + '<div class="an-kpi"><div class="n" style="color:#b45309;">'+pending+'</div><div class="l">Pending</div></div>'
+      + '<div class="an-kpi"><div class="n" style="color:#b91c1c;">'+cancelled+'</div><div class="l">Cancelled</div></div>';
+
+    /* In-house vs external — the split Joseph asked for. Resolved through the company
+       aliases, so a row saved as "OPTC" counts as JF Horizon, not as unknown. */
+    var inHouse = 0, external = 0, unknown = 0;
+    rows.forEach(function(r){
+      var c = findCompany(r.msa_name);
+      if (!c) { unknown++; } else if (c.in_house) { inHouse++; } else { external++; }
+    });
+    var srcParts = [{label:'Our own applications', value:inHouse},
+                    {label:'External MSA', value:external}];
+    if (unknown) srcParts.push({label:'No MSA recorded', value:unknown});
+    document.getElementById('anSourceChart').innerHTML =
+      anDonut(srcParts, ['#15803d','#1d4ed8','#cbd5e1']);
+
+    document.getElementById('anStatusChart').innerHTML =
+      anDonut([{label:'Completed',value:completed},{label:'Pending',value:pending},
+               {label:'Cancelled',value:cancelled},
+               {label:'Rescheduled',value:rows.filter(function(r){return r.status==='Rescheduled';}).length}],
+              ['#16a34a','#f59e0b','#ef4444','#3b82f6']);
+
+    /* Sales per selling company — the number a commission run needs. */
+    var bySeller = {};
+    rows.forEach(function(r){
+      var c = findCompany(r.msa_name);
+      var name = c ? c.name : (r.msa_name || 'Not recorded');
+      bySeller[name] = (bySeller[name] || 0) + 1;
+    });
+    document.getElementById('anMsaChart').innerHTML = anBars(
+      Object.keys(bySeller).map(function(k){ return {label:k, value:bySeller[k]}; })
+        .sort(function(a,b){ return b.value - a.value; }),
+      ['#1d4ed8','#0ea5e9','#6366f1','#8b5cf6','#0d9488','#f97316']);
+
+    /* Installs per contractor — counts completed work only, since that's what was
+       actually delivered rather than merely assigned. */
+    var byInstaller = {};
+    rows.filter(function(r){ return r.status === 'Completed'; }).forEach(function(r){
+      var co = r.company || teamCompany(r.team_id, r.team_number);
+      var name = co || 'Unassigned';
+      byInstaller[name] = (byInstaller[name] || 0) + 1;
+    });
+    document.getElementById('anInstallChart').innerHTML = anBars(
+      Object.keys(byInstaller).map(function(k){ return {label:k, value:byInstaller[k]}; })
+        .sort(function(a,b){ return b.value - a.value; }),
+      ['#15803d','#16a34a','#65a30d','#ca8a04','#0d9488','#0891b2']);
+  }
 
   /* ── ACTIVITY / AUDIT LOG ──
      Supervisor view (Manager/Dispatch/Developer) of who changed what, from the audit_log table.
