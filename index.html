@@ -2816,6 +2816,54 @@
     updateBulkBar();
   };
 
+  /* ── COPY TO CLIPBOARD ──
+     Dispatch coordinates over Viber/Messenger, so what gets copied is a clean text
+     block ready to paste into a chat — labelled lines, not tab-separated table cells. */
+  function formatJOText(r) {
+    var tn = r.team_number || teamNum(r.team_id) || '—';
+    var lines = [
+      'JO#: ' + (r.jo_number || '—'),
+      'Customer: ' + (r.customer_name || '—'),
+      'Account #: ' + (r.account_number || '—'),
+      'Mobile: ' + (r.mobile_number || '—'),
+      'Address: ' + (r.address || '—'),
+      'Brgy/Muni: ' + (r.barangay || '—') + (r.municipality ? ', ' + r.municipality : ''),
+      'Plan: ' + (r.plan || '—'),
+      'Schedule: ' + (r.dispatch_date || '—'),
+      'Team: ' + tn,
+      'Status: ' + (r.status || '—') + (r.status_remarks ? ' — ' + r.status_remarks : '')
+    ];
+    return lines.join('\n');
+  }
+
+  function copyText(text, label) {
+    function done(){ showToast('⧉ ' + label + ' copied — ready to paste', 'success'); }
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(text).then(done, function(){ fallbackCopy(text); done(); });
+    } else { fallbackCopy(text); done(); }
+  }
+  function fallbackCopy(text) {
+    var ta = document.createElement('textarea');
+    ta.value = text; ta.style.position = 'fixed'; ta.style.opacity = '0';
+    document.body.appendChild(ta); ta.select();
+    try { document.execCommand('copy'); } catch(e) {}
+    document.body.removeChild(ta);
+  }
+
+  window.copyJobOrder = function(id) {
+    var r = (allOrders||[]).find(function(o){ return String(o.id) === String(id); });
+    if (!r) return;
+    copyText(formatJOText(r), r.jo_number || 'Job order');
+  };
+
+  window.bulkCopy = function() {
+    if (!bulkSelected.size) return;
+    /* Keep on-screen order so the pasted list reads the same as the table. */
+    var recs = shown.filter(function(r){ return bulkSelected.has(String(r.id)); });
+    var text = recs.map(formatJOText).join('\n----------------\n');
+    copyText(text, recs.length + ' job orders');
+  };
+
   var _skipChatCountRefresh = false;   /* guard: prevents render→refreshChatCounts→render loop */
   function render(data) {
     shown = data;
@@ -2847,7 +2895,8 @@
         +'<td class="chat-cell" style="text-align:center;cursor:pointer;padding:10px 6px;" onclick="event.stopPropagation();openChat(\''+r.id+'\',\''+(r.jo_number||'')+'\',\''+(r.customer_name||'').replace(/\x27/g,"")+'\',\''+(r.dispatch_date||'')+'\',\''+(r.status||'')+'\')">'+(r.chat_count>0?'<div class="chat-badge clickable">'+r.chat_count+'</div>':'<span class="chat-zero">0</span>')+'</td>'
         +'<td style="white-space:nowrap">'+v(r.dispatch_date)+'</td>'
         +'<td>'+(r.gofib_status?'<span class="status-badge '+gBadge(r.gofib_status)+'">'+r.gofib_status+'</span>':'—')+'</td>'
-        +'<td><span class="jo-link '+(tn?'has-team':'no-team')+'">'+v(r.jo_number)+'</span></td>'
+        +'<td><span class="jo-link '+(tn?'has-team':'no-team')+'">'+v(r.jo_number)+'</span>'
+          +'<svg class="copy-jo" data-id="'+r.id+'" title="Copy details" viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="#94a3b8" stroke-width="2" style="margin-left:6px;cursor:pointer;vertical-align:middle;"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V5a2 2 0 012-2h10"/></svg></td>'
         +'<td>'+(tn?'<span class="team-badge '+teamClass(tn)+'">'+tn+(r.team_id?'':' <span class="team-warn">⚑</span>')+'</span>':'—')+'</td>'
         +'<td style="font-size:11px;white-space:nowrap">'+v(r.personnel)+'</td>'
         +'<td style="white-space:nowrap">'+v(r.tl_name)+'</td>'
@@ -3056,6 +3105,8 @@
 
   safeOn('tableBody', 'click', function(e){
     if (textIsSelected()) return;
+    var cp = e.target.closest && e.target.closest('.copy-jo');
+    if (cp) { copyJobOrder(cp.getAttribute('data-id')); return; }
     /* If the click came from the chat bubble/cell, let openChat handle it alone —
        don't also open the job-order detail modal. (Event bubbling would otherwise
        fire both: the bubble's onclick AND this row handler.) */
@@ -7169,6 +7220,7 @@
      box-shadow:0 8px 24px rgba(15,39,68,.35);font-size:13px;">
   <span><b id="bulkCount">0</b> selected</span>
   <button onclick="bulkSelectAllShown()" style="background:none;border:1px solid #3b5a82;color:#bfdbfe;border-radius:7px;padding:6px 10px;font-size:12px;cursor:pointer;">All shown</button>
+  <button onclick="bulkCopy()" style="background:none;border:1px solid #3b5a82;color:#bfdbfe;border-radius:7px;padding:6px 10px;font-size:12px;cursor:pointer;">⧉ Copy</button>
   <button onclick="openBulkAssign()" style="background:#1d4ed8;border:none;color:#fff;border-radius:7px;padding:7px 14px;font-size:12px;font-weight:700;cursor:pointer;">⚑ Assign Team</button>
   <button onclick="bulkClear()" style="background:none;border:none;color:#94a3b8;font-size:12px;cursor:pointer;">Clear</button>
 </div>
