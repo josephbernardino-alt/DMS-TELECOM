@@ -568,6 +568,15 @@
 
   /* REPORTS PAGE */
   .reports-page-title { font-size: 22px; font-weight: 700; color: #1e293b; padding: 20px 24px 16px; }
+  .perf-t { width:100%; border-collapse:collapse; font-size:11px; }
+  .perf-t th { background:#1e3a5f; color:#fff; padding:6px 8px; text-align:right; font-weight:700; white-space:nowrap; }
+  .perf-t th:first-child { text-align:left; }
+  .perf-t td { padding:5px 8px; text-align:right; border-bottom:1px solid #f1f5f9; white-space:nowrap; }
+  .perf-t td:first-child { text-align:left; font-weight:600; color:#334155; }
+  .perf-t tr.perf-total td { background:#f8fafc; font-weight:800; border-top:2px solid #e2e8f0; }
+  .perf-good { color:#15803d; font-weight:700; }
+  .perf-mid  { color:#b45309; font-weight:700; }
+  .perf-bad  { color:#b91c1c; font-weight:700; }
   .an-card { background:#fff; border:1px solid #e8eef5; border-radius:12px; padding:14px 16px; }
   .an-title { font-size:12px; font-weight:700; color:#1e3a5f; margin-bottom:12px; }
   .an-kpi { background:#fff; border:1px solid #e8eef5; border-radius:12px; padding:12px 14px; }
@@ -1404,6 +1413,13 @@
   <div class="filterbar sticky-top">
     <div class="reports-page-title" style="margin:0;">Analytics</div>
     <div class="filter-spacer"></div>
+    <select id="anMonth" style="border:1px solid #cbd5e1;border-radius:8px;padding:7px 9px;font-size:12px;font-weight:700;"></select>
+    <select id="anProduct" style="border:1px solid #cbd5e1;border-radius:8px;padding:7px 9px;font-size:12px;">
+      <option value="">All products</option>
+      <option>BIDA FIBER</option><option>FIBERX</option><option>SUPER BUNDLE</option>
+      <option>NETFLIX BUNDLE</option><option>FLEXIBIZ</option><option>MICROBIZ</option>
+    </select>
+    <div class="filter-spacer"></div>
     <span style="font-size:11px;color:#64748b;">FROM:</span>
     <input type="date" id="anFrom" style="border:1px solid #cbd5e1;border-radius:8px;padding:7px 9px;font-size:12px;">
     <span style="font-size:11px;color:#64748b;">TO:</span>
@@ -1414,6 +1430,10 @@
   </div>
   <div style="padding:14px 20px 30px;">
     <div id="anKpis" style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:16px;"></div>
+    <div class="an-card" style="margin-bottom:16px;">
+      <div class="an-title" id="anPerfTitle">Performance vs Target</div>
+      <div id="anPerfTable" style="overflow-x:auto;"></div>
+    </div>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
       <div class="an-card"><div class="an-title">Where the applications came from</div><div id="anSourceChart"></div></div>
       <div class="an-card"><div class="an-title">Job status</div><div id="anStatusChart"></div></div>
@@ -4126,8 +4146,39 @@
     loadAnalytics();
   };
 
+  var anTargets = [];
+
+  function fillMonthSelect(){
+    var sel = document.getElementById('anMonth');
+    if (sel.options.length) return;
+    var now = new Date(), html = '';
+    /* 24 months back from today — enough to look at last year's same month */
+    for (var i = 0; i < 24; i++){
+      var d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+      var val = d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0');
+      html += '<option value="'+val+'"'+(i===0?' selected':'')+'>'
+            + MONTHS[d.getMonth()].slice(0,3) + ' ' + d.getFullYear() + '</option>';
+    }
+    sel.innerHTML = html;
+  }
+
+  /* Picking a month sets the date range to that whole month, so the targets and the
+     actuals below are always describing the same period — which is the whole point. */
+  function applyMonthToRange(){
+    var v = document.getElementById('anMonth').value;
+    if (!v) return;
+    var y = +v.split('-')[0], m = +v.split('-')[1];
+    var first = new Date(y, m-1, 1), last = new Date(y, m, 0);
+    document.getElementById('anFrom').value = first.toISOString().slice(0,10);
+    document.getElementById('anTo').value   = last.toISOString().slice(0,10);
+  }
+
+  safeOn('anMonth', 'change', function(){ applyMonthToRange(); loadAnalytics(); });
+  safeOn('anProduct', 'change', loadAnalytics);
+
   function initAnalytics(){
-    if (!document.getElementById('anFrom').value) { anPreset(30); return; }
+    fillMonthSelect();
+    if (!document.getElementById('anFrom').value) applyMonthToRange();
     loadAnalytics();
   }
 
@@ -4143,7 +4194,21 @@
       if (res.error) throw res.error;
       /* Scope it the same way the dashboard does, so a subcon or MSA opening this
          page sees analytics for their own work only — not the whole operation. */
-      anRows = scopeRecords(res.data || []);
+      var prodFilter = document.getElementById('anProduct').value;
+      var raw = res.data || [];
+      if (prodFilter) raw = raw.filter(function(r){ return (r.plan_package||'') === prodFilter; });
+      anRows = scopeRecords(raw);
+      /* Targets for the selected month/product, so the table below compares like with like. */
+      anTargets = [];
+      var mv = document.getElementById('anMonth').value;
+      if (mv) {
+        var ty = +mv.split('-')[0], tm = +mv.split('-')[1];
+        var prod = document.getElementById('anProduct').value;
+        var tq = db.from('targets').select('*').eq('year', ty).eq('month', tm);
+        if (prod) tq = tq.eq('plan_package', prod);
+        var tr = await tq;
+        if (!tr.error) anTargets = tr.data || [];
+      }
       renderAnalytics();
     } catch(err){
       document.getElementById('anKpis').innerHTML =
@@ -4189,7 +4254,90 @@
       + '<div style="flex:1;">'+legend+'</div></div>';
   }
 
+  /* Build the monthly performance table: one row per municipality, Turn Ins and
+     Installation side by side, each with Target / Actual / MTD Perf / Daily Ave —
+     the same shape as the sheets A6 already reports on.
+       Turn Ins     = applications received in the month  (date_received, else dispatch_date)
+       Installation = actually activated in the month     (date_activated, else Completed status)
+     Daily Average divides by days elapsed so far in the month, not the whole month,
+     otherwise every figure looks behind until the last day. */
+  function renderPerfTable(){
+    var el = document.getElementById('anPerfTable');
+    var mv = document.getElementById('anMonth').value;
+    var prod = document.getElementById('anProduct').value;
+    document.getElementById('anPerfTitle').textContent =
+      'Performance vs Target' + (prod ? ' — ' + prod : ' — all products');
+
+    if (!mv) { el.innerHTML = '<div style="color:#94a3b8;font-size:12px;">Pick a month.</div>'; return; }
+    var y = +mv.split('-')[0], m = +mv.split('-')[1];
+
+    /* days elapsed: full month if it's in the past, days-so-far if it's the current one */
+    var now = new Date();
+    var isCurrent = (now.getFullYear() === y && (now.getMonth()+1) === m);
+    var daysInMonth = new Date(y, m, 0).getDate();
+    var daysElapsed = isCurrent ? now.getDate() : (new Date(y, m-1, 1) > now ? 0 : daysInMonth);
+
+    function keyOf(r){ return (r.municipality || '(no municipality)').toUpperCase(); }
+    var acc = {};
+    function bucket(k){
+      if (!acc[k]) acc[k] = { turnins:0, installs:0, tTurn:0, tInst:0 };
+      return acc[k];
+    }
+    anRows.forEach(function(r){
+      var b = bucket(keyOf(r));
+      b.turnins++;
+      var activated = r.date_activated || (r.status === 'Completed' ? r.dispatch_date : null);
+      if (activated) b.installs++;
+    });
+    /* targets: municipality rows land on that municipality; province-level rows
+       (municipality null) are shown as their own line so nothing is silently dropped */
+    anTargets.forEach(function(t){
+      var k = (t.municipality || (t.province + ' (province)')).toUpperCase();
+      var b = bucket(k);
+      b.tTurn += Number(t.target_value) || 0;
+      b.tInst += Number(t.target_value) || 0;
+    });
+
+    var keys = Object.keys(acc).sort();
+    if (!keys.length) { el.innerHTML = '<div style="color:#94a3b8;font-size:12px;">No data or targets for this month.</div>'; return; }
+
+    function pct(actual, target){
+      if (!target) return '—';
+      var v = actual / target * 100;
+      var cls = v >= 100 ? 'perf-good' : v >= 70 ? 'perf-mid' : 'perf-bad';
+      return '<span class="'+cls+'">' + v.toFixed(1) + '%</span>';
+    }
+    function ave(actual){ return daysElapsed ? (actual/daysElapsed).toFixed(2) : '0.00'; }
+
+    var tot = { turnins:0, installs:0, tTurn:0, tInst:0 };
+    var body = keys.map(function(k){
+      var b = acc[k];
+      tot.turnins += b.turnins; tot.installs += b.installs;
+      tot.tTurn += b.tTurn;     tot.tInst += b.tInst;
+      return '<tr><td>'+k+'</td>'
+        + '<td>'+(b.tTurn||'—')+'</td><td>'+b.turnins+'</td><td>'+pct(b.turnins,b.tTurn)+'</td><td>'+ave(b.turnins)+'</td>'
+        + '<td>'+(b.tInst||'—')+'</td><td>'+b.installs+'</td><td>'+pct(b.installs,b.tInst)+'</td><td>'+ave(b.installs)+'</td>'
+        + '</tr>';
+    }).join('');
+
+    el.innerHTML = '<table class="perf-t">'
+      + '<thead><tr><th rowspan="2">Municipality</th>'
+      + '<th colspan="4" style="text-align:center;background:#c2410c;">TURN INS</th>'
+      + '<th colspan="4" style="text-align:center;background:#4c1d95;">INSTALLATION</th></tr>'
+      + '<tr><th>Target</th><th>Actual</th><th>MTD Perf</th><th>Daily Ave</th>'
+      + '<th>Target</th><th>Actual</th><th>MTD Perf</th><th>Daily Ave</th></tr></thead>'
+      + '<tbody>' + body
+      + '<tr class="perf-total"><td>TOTAL</td>'
+      + '<td>'+(tot.tTurn||'—')+'</td><td>'+tot.turnins+'</td><td>'+pct(tot.turnins,tot.tTurn)+'</td><td>'+ave(tot.turnins)+'</td>'
+      + '<td>'+(tot.tInst||'—')+'</td><td>'+tot.installs+'</td><td>'+pct(tot.installs,tot.tInst)+'</td><td>'+ave(tot.installs)+'</td>'
+      + '</tr></tbody></table>'
+      + '<div style="font-size:10px;color:#94a3b8;margin-top:6px;">Daily average over '
+      + daysElapsed + ' day' + (daysElapsed===1?'':'s') + ' elapsed'
+      + (isCurrent ? ' this month' : ' in the month') + '.</div>';
+  }
+
   function renderAnalytics(){
+    renderPerfTable();
     var rows = anRows;
     var completed = rows.filter(function(r){ return r.status === 'Completed'; }).length;
     var pending   = rows.filter(function(r){ return r.status === 'Pending'; }).length;
