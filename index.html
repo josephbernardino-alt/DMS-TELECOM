@@ -4190,7 +4190,10 @@
     var byInstaller = {};
     rows.filter(function(r){ return r.status === 'Completed'; }).forEach(function(r){
       var co = r.company || teamCompany(r.team_id, r.team_number);
-      var name = co || 'Unassigned';
+      /* Resolve through the companies list so aliases collapse — a team recorded as
+         "Opticore" counts toward JF Horizon rather than showing as a separate contractor. */
+      var resolved = findCompany(co);
+      var name = resolved ? resolved.name : (co || 'Unassigned');
       byInstaller[name] = (byInstaller[name] || 0) + 1;
     });
     document.getElementById('anInstallChart').innerHTML = anBars(
