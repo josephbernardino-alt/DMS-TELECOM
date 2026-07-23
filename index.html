@@ -30,20 +30,22 @@
   .table-body-table td:nth-child(3)  { min-width: 104px; }  /* Dispatch Date */
   .table-body-table td:nth-child(4)  { min-width: 116px; }  /* GoFiber Status */
   .table-body-table td:nth-child(5)  { min-width: 108px; }  /* JO Number */
-  .table-body-table td:nth-child(6)  { min-width: 108px; }  /* Team Number */
-  .table-body-table td:nth-child(7)  { min-width: 150px; }  /* Personnel */
-  .table-body-table td:nth-child(8)  { min-width: 92px; }   /* TL */
-  .table-body-table td:nth-child(9)  { min-width: 132px; }  /* Account No. */
-  .table-body-table td:nth-child(10) { min-width: 124px; }  /* Barangay */
-  .table-body-table td:nth-child(11) { min-width: 120px; }  /* Municipality */
-  .table-body-table td:nth-child(12) { min-width: 210px; }  /* Customer Name */
-  .table-body-table td:nth-child(13) { min-width: 96px; }   /* Status */
-  .table-body-table td:nth-child(14) { min-width: 160px; max-width: 200px; overflow: hidden; text-overflow: ellipsis; }  /* Status Remarks */
-  .table-body-table td:nth-child(15) { min-width: 150px; }  /* NAP Code */
-  .table-body-table td:nth-child(16) { min-width: 132px; }  /* Call Status */
-  .table-body-table td:nth-child(17) { min-width: 150px; max-width: 200px; overflow: hidden; text-overflow: ellipsis; }  /* Call Remarks */
-  .table-body-table td:nth-child(18) { min-width: 150px; }  /* Mobile No. */
-  .table-body-table td:nth-child(19) { min-width: 104px; }  /* Updated By */
+  .table-body-table td:nth-child(6)  { min-width: 132px; }  /* Account No. */
+  .table-body-table td:nth-child(7)  { min-width: 140px; }  /* Reference No. */
+  .table-body-table td:nth-child(8)  { min-width: 128px; }  /* Installation Team */
+  .table-body-table td:nth-child(9)  { min-width: 150px; }  /* Personnel */
+  .table-body-table td:nth-child(10) { min-width: 92px; }   /* TL */
+  .table-body-table td:nth-child(11) { min-width: 104px; }  /* MSA */
+  .table-body-table td:nth-child(12) { min-width: 124px; }  /* Barangay */
+  .table-body-table td:nth-child(13) { min-width: 120px; }  /* Municipality */
+  .table-body-table td:nth-child(14) { min-width: 210px; }  /* Customer Name */
+  .table-body-table td:nth-child(15) { min-width: 96px; }   /* Status */
+  .table-body-table td:nth-child(16) { min-width: 160px; max-width: 200px; overflow: hidden; text-overflow: ellipsis; }  /* Status Remarks */
+  .table-body-table td:nth-child(17) { min-width: 150px; }  /* NAP Code */
+  .table-body-table td:nth-child(18) { min-width: 132px; }  /* Call Status */
+  .table-body-table td:nth-child(19) { min-width: 150px; max-width: 200px; overflow: hidden; text-overflow: ellipsis; }  /* Call Remarks */
+  .table-body-table td:nth-child(20) { min-width: 150px; }  /* Mobile No. */
+  .table-body-table td:nth-child(21) { min-width: 104px; }  /* Updated By */
   thead th { background: #f1f5f9; white-space: nowrap; }
 
   /* NAVBAR */
@@ -1030,6 +1032,7 @@
       <div class="nav-avatar" id="userAvatarBtn">FB</div>
     </div>
     <div class="nav-menu" id="userMenu" style="right:0;left:auto;min-width:170px;">
+      <div class="nav-menu-item" id="companiesBtn">Companies</div>
       <div class="nav-menu-item" id="teamsBtn">Teams</div>
       <div class="nav-menu-item" id="changePwBtn">Change Password</div>
       <div style="border-top:1px solid #f1f5f9;margin:4px 0;"></div>
@@ -1071,7 +1074,9 @@
       <div class="col-item"><input type="checkbox" id="col-team" checked> Installation Team</div>
       <div class="col-item"><input type="checkbox" id="col-personnel" checked> Personnel</div>
       <div class="col-item"><input type="checkbox" id="col-tl" checked> TL</div>
+      <div class="col-item"><input type="checkbox" id="col-msa" checked> MSA (Selling Agency)</div>
       <div class="col-item"><input type="checkbox" id="col-account" checked> Account Number</div>
+      <div class="col-item"><input type="checkbox" id="col-reference" checked> Reference Number</div>
       <div class="col-item"><input type="checkbox" id="col-barangay" checked> Barangay</div>
       <div class="col-item"><input type="checkbox" id="col-muni" checked> Municipality</div>
       <div class="col-item"><input type="checkbox" id="col-customer" checked> Customer Name</div>
@@ -1157,8 +1162,9 @@
     <table class="table-head-table" id="tableHeadTable">
       <tbody><tr id="tableHeadRow">
         <td id="hth0">Count</td><td id="hth1">Chat</td><td id="hth2">Dispatch Date</td><td id="hth3">GoFiber Status</td>
-        <td id="hth4">JO Number</td><td id="hth5">Installation Team</td><td id="hth6">Personnel</td><td id="hth7">TL</td>
-        <td id="hth8">Account No.</td><td id="hth9">Barangay</td><td id="hth9m">Municipality</td><td id="hth10">Customer Name</td><td id="hth11">Status</td>
+        <td id="hth4">JO Number</td><td id="hth8">Account No.</td><td id="hthRef">Reference No.</td>
+        <td id="hth5">Installation Team</td><td id="hth6">Personnel</td><td id="hth7">TL</td><td id="hthMsa">MSA</td>
+        <td id="hth9">Barangay</td><td id="hth9m">Municipality</td><td id="hth10">Customer Name</td><td id="hth11">Status</td>
         <td id="hth12">Status Remarks</td><td id="hth13">NAP ID</td><td id="hth14">Call Status</td>
         <td id="hth15">Call Remarks</td><td id="hth16">Mobile No.</td><td id="hth17">Updated By</td>
       </tr></tbody>
@@ -1168,7 +1174,7 @@
   <div class="table-body-wrap" id="tableBodyWrap">
     <table class="table-body-table" id="tableBodyTable">
       <tbody id="tableBody">
-        <tr class="loading-row"><td colspan="19"><span class="spinner"></span>Loading today's job orders...</td></tr>
+        <tr class="loading-row"><td colspan="21"><span class="spinner"></span>Loading today's job orders...</td></tr>
       </tbody>
     </table>
   </div>
@@ -1844,6 +1850,41 @@
     <div class="staging-footer">
       <button class="btn btn-close" onclick="closeMigRecordModal()">Close</button>
       <button class="btn btn-save" onclick="saveMigRecordModal()">Save Changes</button>
+    </div>
+  </div>
+</div>
+
+<!-- COMPANIES MODAL -->
+<div class="staging-overlay" id="companiesOverlay">
+  <div class="staging-modal" style="width:660px;max-width:95vw;">
+    <div class="staging-header">
+      <span class="team-assign-title">Companies</span>
+      <button class="modal-close" onclick="closeCompaniesModal()">✕</button>
+    </div>
+    <div class="staging-body" style="padding:0;">
+      <div style="padding:10px 14px;background:#f8fafc;border-bottom:1px solid #eef2f7;font-size:11px;color:#64748b;">
+        <b>Sells</b> = appears in the MSA list (they bring the application).
+        <b>Installs</b> = their teams can be assigned the job.
+        <b>In-house</b> = one of ours, so jobs they sell are marked “Our application”.
+        A company can be both.
+      </div>
+      <div id="companiesBody" style="max-height:46vh;overflow-y:auto;">
+        <div style="padding:30px;text-align:center;color:#94a3b8;font-size:12px;">Loading…</div>
+      </div>
+      <div style="padding:10px 14px;border-top:1px solid #eef2f7;background:#f8fafc;">
+        <div style="font-size:10px;color:#94a3b8;font-weight:700;text-transform:uppercase;letter-spacing:.3px;margin-bottom:6px;">Add a company</div>
+        <div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center;">
+          <input id="newCoName" type="text" placeholder="Company name"
+                 style="flex:1;min-width:150px;border:1px solid #cbd5e1;border-radius:7px;padding:7px 9px;font-size:12px;">
+          <label style="font-size:11px;display:flex;align-items:center;gap:4px;"><input type="checkbox" id="newCoSells"> Sells</label>
+          <label style="font-size:11px;display:flex;align-items:center;gap:4px;"><input type="checkbox" id="newCoInstalls"> Installs</label>
+          <label style="font-size:11px;display:flex;align-items:center;gap:4px;"><input type="checkbox" id="newCoInHouse"> In-house</label>
+          <button class="btn-refresh" style="padding:7px 12px;font-size:12px;" onclick="addCompany()">+ Add</button>
+        </div>
+      </div>
+    </div>
+    <div class="staging-footer">
+      <button class="btn btn-close" onclick="closeCompaniesModal()">Close</button>
     </div>
   </div>
 </div>
@@ -2537,11 +2578,11 @@
 
   /* ── COLUMN VISIBILITY ── */
   var colMap = {
-    'col-dispatch':2, 'col-gofiber':3, 'col-team':5,
-    'col-personnel':6, 'col-tl':7, 'col-account':8,
-    'col-barangay':9, 'col-muni':10, 'col-customer':11, 'col-status':12,
-    'col-remarks':13, 'col-nap':14, 'col-callstatus':15,
-    'col-callremarks':16, 'col-mobile':17, 'col-updated':18
+    'col-dispatch':2, 'col-gofiber':3, 'col-account':5, 'col-reference':6,
+    'col-team':7, 'col-personnel':8, 'col-tl':9, 'col-msa':10,
+    'col-barangay':11, 'col-muni':12, 'col-customer':13, 'col-status':14,
+    'col-remarks':15, 'col-nap':16, 'col-callstatus':17,
+    'col-callremarks':18, 'col-mobile':19, 'col-updated':20
   };
 
   function applyColumnVisibility() {
@@ -2714,20 +2755,22 @@
       var el = document.getElementById(id); if(el) el.classList.remove('active-filter');
     });
     document.getElementById('tableBody').innerHTML =
-      '<tr class="loading-row"><td colspan="19"><span class="spinner"></span>Loading job orders for '+fmtDate(dateFrom)+'...</td></tr>';
+      '<tr class="loading-row"><td colspan="21"><span class="spinner"></span>Loading job orders for '+fmtDate(dateFrom)+'...</td></tr>';
     if (!db) {
       if (DEMO_MODE) { seedDemoTeams(); allOrders = scopeRecords(demoJobsForRange(dateFrom,dateTo)); shown = allOrders; render(shown); summary(shown); updateDateLabel(); }
       else {
         /* No database connection and no demo fallback — say so plainly instead of
            leaving a spinner running forever, which looks like the app has hung. */
         document.getElementById('tableBody').innerHTML =
-          '<tr class="loading-row"><td colspan="19" style="color:#ef4444;">⚠ Cannot reach the database. Check your connection, then refresh.</td></tr>';
+          '<tr class="loading-row"><td colspan="21" style="color:#ef4444;">⚠ Cannot reach the database. Check your connection, then refresh.</td></tr>';
         updateDateLabel();
       }
       return;
     }
     try {
       if (!allTeams.length) {
+        var rC = await db.from('companies').select('*').order('name');
+        if (!rC.error) allCompanies = rC.data || [];
         var r2 = await db.from('teams').select('*');
         if (!r2.error) { allTeams = r2.data||[]; document.getElementById('teamCount').textContent = allTeams.length;
       var mtc = document.getElementById('mapTeamCount');
@@ -2764,7 +2807,7 @@
         render(shown); summary(shown); updateDateLabel();
       } else {
         document.getElementById('tableBody').innerHTML =
-          '<tr class="loading-row"><td colspan="19" style="color:#ef4444;">⚠ Error: '+err.message+'</td></tr>';
+          '<tr class="loading-row"><td colspan="21" style="color:#ef4444;">⚠ Error: '+err.message+'</td></tr>';
       }
     }
   }
@@ -2833,12 +2876,14 @@
       'JO#: ' + (r.jo_number || '—'),
       'Customer: ' + (r.customer_name || '—'),
       'Account #: ' + (r.account_number || '—'),
+      'Reference #: ' + (r.reference_id || '—'),
       'Mobile: ' + (r.mobile_number || '—'),
       'Address: ' + (r.address || '—'),
       'Brgy/Muni: ' + (r.barangay || '—') + (r.municipality ? ', ' + r.municipality : ''),
       'Plan: ' + (r.plan || '—'),
       'Schedule: ' + (r.dispatch_date || '—'),
       'Team: ' + tn,
+      'MSA: ' + (r.msa_name || '—'),
       'Status: ' + (r.status || '—') + (r.status_remarks ? ' — ' + r.status_remarks : '')
     ];
     return lines.join('\n');
@@ -2880,7 +2925,7 @@
     if (currentUser && currentUser.role === 'tl') renderTlCards(data);
     var tbody = document.getElementById('tableBody');
     if (!data.length) {
-      tbody.innerHTML = '<tr class="loading-row"><td colspan="19">No job orders found for '+fmtDate(dateFrom)+'</td></tr>';
+      tbody.innerHTML = '<tr class="loading-row"><td colspan="21">No job orders found for '+fmtDate(dateFrom)+'</td></tr>';
       document.getElementById('rowCount').textContent = '0'; return;
     }
     var html = '';
@@ -2905,10 +2950,13 @@
         +'<td>'+(r.gofib_status?'<span class="status-badge '+gBadge(r.gofib_status)+'">'+r.gofib_status+'</span>':'—')+'</td>'
         +'<td><span class="jo-link '+(tn?'has-team':'no-team')+'">'+v(r.jo_number)+'</span>'
           +'<svg class="copy-jo" data-id="'+r.id+'" title="Copy details" viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="#94a3b8" stroke-width="2" style="margin-left:6px;cursor:pointer;vertical-align:middle;"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V5a2 2 0 012-2h10"/></svg></td>'
+        +'<td style="font-size:11px">'+v(r.account_number)+'</td>'
+        +'<td style="font-size:11px;white-space:nowrap">'+v(r.reference_id)+'</td>'
         +'<td>'+(tn?'<span class="team-badge '+teamClass(tn)+'">'+tn+(r.team_id?'':' <span class="team-warn">⚑</span>')+'</span>':'—')+'</td>'
         +'<td style="font-size:11px;white-space:nowrap">'+v(r.personnel)+'</td>'
         +'<td style="white-space:nowrap">'+v(r.tl_name)+'</td>'
-        +'<td style="font-size:11px">'+v(r.account_number)+'</td>'
+        +'<td style="white-space:nowrap;font-size:11px">'+v(r.msa_name)
+          +(isInHouseSale(r.msa_name)?' <span title="Our application" style="background:#dcfce7;color:#15803d;border-radius:4px;padding:1px 5px;font-size:9px;font-weight:700;">OURS</span>':'')+'</td>'
         +'<td style="white-space:nowrap">'+v(r.barangay)+'</td>'
         +'<td style="white-space:nowrap">'+v(r.municipality)+'</td>'
         +'<td><span class="cust-link">'+v(r.customer_name)+'</span></td>'
@@ -3049,7 +3097,7 @@
   var sortState = { key: null, dir: 1 };
   var SORT_KEYS = {   /* header cell id → record field */
     hth2:'dispatch_date', hth3:'gofib_status', hth4:'jo_number', hth5:'team_number',
-    hth6:'personnel', hth7:'tl_name', hth8:'account_number', hth9:'barangay', hth9m:'municipality',
+    hth6:'personnel', hth7:'tl_name', hth8:'account_number', hth9:'barangay', hth9m:'municipality', hthRef:'reference_id', hthMsa:'msa_name',
     hth10:'customer_name', hth11:'status', hth14:'call_status', hth17:'updated_by'
   };
   var HEADER_LABELS = {};   /* remembered so sort arrows can be redrawn cleanly */
@@ -3073,7 +3121,7 @@
       if (prov && regionOf(r) !== prov) return false;
       if (muni && r.municipality !== muni) return false;
       if (!q) return true;
-      return (r.jo_number&&r.jo_number.toLowerCase().includes(q))||(r.customer_name&&r.customer_name.toLowerCase().includes(q))||(r.account_number&&r.account_number.toLowerCase().includes(q))||(r.barangay&&r.barangay.toLowerCase().includes(q))||(r.municipality&&r.municipality.toLowerCase().includes(q))||(r.personnel&&r.personnel.toLowerCase().includes(q))||(r.mobile_number&&r.mobile_number.includes(q));
+      return (r.jo_number&&r.jo_number.toLowerCase().includes(q))||(r.customer_name&&r.customer_name.toLowerCase().includes(q))||(r.account_number&&r.account_number.toLowerCase().includes(q))||(r.barangay&&r.barangay.toLowerCase().includes(q))||(r.municipality&&r.municipality.toLowerCase().includes(q))||(r.personnel&&r.personnel.toLowerCase().includes(q))||(r.reference_id&&r.reference_id.toLowerCase().includes(q))||(r.msa_name&&r.msa_name.toLowerCase().includes(q))||(r.mobile_number&&r.mobile_number.includes(q));
     });
     if (sortState.key) {
       f = f.slice().sort(function(a,b){
@@ -3181,6 +3229,19 @@
       return canEditJO ? efld(lbl, val, id, type) : fld(lbl, val);
     }
 
+    /* MSA is picked from the companies that sell — never typed. Free text would let
+       "P&A" and "P & A" become two different agencies and quietly break commission counts. */
+    function msaField(val) {
+      if (!canEditAcct) return fld('MSA (Selling Agency)', val);
+      var opts = '<option value="">— None —</option>' + companiesThatSell().map(function(c){
+        return '<option value="'+c.name+'"'+(c.name===val?' selected':'')+'>'+c.name+(c.in_house?' (in-house)':'')+'</option>';
+      }).join('');
+      /* keep an unrecognised historical value visible rather than silently blanking it */
+      if (val && !findCompany(val)) opts += '<option value="'+val+'" selected>'+val+' (unrecognised)</option>';
+      return '<div class="fld"><label>MSA (Selling Agency)</label>'
+           + '<select id="editMsa" class="fld-input">'+opts+'</select></div>';
+    }
+
     var detailsHtml =
       sec('Job Information',
         g3(fld('JO Number',r.jo_number),fld('Date',r.dispatch_date),fld('Installation Team',tn))
@@ -3200,7 +3261,7 @@
         )+
         g3(ofld('Assigned TL',r.assigned_tl||r.tl_name,'editTL'),ofld('Call Status',r.call_status,'editCallStatus'),ofld('Call Remarks',r.call_remarks,'editCallRemarks'))+
         g3(ofld('Time In',r.time_in,'editTimeIn','time'),ofld('Time Out',r.time_out,'editTimeOut','time'),ofld('NAP ID',r.nap_id,'editNapId'))+
-        g2(afld('Modem Serial Number',r.modem_serial,'editModemSerial'),afld('IPTV Serial Number',r.iptv_serial,'editIptvSerial'))
+        g3(msaField(r.msa_name),afld('Modem Serial Number',r.modem_serial,'editModemSerial'),afld('IPTV Serial Number',r.iptv_serial,'editIptvSerial'))
       );
 
     document.getElementById('panelDetails').innerHTML = detailsHtml;
@@ -3270,7 +3331,7 @@
 
   /* Human-readable labels for regions and roles (used in the UI). */
   var REGION_LABELS = { ALL: 'All Regions', NCR_RIZAL: 'NCR / Rizal', CAVITE: 'Cavite', PANAY: 'Panay' };
-  var ROLE_LABELS   = { developer:'Developer', manager:'Manager / Supervisor', dispatch:'Dispatch', sales_admin:'Sales Admin (view-only)', encoder:'Encoder', tl:'Team Leader', agent:'Agent', subcon:'Subcon' };
+  var ROLE_LABELS   = { developer:'Developer', manager:'Manager / Supervisor', dispatch:'Dispatch', sales_admin:'Sales Admin (view-only)', encoder:'Encoder', tl:'Team Leader', agent:'Agent', subcon:'Subcon (Installer)', msa:'MSA (Selling Agency)' };
 
   /* The single source of truth for "who is logged in right now". Null = logged out. */
   var currentUser = null;
@@ -3399,7 +3460,9 @@
        Status changes happen through the chat popup (update_status), not the detail modal. */
     tl:          ['view_dashboard','update_status'],
     agent:       ['view_dashboard','update_status'],
-    subcon:      ['view_dashboard','update_status']
+    subcon:      ['view_dashboard','update_status'],
+    /* MSA = selling agency. They view their own sales; they don't touch operations. */
+    msa:         ['view_dashboard']
   };
 
   function can(capability) {
@@ -3432,7 +3495,7 @@
   /* Convenience: apply BOTH scopes (region then team) in one call, since most
      data loads want both. A TL is region-scoped AND team-scoped. */
   function scopeRecords(records) {
-    return filterByCompany(filterByTeam(filterByRegion(records)));
+    return filterByMsa(filterByCompany(filterByTeam(filterByRegion(records))));
   }
 
   /* Which contractor a job belongs to comes from the team it's assigned to.
@@ -3450,6 +3513,19 @@
      Note this FAILS CLOSED: a subcon account with no company set sees nothing at all,
      rather than everything. A misconfigured account should show too little, never too much.
      Unassigned job orders (no team yet) are also hidden — nobody has been given that work. */
+  /* An MSA sees the jobs THEY sold — matched through company aliases so historical
+     rows saved as "OPTC" still resolve to JF Horizon. Fails closed like the others. */
+  function filterByMsa(records) {
+    if (!currentUser || currentUser.role !== 'msa') return records;
+    if (!currentUser.company) return [];
+    var mine = findCompany(currentUser.company);
+    return (records || []).filter(function(r){
+      if (!r.msa_name) return false;
+      var c = findCompany(r.msa_name);
+      return c && mine && String(c.id) === String(mine.id);
+    });
+  }
+
   function filterByCompany(records) {
     if (!currentUser || currentUser.role !== 'subcon') return records;
     if (!currentUser.company) return [];
@@ -3544,7 +3620,7 @@
     document.body.classList.toggle('tl-view', currentUser.role === 'tl');
     /* Subcons get the same nav restrictions as a TL, but keep the full table layout —
        they're an office user at another company, not a field tech on a phone. */
-    document.body.classList.toggle('subcon-view', currentUser.role === 'subcon');
+    document.body.classList.toggle('subcon-view', currentUser.role === 'subcon' || currentUser.role === 'msa');
 
     /* Backstop: if the page currently on screen needs a capability this user doesn't
        have, send them to the dashboard. Hiding the nav button alone isn't enough —
@@ -3553,7 +3629,7 @@
     var active = document.querySelector('.page-view.active');
     if (active) {
       var needed = PAGE_CAPS[active.id];
-      var fieldRole = ['tl','subcon','agent'].indexOf(currentUser.role) >= 0;
+      var fieldRole = ['tl','subcon','agent','msa'].indexOf(currentUser.role) >= 0;
       var tlOffLimits = (fieldRole && active.id !== 'page-dashboard');
       if ((needed && !can(needed)) || tlOffLimits) switchPage('dashboard');
     }
@@ -3672,7 +3748,7 @@
           customer_name:'editCustomerName', account_number:'editAccountNumber', reference_id:'editReferenceId',
           mobile_number:'editMobileNumber', alt_mobile_number:'editAltMobile', address:'editAddress',
           municipality:'editMunicipality', barangay:'editBarangay', plan:'editPlan',
-          modem_serial:'editModemSerial', iptv_serial:'editIptvSerial'
+          modem_serial:'editModemSerial', iptv_serial:'editIptvSerial', msa_name:'editMsa'
         };
         Object.keys(acctMap).forEach(function(field){
           var el = document.getElementById(acctMap[field]);
@@ -3929,7 +4005,7 @@
       customer_name:'Customer Name', account_number:'Account Number', reference_id:'Reference ID',
       mobile_number:'Mobile Number', alt_mobile_number:'Alt Mobile', address:'Address',
       municipality:'Municipality', barangay:'Barangay', plan:'Plan', modem_serial:'Modem Serial',
-      iptv_serial:'IPTV Serial', status:'Status', gofib_status:'GoFiber Status',
+      iptv_serial:'IPTV Serial', msa_name:'MSA', reference_id:'Reference No.', status:'Status', gofib_status:'GoFiber Status',
       status_remarks:'Status Remarks', call_status:'Call Status', call_remarks:'Call Remarks',
       tl_name:'Assigned TL', time_in:'Time In', time_out:'Time Out', nap_id:'NAP ID',
       reschedule_count:'Reschedule Count', sales_agent:'Sales Agent'
@@ -4765,7 +4841,36 @@
      instead of needing a database edit every time a team moves or a subcon adds one.
      This mapping is what subcontractor access is built on, so it matters that it's easy
      to keep correct. */
-  var CONTRACTORS = ['A6', 'Opticore', 'A2 Telecom', 'TMR', 'PMAJ', 'Balangue'];
+  /* ── COMPANIES ──
+     One list, three capability flags — because several companies do BOTH jobs:
+       sells    → appears in the MSA dropdown (they generate the application)
+       installs → its teams appear in the Installation Team dropdown
+       in_house → one of ours, so a job it sold is marked "Our application"
+     Two lists would mean maintaining A6/JF Horizon/BIIS twice and letting them drift. */
+  var allCompanies = [];
+
+  function companiesThatSell()    { return allCompanies.filter(function(c){ return c.sells    && c.active !== false; }); }
+  function companiesThatInstall() { return allCompanies.filter(function(c){ return c.installs && c.active !== false; }); }
+
+  /* Match a stored name against a company, allowing for old names in the historical data
+     (e.g. OPTC / Opticore both resolve to JF Horizon). Without this, imported sheet rows
+     would silently fail to link and commission counts would come up short. */
+  function findCompany(name) {
+    if (!name) return null;
+    var n = String(name).trim().toLowerCase();
+    return allCompanies.find(function(c){
+      if (String(c.name).trim().toLowerCase() === n) return true;
+      return (c.aliases || []).some(function(a){ return String(a).trim().toLowerCase() === n; });
+    }) || null;
+  }
+  function isInHouseSale(msa) {
+    var c = findCompany(msa);
+    return !!(c && c.in_house);
+  }
+  /* Kept as a helper so the Teams manager can still offer a company per team. */
+  function contractorNames() {
+    return companiesThatInstall().map(function(c){ return c.name; });
+  }
 
   safeOn('teamsBtn', 'click', function(e){
     e.stopPropagation();
@@ -4776,10 +4881,96 @@
 
   window.closeTeamsModal = function(){ document.getElementById('teamsOverlay').style.display = 'none'; };
 
+  /* ── COMPANIES MANAGER ── */
+  safeOn('companiesBtn', 'click', function(e){
+    e.stopPropagation();
+    document.getElementById('userMenu').classList.remove('open');
+    if (!can('assign')) { showToast('You do not have permission to manage companies', 'warning'); return; }
+    openCompaniesModal();
+  });
+  window.closeCompaniesModal = function(){ document.getElementById('companiesOverlay').style.display = 'none'; };
+
+  async function openCompaniesModal() {
+    document.getElementById('companiesOverlay').style.display = 'flex';
+    var body = document.getElementById('companiesBody');
+    if (!db) { body.innerHTML = '<div style="padding:30px;text-align:center;color:#ef4444;font-size:12px;">No database connection.</div>'; return; }
+    try {
+      var res = await db.from('companies').select('*').order('name');
+      if (res.error) throw res.error;
+      allCompanies = res.data || [];
+      renderCompanies();
+    } catch (err) {
+      body.innerHTML = '<div style="padding:30px;text-align:center;color:#ef4444;font-size:12px;">Error: '+err.message+'</div>';
+    }
+  }
+
+  function renderCompanies() {
+    var body = document.getElementById('companiesBody');
+    if (!allCompanies.length) {
+      body.innerHTML = '<div style="padding:30px;text-align:center;color:#94a3b8;font-size:12px;">No companies yet. Add one below.</div>';
+      return;
+    }
+    function chk(co, field) {
+      return '<label style="font-size:11px;display:inline-flex;align-items:center;gap:4px;margin-right:10px;">'
+        + '<input type="checkbox" class="co-flag" data-id="'+co.id+'" data-field="'+field+'"'+(co[field]?' checked':'')+'> '
+        + ({sells:'Sells', installs:'Installs', in_house:'In-house'})[field] + '</label>';
+    }
+    body.innerHTML = allCompanies.map(function(co){
+      var alias = (co.aliases && co.aliases.length) ? '<span style="font-size:10px;color:#94a3b8;"> (also: '+co.aliases.join(', ')+')</span>' : '';
+      return '<div style="display:flex;align-items:center;gap:8px;padding:9px 14px;border-bottom:1px solid #f6f8fa;'+(co.active===false?'opacity:.5;':'')+'">'
+        + '<span style="flex:1;font-size:12px;font-weight:600;color:#1e293b;">'+co.name+alias+'</span>'
+        + '<span style="white-space:nowrap;">'+chk(co,'sells')+chk(co,'installs')+chk(co,'in_house')+'</span>'
+        + '</div>';
+    }).join('');
+    body.querySelectorAll('.co-flag').forEach(function(cb){
+      cb.addEventListener('change', function(){
+        saveCompanyFlag(cb.getAttribute('data-id'), cb.getAttribute('data-field'), cb.checked, cb);
+      });
+    });
+  }
+
+  async function saveCompanyFlag(id, field, value, cb) {
+    var co = allCompanies.find(function(c){ return String(c.id) === String(id); });
+    var previous = co ? co[field] : null;
+    if (co) co[field] = value;
+    try {
+      var upd = {}; upd[field] = value;
+      var r = await db.from('companies').update(upd).eq('id', id);
+      if (r.error) throw r.error;
+      showToast('✓ ' + (co?co.name:'Company') + ' updated', 'success');
+      renderCompanies();
+    } catch (err) {
+      if (co) co[field] = previous;      /* roll back so the screen doesn't lie */
+      if (cb) cb.checked = !!previous;
+      showToast('Error saving: ' + err.message, 'error');
+    }
+  }
+
+  window.addCompany = async function() {
+    var name = document.getElementById('newCoName').value.trim();
+    if (!name) { showToast('Enter a company name', 'warning'); return; }
+    if (findCompany(name)) { showToast('That company already exists', 'warning'); return; }
+    try {
+      var r = await db.from('companies').insert({
+        name: name,
+        sells:    document.getElementById('newCoSells').checked,
+        installs: document.getElementById('newCoInstalls').checked,
+        in_house: document.getElementById('newCoInHouse').checked
+      }).select().single();
+      if (r.error) throw r.error;
+      allCompanies.push(r.data);
+      allCompanies.sort(function(a,b){ return a.name.localeCompare(b.name); });
+      document.getElementById('newCoName').value = '';
+      ['newCoSells','newCoInstalls','newCoInHouse'].forEach(function(id){ document.getElementById(id).checked = false; });
+      renderCompanies();
+      showToast('✓ ' + name + ' added', 'success');
+    } catch (err) { showToast('Error adding company: ' + err.message, 'error'); }
+  };
+
   function contractorOptions(selected) {
     /* Include any company already in the data that isn't in the standard list, so an
        unexpected value is visible and fixable rather than silently reset. */
-    var list = CONTRACTORS.slice();
+    var list = contractorNames();
     if (selected && list.indexOf(selected) < 0) list.push(selected);
     return '<option value="">— Unassigned —</option>' + list.map(function(c){
       return '<option value="'+c+'"'+(c===selected?' selected':'')+'>'+c+'</option>';
@@ -7018,7 +7209,7 @@
        - a SUBCONTRACTOR gets work by name (their team row is named after the company)
        - an IN-HOUSE crew is picked by team number.
        Grouping comes from teams.company: anything matching a known subcon goes up top. */
-    var subconNames = CONTRACTORS.filter(function(c){ return c !== 'A6'; });
+    var subconNames = companiesThatInstall().filter(function(c){ return !c.in_house; }).map(function(c){ return c.name; });
     var subs = [], inhouse = [];
     allTeams.forEach(function(t){
       if (t.company && subconNames.indexOf(t.company) >= 0) subs.push(t); else inhouse.push(t);
