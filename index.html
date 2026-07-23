@@ -1058,7 +1058,7 @@
     <div class="columns-panel" id="columnsPanel">
       <div class="col-item"><input type="checkbox" id="col-dispatch" checked> Dispatch Date</div>
       <div class="col-item"><input type="checkbox" id="col-gofiber" checked> GoFiber Status</div>
-      <div class="col-item"><input type="checkbox" id="col-team" checked> Team Number</div>
+      <div class="col-item"><input type="checkbox" id="col-team" checked> Installation Team</div>
       <div class="col-item"><input type="checkbox" id="col-personnel" checked> Personnel</div>
       <div class="col-item"><input type="checkbox" id="col-tl" checked> TL</div>
       <div class="col-item"><input type="checkbox" id="col-account" checked> Account Number</div>
@@ -1146,7 +1146,7 @@
     <table class="table-head-table" id="tableHeadTable">
       <tbody><tr id="tableHeadRow">
         <td id="hth0">Count</td><td id="hth1">Chat</td><td id="hth2">Dispatch Date</td><td id="hth3">GoFiber Status</td>
-        <td id="hth4">JO Number</td><td id="hth5">Team Number</td><td id="hth6">Personnel</td><td id="hth7">TL</td>
+        <td id="hth4">JO Number</td><td id="hth5">Installation Team</td><td id="hth6">Personnel</td><td id="hth7">TL</td>
         <td id="hth8">Account No.</td><td id="hth9">Barangay</td><td id="hth10">Customer Name</td><td id="hth11">Status</td>
         <td id="hth12">Status Remarks</td><td id="hth13">NAP ID</td><td id="hth14">Call Status</td>
         <td id="hth15">Call Remarks</td><td id="hth16">Mobile No.</td><td id="hth17">Updated By</td>
@@ -1878,7 +1878,7 @@
     <div class="staging-body">
       <div id="assignCustomerName" style="display:none;"></div>
 
-      <label class="team-assign-label">Team Number <span class="req">*</span></label>
+      <label class="team-assign-label">Installation Team <span class="req">*</span></label>
       <select class="team-assign-select" id="assignTeamSelect">
         <option value="">— Select Team —</option>
       </select>
@@ -2138,7 +2138,7 @@
     </div>
     <div class="modal-footer">
       <button class="btn btn-close" id="btnClose2">Close</button>
-      <button class="btn btn-reschedule" id="btnAssignJO" data-cap="assign" style="color:#1d4ed8;border-color:#1d4ed8;">⚑ Assign Team</button>
+      <button class="btn" id="btnAssignJO" data-cap="assign" style="background:#fff;color:#1d4ed8;border:1px solid #1d4ed8;">⚑ Assign Team</button>
       <button class="btn btn-reschedule" data-cap="edit_jo">↺ Reschedule Job Order</button>
       <button class="btn btn-cancel-jo" data-cap="edit_jo">✕ Cancel Job Order</button>
       <button class="btn btn-complete" data-cap="edit_jo">✓ Complete Job Order</button>
@@ -3055,7 +3055,7 @@
 
     var detailsHtml =
       sec('Job Information',
-        g3(fld('JO Number',r.jo_number),fld('Date',r.dispatch_date),fld('Team Number',tn))
+        g3(fld('JO Number',r.jo_number),fld('Date',r.dispatch_date),fld('Installation Team',tn))
       )+
       sec('',
         g3(afld('Account Number',r.account_number,'editAccountNumber'),afld('Reference ID',r.reference_id,'editReferenceId'),afld('Customer Name',r.customer_name,'editCustomerName'))+
@@ -6884,12 +6884,23 @@
 
   function fillAssignSelects() {
     var teamSelect = document.getElementById('assignTeamSelect');
-    teamSelect.innerHTML = '<option value="">— Select Team —</option>' +
-      allTeams.map(function(t){
-        /* Show the contractor next to the team so dispatch can see who they're handing work to. */
-        var co = t.company ? '  ·  ' + t.company : '';
-        return '<option value="'+t.team_number+'">'+t.team_number+co+'</option>';
-      }).join('');
+    /* Two groups, matching how dispatch actually thinks about it:
+       - a SUBCONTRACTOR gets work by name (their team row is named after the company)
+       - an IN-HOUSE crew is picked by team number.
+       Grouping comes from teams.company: anything matching a known subcon goes up top. */
+    var subconNames = CONTRACTORS.filter(function(c){ return c !== 'A6'; });
+    var subs = [], inhouse = [];
+    allTeams.forEach(function(t){
+      if (t.company && subconNames.indexOf(t.company) >= 0) subs.push(t); else inhouse.push(t);
+    });
+    function opt(t, label){ return '<option value="'+t.team_number+'">'+label+'</option>'; }
+    teamSelect.innerHTML = '<option value="">— Select Installation Team —</option>'
+      + (subs.length ? '<optgroup label="Subcontractors">' + subs.map(function(t){
+          return opt(t, t.team_number === t.company ? t.company : t.team_number + '  ·  ' + t.company);
+        }).join('') + '</optgroup>' : '')
+      + (inhouse.length ? '<optgroup label="In-house Teams">' + inhouse.map(function(t){
+          return opt(t, t.team_number);
+        }).join('') + '</optgroup>' : '');
     var p1 = document.getElementById('assignPersonnel1Select');
     var p2 = document.getElementById('assignPersonnel2Select');
     var personnelOptions = allPersonnel.map(function(p){
@@ -6921,7 +6932,7 @@
     var p1Val   = document.getElementById('assignPersonnel1Select').value;
     var p2Val   = document.getElementById('assignPersonnel2Select').value;
 
-    if (!teamVal) { showToast('Team Number is required', 'warning'); return; }
+    if (!teamVal) { showToast('Installation Team is required', 'warning'); return; }
     if (!p1Val)   { showToast('Personnel 1 is required', 'warning'); return; }
 
     var personnelStr = p1Val + (p2Val ? ', '+p2Val : '');
