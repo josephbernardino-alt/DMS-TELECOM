@@ -591,6 +591,7 @@
   /* Nav items a Team Leader never needs (NI/Migration/NAP menus, view-adjust eye)
      are hidden on every screen size. */
   body.tl-view .tl-hide { display: none !important; }
+  body.subcon-view .tl-hide { display: none !important; }
 
   /* The lean CARD view is PHONE-ONLY. On a laptop the TL keeps the normal table.
      So the card-vs-table swap lives inside the mobile media query below.
@@ -1835,6 +1836,37 @@
   </div>
 </div>
 
+<!-- TEAMS MANAGEMENT MODAL -->
+<div class="staging-overlay" id="teamsOverlay">
+  <div class="staging-modal" style="width:620px;max-width:95vw;">
+    <div class="staging-header">
+      <span class="team-assign-title">Teams &amp; Contractors</span>
+      <button class="modal-close" onclick="closeTeamsModal()">✕</button>
+    </div>
+    <div class="staging-body" style="padding:0;">
+      <div style="padding:10px 14px;background:#f8fafc;border-bottom:1px solid #eef2f7;font-size:11px;color:#64748b;">
+        Set which contractor each team belongs to. Subcontractor accounts only see job orders
+        assigned to their own company's teams.
+      </div>
+      <div id="teamsMgmtBody" style="max-height:48vh;overflow-y:auto;">
+        <div style="padding:30px;text-align:center;color:#94a3b8;font-size:12px;">Loading teams…</div>
+      </div>
+      <div style="padding:10px 14px;border-top:1px solid #eef2f7;background:#f8fafc;">
+        <div style="font-size:10px;color:#94a3b8;font-weight:700;text-transform:uppercase;letter-spacing:.3px;margin-bottom:6px;">Add a team</div>
+        <div style="display:flex;gap:6px;flex-wrap:wrap;">
+          <input id="newTeamNumber" type="text" placeholder="Team number (e.g. OPT-0001)"
+                 style="flex:1;min-width:150px;border:1px solid #cbd5e1;border-radius:7px;padding:7px 9px;font-size:12px;">
+          <select id="newTeamCompany" style="border:1px solid #cbd5e1;border-radius:7px;padding:7px 9px;font-size:12px;"></select>
+          <button class="btn-refresh" style="padding:7px 12px;font-size:12px;" onclick="addTeam()">+ Add</button>
+        </div>
+      </div>
+    </div>
+    <div class="staging-footer">
+      <button class="btn btn-close" onclick="closeTeamsModal()">Close</button>
+    </div>
+  </div>
+</div>
+
 <!-- ASSIGN TEAM MODAL -->
 <div class="staging-overlay" id="assignTeamOverlay">
   <div class="staging-modal" style="width:420px;">
@@ -2705,6 +2737,7 @@
          here so every downstream reader works unchanged. Demo rows already had it. */
       allOrders.forEach(function(o){
         if (!o.team_number && o.team_id) o.team_number = teamNum(o.team_id);
+        if (!o.company) o.company = teamCompany(o.team_id, o.team_number);
       });
       if (DEMO_MODE && !allOrders.length) { seedDemoTeams(); allOrders = demoJobsForRange(dateFrom,dateTo); }
       allOrders = scopeRecords(allOrders);   /* scope to the user's office/region */
@@ -3102,7 +3135,8 @@
     return {
       id: p.id, username: p.username, name: p.name,
       initials: p.initials || (p.name || '?').slice(0,2).toUpperCase(),
-      role: p.role, region: p.region || 'ALL', team: p.team || null
+      role: p.role, region: p.region || 'ALL', team: p.team || null,
+      company: p.company || null
     };
   }
 
@@ -3232,7 +3266,31 @@
   /* Convenience: apply BOTH scopes (region then team) in one call, since most
      data loads want both. A TL is region-scoped AND team-scoped. */
   function scopeRecords(records) {
-    return filterByTeam(filterByRegion(records));
+    return filterByCompany(filterByTeam(filterByRegion(records)));
+  }
+
+  /* Which contractor a job belongs to comes from the team it's assigned to.
+     This is stored explicitly on the team record rather than guessed from the team
+     number, because the real company names (Opticore, A2 Telecom, TMR, PMAJ, Balangue,
+     and the in-house A6/BEST teams) don't match the BEST-/ATS- numbering at all. */
+  function teamCompany(id, tn) {
+    var t = (allTeams || []).find(function(x) {
+      return (id && x.id === id) || (tn && x.team_number === tn);
+    });
+    return t ? (t.company || null) : null;
+  }
+
+  /* Subcontractors see only job orders assigned to one of their own company's teams.
+     Note this FAILS CLOSED: a subcon account with no company set sees nothing at all,
+     rather than everything. A misconfigured account should show too little, never too much.
+     Unassigned job orders (no team yet) are also hidden — nobody has been given that work. */
+  function filterByCompany(records) {
+    if (!currentUser || currentUser.role !== 'subcon') return records;
+    if (!currentUser.company) return [];
+    return (records || []).filter(function(r) {
+      var c = r.company || teamCompany(r.team_id, r.team_number);
+      return c && c === currentUser.company;
+    });
   }
 
   /* ── Municipality → Region mapping ──
@@ -3318,6 +3376,9 @@
     }
     /* Team Leaders get a lean, phone-friendly view (collapsed KPIs + client cards). */
     document.body.classList.toggle('tl-view', currentUser.role === 'tl');
+    /* Subcons get the same nav restrictions as a TL, but keep the full table layout —
+       they're an office user at another company, not a field tech on a phone. */
+    document.body.classList.toggle('subcon-view', currentUser.role === 'subcon');
 
     /* Backstop: if the page currently on screen needs a capability this user doesn't
        have, send them to the dashboard. Hiding the nav button alone isn't enough —
@@ -3326,7 +3387,8 @@
     var active = document.querySelector('.page-view.active');
     if (active) {
       var needed = PAGE_CAPS[active.id];
-      var tlOffLimits = (currentUser.role === 'tl' && active.id !== 'page-dashboard');
+      var fieldRole = ['tl','subcon','agent'].indexOf(currentUser.role) >= 0;
+      var tlOffLimits = (fieldRole && active.id !== 'page-dashboard');
       if ((needed && !can(needed)) || tlOffLimits) switchPage('dashboard');
     }
   }
@@ -4524,11 +4586,114 @@
     e.stopPropagation();
     document.getElementById('userMenu').classList.toggle('open');
   });
+  /* ── TEAMS & CONTRACTORS ──
+     Lets a manager set which contractor company each team belongs to, from inside the app,
+     instead of needing a database edit every time a team moves or a subcon adds one.
+     This mapping is what subcontractor access is built on, so it matters that it's easy
+     to keep correct. */
+  var CONTRACTORS = ['A6', 'Opticore', 'A2 Telecom', 'TMR', 'PMAJ', 'Balangue'];
+
   safeOn('teamsBtn', 'click', function(e){
     e.stopPropagation();
     document.getElementById('userMenu').classList.remove('open');
-    showToast('Teams management coming soon', 'warning');
+    if (!can('assign')) { showToast('You do not have permission to manage teams', 'warning'); return; }
+    openTeamsModal();
   });
+
+  window.closeTeamsModal = function(){ document.getElementById('teamsOverlay').style.display = 'none'; };
+
+  function contractorOptions(selected) {
+    /* Include any company already in the data that isn't in the standard list, so an
+       unexpected value is visible and fixable rather than silently reset. */
+    var list = CONTRACTORS.slice();
+    if (selected && list.indexOf(selected) < 0) list.push(selected);
+    return '<option value="">— Unassigned —</option>' + list.map(function(c){
+      return '<option value="'+c+'"'+(c===selected?' selected':'')+'>'+c+'</option>';
+    }).join('');
+  }
+
+  async function openTeamsModal() {
+    document.getElementById('teamsOverlay').style.display = 'flex';
+    document.getElementById('newTeamCompany').innerHTML = contractorOptions('');
+    var body = document.getElementById('teamsMgmtBody');
+    if (!db) { body.innerHTML = '<div style="padding:30px;text-align:center;color:#ef4444;font-size:12px;">No database connection.</div>'; return; }
+    try {
+      var res = await db.from('teams').select('*').order('team_number');
+      if (res.error) throw res.error;
+      allTeams = res.data || [];
+      renderTeamsMgmt();
+    } catch (err) {
+      body.innerHTML = '<div style="padding:30px;text-align:center;color:#ef4444;font-size:12px;">Error: '+err.message+'</div>';
+    }
+  }
+
+  function renderTeamsMgmt() {
+    var body = document.getElementById('teamsMgmtBody');
+    if (!allTeams.length) {
+      body.innerHTML = '<div style="padding:30px;text-align:center;color:#94a3b8;font-size:12px;">No teams yet. Add one below.</div>';
+      return;
+    }
+    /* Group by contractor so it's obvious at a glance who has how many teams —
+       which is exactly the question that prompted this screen. */
+    var byCo = {};
+    allTeams.forEach(function(t){ var c = t.company || '— Unassigned —'; (byCo[c] = byCo[c] || []).push(t); });
+    var counts = Object.keys(byCo).sort().map(function(c){
+      return '<span style="display:inline-block;background:#eef2f7;color:#334155;border-radius:5px;padding:2px 8px;font-size:11px;margin:0 4px 4px 0;">'
+             + c + ': <b>' + byCo[c].length + '</b></span>';
+    }).join('');
+
+    body.innerHTML = '<div style="padding:8px 14px;border-bottom:1px solid #f1f5f9;">'+counts+'</div>'
+      + allTeams.map(function(t){
+        return '<div style="display:flex;align-items:center;gap:8px;padding:8px 14px;border-bottom:1px solid #f6f8fa;">'
+          + '<span class="team-badge '+teamClass(t.team_number)+'" style="min-width:88px;">'+(t.team_number||'—')+'</span>'
+          + '<span style="flex:1;font-size:12px;color:#475569;">'+(t.team_name||'')+'</span>'
+          + '<select data-team-id="'+t.id+'" class="team-company-select" '
+          + 'style="border:1px solid #cbd5e1;border-radius:7px;padding:6px 8px;font-size:12px;min-width:140px;">'
+          + contractorOptions(t.company) + '</select>'
+          + '</div>';
+      }).join('');
+
+    /* Save the moment a company is picked — no separate save button to forget. */
+    body.querySelectorAll('.team-company-select').forEach(function(sel){
+      sel.addEventListener('change', function(){ saveTeamCompany(sel.getAttribute('data-team-id'), sel.value, sel); });
+    });
+  }
+
+  async function saveTeamCompany(teamId, company, sel) {
+    var team = allTeams.find(function(t){ return String(t.id) === String(teamId); });
+    var previous = team ? team.company : null;
+    if (team) team.company = company || null;
+    try {
+      var r = await db.from('teams').update({ company: company || null }).eq('id', teamId);
+      if (r.error) throw r.error;
+      showToast('✓ ' + (team ? team.team_number : 'Team') + ' → ' + (company || 'Unassigned'), 'success');
+      renderTeamsMgmt();
+    } catch (err) {
+      if (team) team.company = previous;      /* roll back so the screen doesn't lie */
+      if (sel) sel.value = previous || '';
+      showToast('Error saving: ' + err.message, 'error');
+    }
+  }
+
+  window.addTeam = async function() {
+    var num = document.getElementById('newTeamNumber').value.trim();
+    var co  = document.getElementById('newTeamCompany').value;
+    if (!num) { showToast('Enter a team number', 'warning'); return; }
+    if (allTeams.some(function(t){ return (t.team_number||'').toLowerCase() === num.toLowerCase(); })) {
+      showToast('That team number already exists', 'warning'); return;
+    }
+    try {
+      var r = await db.from('teams').insert({ team_number: num, team_name: 'Team ' + num, company: co || null }).select().single();
+      if (r.error) throw r.error;
+      allTeams.push(r.data);
+      allTeams.sort(function(a,b){ return (a.team_number||'').localeCompare(b.team_number||''); });
+      document.getElementById('newTeamNumber').value = '';
+      renderTeamsMgmt();
+      showToast('✓ Team ' + num + ' added', 'success');
+    } catch (err) {
+      showToast('Error adding team: ' + err.message, 'error');
+    }
+  };
   safeOn('changePwBtn', 'click', function(e){
     e.stopPropagation();
     document.getElementById('userMenu').classList.remove('open');
