@@ -1045,6 +1045,9 @@
 <!-- FILTER BAR -->
 <div class="filterbar sticky-top">
   <span class="search-wrap"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg><input class="search-input" id="searchInput" type="text" placeholder="Search JO#, name, account..."></span>
+  <select id="muniFilter" class="tl-hide" style="border:1px solid #cbd5e1;border-radius:8px;padding:8px 10px;font-size:12px;background:#fff;max-width:170px;">
+    <option value="">All Municipalities</option>
+  </select>
   <button class="date-nav" id="btnPrev">‹</button>
   <button class="date-nav" id="btnNext">›</button>
   <span class="date-label">Date from:</span>
@@ -1147,7 +1150,7 @@
       <tbody><tr id="tableHeadRow">
         <td id="hth0">Count</td><td id="hth1">Chat</td><td id="hth2">Dispatch Date</td><td id="hth3">GoFiber Status</td>
         <td id="hth4">JO Number</td><td id="hth5">Installation Team</td><td id="hth6">Personnel</td><td id="hth7">TL</td>
-        <td id="hth8">Account No.</td><td id="hth9">Barangay</td><td id="hth10">Customer Name</td><td id="hth11">Status</td>
+        <td id="hth8">Account No.</td><td id="hth9">Barangay / Municipality</td><td id="hth10">Customer Name</td><td id="hth11">Status</td>
         <td id="hth12">Status Remarks</td><td id="hth13">NAP ID</td><td id="hth14">Call Status</td>
         <td id="hth15">Call Remarks</td><td id="hth16">Mobile No.</td><td id="hth17">Updated By</td>
       </tr></tbody>
@@ -1883,7 +1886,7 @@
         <option value="">— Select Team —</option>
       </select>
 
-      <label class="team-assign-label">Personnel 1 <span class="req">*</span></label>
+      <label class="team-assign-label">Personnel 1 <span style="color:#94a3b8;font-weight:400;">(optional)</span></label>
       <select class="team-assign-select" id="assignPersonnel1Select">
         <option value="">— Select Personnel 1 —</option>
       </select>
@@ -2816,6 +2819,7 @@
   var _skipChatCountRefresh = false;   /* guard: prevents render→refreshChatCounts→render loop */
   function render(data) {
     shown = data;
+    if (typeof refreshMuniOptions === 'function') refreshMuniOptions();
     if (!_skipChatCountRefresh && typeof refreshChatCounts === 'function') refreshChatCounts(data);
     if (currentUser && currentUser.role === 'tl') renderTlCards(data);
     var tbody = document.getElementById('tableBody');
@@ -2848,7 +2852,7 @@
         +'<td style="font-size:11px;white-space:nowrap">'+v(r.personnel)+'</td>'
         +'<td style="white-space:nowrap">'+v(r.tl_name)+'</td>'
         +'<td style="font-size:11px">'+v(r.account_number)+'</td>'
-        +'<td style="white-space:nowrap">'+v(r.barangay)+'</td>'
+        +'<td style="white-space:nowrap">'+v(r.barangay)+(r.municipality?'<div style="font-size:10px;color:#94a3b8;">'+r.municipality+'</div>':'')+'</td>'
         +'<td><span class="cust-link">'+v(r.customer_name)+'</span></td>'
         +'<td>'+pendingHtml+'</td>'
         +'<td style="font-size:11px;max-width:130px;overflow:hidden;text-overflow:ellipsis">'+v(r.status_remarks)+'</td>'
@@ -2980,13 +2984,64 @@
   safeOn('dateTo', 'change', function(){ dateTo=this.value; load(); });
 
   /* ── SEARCH ── */
-  safeOn('searchInput', 'input', function(){
-    var q=this.value.toLowerCase().trim();
-    if(!q){render(allOrders);summary(allOrders);return;}
-    var f=allOrders.filter(function(r){
-      return (r.jo_number&&r.jo_number.toLowerCase().includes(q))||(r.customer_name&&r.customer_name.toLowerCase().includes(q))||(r.account_number&&r.account_number.toLowerCase().includes(q))||(r.barangay&&r.barangay.toLowerCase().includes(q))||(r.personnel&&r.personnel.toLowerCase().includes(q))||(r.mobile_number&&r.mobile_number.includes(q));
+  /* ── FILTER + SORT ──
+     One pipeline: allOrders → search text → municipality → sort → screen.
+     Search, the municipality dropdown, and header clicks all funnel through here,
+     so the three never fight each other about what's on screen. */
+  var sortState = { key: null, dir: 1 };
+  var SORT_KEYS = {   /* header cell id → record field */
+    hth2:'dispatch_date', hth3:'gofib_status', hth4:'jo_number', hth5:'team_number',
+    hth6:'personnel', hth7:'tl_name', hth8:'account_number', hth9:'barangay',
+    hth10:'customer_name', hth11:'status', hth14:'call_status', hth17:'updated_by'
+  };
+  var HEADER_LABELS = {};   /* remembered so sort arrows can be redrawn cleanly */
+
+  function refreshMuniOptions() {
+    var sel = document.getElementById('muniFilter');
+    if (!sel) return;
+    var current = sel.value;
+    var munis = {};
+    (allOrders||[]).forEach(function(r){ if (r.municipality) munis[r.municipality] = true; });
+    var names = Object.keys(munis).sort();
+    sel.innerHTML = '<option value="">All Municipalities</option>' +
+      names.map(function(m){ return '<option value="'+m+'"'+(m===current?' selected':'')+'>'+m+'</option>'; }).join('');
+  }
+
+  function applyFilters() {
+    var q = (document.getElementById('searchInput').value||'').toLowerCase().trim();
+    var muni = document.getElementById('muniFilter') ? document.getElementById('muniFilter').value : '';
+    var f = (allOrders||[]).filter(function(r){
+      if (muni && r.municipality !== muni) return false;
+      if (!q) return true;
+      return (r.jo_number&&r.jo_number.toLowerCase().includes(q))||(r.customer_name&&r.customer_name.toLowerCase().includes(q))||(r.account_number&&r.account_number.toLowerCase().includes(q))||(r.barangay&&r.barangay.toLowerCase().includes(q))||(r.municipality&&r.municipality.toLowerCase().includes(q))||(r.personnel&&r.personnel.toLowerCase().includes(q))||(r.mobile_number&&r.mobile_number.includes(q));
     });
+    if (sortState.key) {
+      f = f.slice().sort(function(a,b){
+        var av = (a[sortState.key]==null?'':String(a[sortState.key])).toLowerCase();
+        var bv = (b[sortState.key]==null?'':String(b[sortState.key])).toLowerCase();
+        return av < bv ? -sortState.dir : av > bv ? sortState.dir : 0;
+      });
+    }
     render(f); summary(f);
+  }
+
+  safeOn('searchInput', 'input', applyFilters);
+  safeOn('muniFilter', 'change', applyFilters);
+
+  /* Header click = sort by that column; click again = flip direction. ▲▼ shows where. */
+  safeOn('tableHeadRow', 'click', function(e){
+    var cell = e.target.closest('td');
+    if (!cell || !SORT_KEYS[cell.id]) return;
+    var key = SORT_KEYS[cell.id];
+    if (sortState.key === key) sortState.dir = -sortState.dir;
+    else { sortState.key = key; sortState.dir = 1; }
+    Object.keys(SORT_KEYS).forEach(function(id){
+      var el = document.getElementById(id);
+      if (!el) return;
+      if (!(id in HEADER_LABELS)) HEADER_LABELS[id] = el.textContent;
+      el.textContent = HEADER_LABELS[id] + (SORT_KEYS[id]===sortState.key ? (sortState.dir===1?' ▲':' ▼') : '');
+    });
+    applyFilters();
   });
 
   /* ── ROW CLICK ── */
@@ -6933,9 +6988,8 @@
     var p2Val   = document.getElementById('assignPersonnel2Select').value;
 
     if (!teamVal) { showToast('Installation Team is required', 'warning'); return; }
-    if (!p1Val)   { showToast('Personnel 1 is required', 'warning'); return; }
 
-    var personnelStr = p1Val + (p2Val ? ', '+p2Val : '');
+    var personnelStr = [p1Val, p2Val].filter(Boolean).join(', ');
 
     /* ---- BULK: one team applied to every ticked job order, in a single update ---- */
     if (assignContext === 'ni-bulk') {
