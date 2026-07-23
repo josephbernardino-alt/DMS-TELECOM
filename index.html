@@ -580,6 +580,42 @@
   .report-table tr:nth-child(even) td { background: #fafbfc; }
   .report-table tr.report-total-row td { font-weight: 800; background: #eff6ff; color: #1e3a8a; border-top: 2px solid #bfdbfe; }
   .report-table td.report-num, .report-table th.report-num { text-align: center; }
+  /* ── SMALL-LAPTOP SIZING ──
+     21 columns is comfortable on a 24" monitor but ~2500px wide, which means constant
+     sideways scrolling on a 1366px laptop. These breakpoints tighten padding, type and
+     column widths so more fits per screen without hiding anything. */
+  @media (max-width: 1600px) {
+    .table-body-table td, .table-head-table td { padding-left: 7px; padding-right: 7px; font-size: 11.5px; }
+    .table-body-table td[class*="min-width"] { min-width: auto; }
+    .table-body-table td:nth-child(7)  { min-width: 118px; }  /* Reference No. */
+    .table-body-table td:nth-child(9)  { min-width: 120px; }  /* Personnel */
+    .table-body-table td:nth-child(14) { min-width: 170px; }  /* Customer Name */
+    .table-body-table td:nth-child(16) { min-width: 130px; max-width: 150px; }  /* Status Remarks */
+    .table-body-table td:nth-child(17) { min-width: 120px; }  /* NAP */
+    .table-body-table td:nth-child(19) { min-width: 120px; max-width: 150px; }  /* Call Remarks */
+    .table-body-table td:nth-child(20) { min-width: 122px; }  /* Mobile */
+  }
+  @media (max-width: 1400px) {
+    .table-body-table td, .table-head-table td { padding-left: 5px; padding-right: 5px; font-size: 11px; }
+    .table-body-table td:nth-child(1)  { min-width: 36px; }   /* Count */
+    .table-body-table td:nth-child(2)  { min-width: 44px; }   /* Chat */
+    .table-body-table td:nth-child(3)  { min-width: 86px; }   /* Dispatch Date */
+    .table-body-table td:nth-child(4)  { min-width: 96px; }   /* GoFiber */
+    .table-body-table td:nth-child(5)  { min-width: 100px; }  /* JO Number */
+    .table-body-table td:nth-child(6)  { min-width: 104px; }  /* Account No. */
+    .table-body-table td:nth-child(8)  { min-width: 104px; }  /* Installation Team */
+    .table-body-table td:nth-child(10) { min-width: 78px; }   /* TL */
+    .table-body-table td:nth-child(11) { min-width: 88px; }   /* MSA */
+    .table-body-table td:nth-child(12) { min-width: 100px; }  /* Barangay */
+    .table-body-table td:nth-child(13) { min-width: 100px; }  /* Municipality */
+    .table-body-table td:nth-child(14) { min-width: 140px; }  /* Customer Name */
+    .table-body-table td:nth-child(15) { min-width: 84px; }   /* Status */
+    .table-body-table td:nth-child(16) { min-width: 110px; max-width: 130px; }  /* Status Remarks */
+    .table-body-table td:nth-child(20) { min-width: 104px; }  /* Mobile */
+    .filterbar { gap: 6px; }
+    .search-input { max-width: 190px; }
+  }
+
   @media (max-width: 1100px) { .reports-grid { grid-template-columns: repeat(2, 1fr); } }
   @media (max-width: 700px) { .reports-grid { grid-template-columns: 1fr; } }
 
@@ -1069,6 +1105,10 @@
   <div class="columns-btn" id="columnsBtn" style="position:relative;">
     <svg class="tb-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M3 12h18M3 18h18"/></svg> Columns
     <div class="columns-panel" id="columnsPanel">
+      <div style="display:flex;gap:6px;padding:8px 12px;border-bottom:1px solid #f1f5f9;">
+        <button onclick="colPreset('essential')" style="flex:1;background:#eff6ff;color:#1d4ed8;border:1px solid #bfdbfe;border-radius:6px;padding:5px 8px;font-size:11px;font-weight:600;cursor:pointer;">Essential</button>
+        <button onclick="colPreset('all')" style="flex:1;background:#f8fafc;color:#475569;border:1px solid #e2e8f0;border-radius:6px;padding:5px 8px;font-size:11px;font-weight:600;cursor:pointer;">Show all</button>
+      </div>
       <div class="col-item"><input type="checkbox" id="col-dispatch" checked> Dispatch Date</div>
       <div class="col-item"><input type="checkbox" id="col-gofiber" checked> GoFiber Status</div>
       <div class="col-item"><input type="checkbox" id="col-team" checked> Installation Team</div>
@@ -2585,6 +2625,30 @@
     'col-callremarks':18, 'col-mobile':19, 'col-updated':20
   };
 
+  /* Columns dispatch rarely needs mid-shift. Hiding these brings the table under
+     ~1300px, so a 1366px laptop fits everything with no sideways scrolling at all. */
+  var ESSENTIAL_HIDDEN = ['col-reference','col-personnel','col-nap','col-callremarks','col-updated','col-gofiber','col-callstatus'];
+
+  window.colPreset = function(which) {
+    Object.keys(colMap).forEach(function(id){
+      var chk = document.getElementById(id);
+      if (chk) chk.checked = (which === 'all') || ESSENTIAL_HIDDEN.indexOf(id) < 0;
+    });
+    applyColumnVisibility();
+    showToast(which === 'all' ? 'Showing all columns' : 'Essential columns only', 'success');
+  };
+
+  /* On a narrow screen, start on the essential set rather than dropping the user into a
+     2500px-wide table. It's a starting point, not a lock — the Columns panel still rules. */
+  function autoFitColumns() {
+    if (window.innerWidth > 1500) return;
+    Object.keys(colMap).forEach(function(id){
+      var chk = document.getElementById(id);
+      if (chk && ESSENTIAL_HIDDEN.indexOf(id) >= 0) chk.checked = false;
+    });
+    applyColumnVisibility();
+  }
+
   function applyColumnVisibility() {
     Object.keys(colMap).forEach(function(id) {
       var chk = document.getElementById(id);
@@ -2921,6 +2985,7 @@
   function render(data) {
     shown = data;
     if (typeof refreshMuniOptions === 'function') refreshMuniOptions();
+    if (!window.__autoFitDone) { window.__autoFitDone = true; setTimeout(autoFitColumns, 0); }
     if (!_skipChatCountRefresh && typeof refreshChatCounts === 'function') refreshChatCounts(data);
     if (currentUser && currentUser.role === 'tl') renderTlCards(data);
     var tbody = document.getElementById('tableBody');
