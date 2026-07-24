@@ -1118,6 +1118,7 @@
 <!-- FILTER BAR -->
 <div class="filterbar sticky-top">
   <span class="search-wrap"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg><input class="search-input" id="searchInput" type="text" placeholder="Search JO#, name, brgy, muni..."></span>
+  <button class="view-btn" id="backlogBtn" title="Show every job order still open, whatever date it was scheduled for">⚠ Backlog</button>
   <select id="provFilter" class="tl-hide" style="border:1px solid #cbd5e1;border-radius:8px;padding:8px 10px;font-size:12px;background:#fff;">
     <option value="">All Provinces</option>
     <option value="NCR_RIZAL">NCR / Rizal</option>
@@ -1286,7 +1287,7 @@
     <button class="bo-tab active" id="boTabImports" onclick="switchBoTab('imports')">Back Office Imports</button>
     <button class="bo-tab" id="boTabTurnins" onclick="switchBoTab('turnins')">Turn-ins: <span id="turninCount">0</span></button>
   </div>
-  <div class="bo-page-title" id="boPageTitle">Back Office Imports</div>
+  <div class="bo-page-title" id="boPageTitle">Turn-ins awaiting schedule</div>
   <div class="table-section">
     <div class="table-wrap">
       <table id="boTable">
@@ -1976,8 +1977,8 @@
     </div>
     <div class="staging-body">
       <div style="font-size:12px;color:#475569;margin-bottom:12px;">
-        <b id="sendCountLabel">0</b> application(s) will be created as job orders and appear
-        on the <b>For Dispatch</b> board for the date below.
+        <b id="sendCountLabel">0</b> application(s) will be scheduled and appear on the
+        <b>For Dispatch</b> board for the date below.
       </div>
       <label style="font-size:11px;color:#475569;font-weight:600;">Dispatch date
         <input type="date" id="sendDate" style="width:100%;border:1px solid #cbd5e1;border-radius:8px;padding:8px 10px;font-size:13px;margin-top:4px;">
@@ -1988,7 +1989,7 @@
     </div>
     <div class="staging-footer">
       <button class="btn btn-close" onclick="closeSendModal()">Cancel</button>
-      <button class="btn btn-save" id="sendGo" onclick="confirmSendToDispatch()">→ Create job orders</button>
+      <button class="btn btn-save" id="sendGo" onclick="confirmSendToDispatch()">→ Schedule</button>
     </div>
   </div>
 </div>
@@ -3405,6 +3406,45 @@
   safeOn('searchInput', 'input', applyFilters);
   safeOn('muniFilter', 'change', applyFilters);
   safeOn('provFilter', 'change', applyFilters);
+
+  /* ── BACKLOG ──
+     The date-filtered board is right for planning today, but it hides work that was
+     scheduled days ago and never finished — the thing a spreadsheet shows for free by
+     just scrolling. This ignores the date range entirely and lists everything still
+     open, oldest first, so nothing quietly goes stale. */
+  var backlogOn = false;
+  safeOn('backlogBtn', 'click', async function(){
+    backlogOn = !backlogOn;
+    var btn = document.getElementById('backlogBtn');
+    btn.style.background = backlogOn ? '#b45309' : '';
+    btn.style.color      = backlogOn ? '#fff'    : '';
+    btn.style.borderColor= backlogOn ? '#b45309' : '';
+    if (!backlogOn) { load(); return; }
+    if (!db) return;
+    document.getElementById('tableBody').innerHTML =
+      '<tr class="loading-row"><td colspan="21"><span class="spinner"></span> Loading backlog…</td></tr>';
+    try {
+      var res = await db.from('job_orders').select('*')
+        .in('status', ['Pending','Rescheduled'])
+        .not('dispatch_date','is',null)
+        .lt('dispatch_date', today())
+        .order('dispatch_date', { ascending: true })
+        .limit(2000);
+      if (res.error) throw res.error;
+      allOrders = scopeRecords(res.data || []);
+      allOrders.forEach(function(o){
+        if (!o.team_number && o.team_id) o.team_number = teamNum(o.team_id);
+        if (!o.company) o.company = teamCompany(o.team_id, o.team_number);
+      });
+      applyFilters();
+      updateDateLabel();
+      var lbl = document.getElementById('dateRangeLabel');
+      if (lbl) lbl.textContent = 'Backlog — ' + allOrders.length + ' unfinished before today';
+      showToast(allOrders.length + ' unfinished job orders before today', allOrders.length ? 'warning' : 'success');
+    } catch(err){
+      showToast('Could not load backlog: ' + err.message, 'error');
+    }
+  });
 
   /* Header click = sort by that column; click again = flip direction. ▲▼ shows where. */
   safeOn('tableHeadRow', 'click', function(e){
@@ -5589,42 +5629,21 @@
     if (!rows.length) return;
 
     var btn = document.getElementById('sendGo');
-    btn.disabled = true; btn.textContent = 'Creating…';
+    btn.disabled = true; btn.textContent = 'Scheduling…';
     try {
-      var jobs = rows.map(function(r){
-        return {
-          jo_number:      r.jo_number || null,
-          reference_id:   r.reference_id || null,
-          account_number: r.account_number,
-          customer_name:  r.customer_name,
-          mobile_number:  r.mobile_number || null,
-          address:        r.address || null,
-          municipality:   r.municipality || null,
-          region:         provinceToRegion(r.province),
-          msa_name:       r.sales_agent || null,
-          plan:           r.plan || null,
-          plan_package:   r.plan_package || null,
-          date_received:  r.turnin_date || null,
-          dispatch_date:  date,
-          status:         'Pending',
-          updated_by:     getCurrentUser().name || 'Unknown'
-        };
-      });
-      var res = await db.from('job_orders').upsert(jobs, { onConflict:'account_number' });
+      /* These are already job orders — scheduling just gives them a date, which moves
+         them off the turn-in queue and onto that day's board. */
+      var ids = rows.map(function(r){ return r.id; });
+      var user = getCurrentUser();
+      var res = await db.from('job_orders')
+        .update({ dispatch_date: date, updated_by: user.name || 'Unknown' })
+        .in('id', ids);
       if (res.error) throw res.error;
 
-      /* Mark the staging rows so the same application can't be sent twice. */
-      var ids = rows.map(function(r){ return r.id; });
-      var up = await db.from('back_office_imports')
-        .update({ status:'Sent to Dispatch', dispatch_date: date })
-        .in('id', ids);
-      if (up.error) console.error('bo status update', up.error);
-
-      /* Log it — this is the moment an application becomes real work. */
       try {
-        var user = getCurrentUser();
         await db.from('audit_log').insert(rows.map(function(r){
           return {
+            job_order_id: r.id,
             jo_number: r.jo_number || r.reference_id || String(r.account_number),
             changed_by: user.name || 'Unknown', changed_role: user.role || '',
             field_name: 'dispatch_date', old_value: '', new_value: date, action: 'assign'
@@ -5632,14 +5651,14 @@
         }));
       } catch(e){ console.error('audit', e); }
 
-      showToast('✓ ' + jobs.length + ' job order(s) sent to dispatch for ' + date, 'success');
+      showToast('✓ ' + rows.length + ' scheduled for ' + date, 'success');
       boSelected.clear(); refreshBoSelection();
       closeSendModal();
       if (typeof loadBoImports === 'function') loadBoImports();
     } catch(err){
-      showToast('Could not send: ' + err.message, 'error');
+      showToast('Could not schedule: ' + err.message, 'error');
     } finally {
-      btn.disabled = false; btn.textContent = '→ Create job orders';
+      btn.disabled = false; btn.textContent = '→ Schedule';
     }
   };
 
@@ -5733,13 +5752,29 @@
     try {
       var user = getCurrentUser();
       var payload = encParsed.map(function(r){
-        var o = {}; Object.keys(r).forEach(function(k){ o[k] = r[k]; });
-        o.uploaded_by = user.name || 'Unknown';
-        return o;
+        return {
+          reference_id:   r.reference_id || null,
+          jo_number:      r.jo_number || null,
+          account_number: r.account_number,
+          customer_name:  r.customer_name || null,
+          mobile_number:  r.mobile_number || null,
+          address:        r.address || null,
+          municipality:   r.municipality || null,
+          region:         provinceToRegion(r.province),
+          msa_name:       r.sales_agent || null,
+          plan:           r.plan || null,
+          plan_package:   r.plan_package || null,
+          date_received:  r.turnin_date || null,
+          dispatch_date:  null,          /* unscheduled until dispatch picks a date */
+          status:         'Pending',
+          updated_by:     user.name || 'Unknown'
+        };
       });
-      var res = await db.from('back_office_imports').insert(payload);
+      /* Straight onto the board as UNSCHEDULED work: dispatch_date stays null, which is
+         what puts them in the turn-in queue rather than on a particular day's board. */
+      var res = await db.from('job_orders').upsert(payload, { onConflict:'account_number' });
       if (res.error) throw res.error;
-      showToast('✓ Added ' + payload.length + ' applications to Back Office', 'success');
+      showToast('✓ Added ' + payload.length + ' application(s) — waiting for scheduling', 'success');
       closeEncodeModal();
       if (typeof loadBoImports === 'function') loadBoImports();
     } catch(err){
@@ -6212,9 +6247,22 @@
   async function loadBoImports() {
     document.getElementById('boTableBody').innerHTML = '<tr class="loading-row"><td colspan="12"><span class="spinner"></span>Loading...</td></tr>';
     try {
-      var r = await db.from('back_office_imports').select('*').order('created_at', { ascending: false }).limit(1000);
+      /* The turn-in queue IS job_orders with no dispatch date yet — one table, so there's
+         nothing to keep in sync between staging and the board. */
+      var r = await db.from('job_orders').select('*')
+        .is('dispatch_date', null)
+        .order('date_received', { ascending: true })
+        .limit(1000);
       if (r.error) throw r.error;
-      boData = r.data || [];
+      boData = scopeRecords(r.data || []).map(function(o){
+        return Object.assign({}, o, {
+          turnin_date: o.date_received,
+          sales_agent: o.msa_name,
+          assigned_tl: o.tl_name,
+          uploaded_by: o.updated_by,
+          status: o.status === 'Pending' ? 'Awaiting schedule' : o.status
+        });
+      });
       document.getElementById('turninCount').textContent = boData.length;
       renderBo();
     } catch(err) {
