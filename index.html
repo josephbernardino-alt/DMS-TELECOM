@@ -1054,9 +1054,13 @@
       <div class="nav-menu-item" data-migpage="overall">Overall Migration Progress</div>
     </div>
   </div>
-  <button class="nav-btn" id="analyticsBtn" data-cap="view_reports">📊 Analytics</button>
-  <button class="nav-btn" id="reportsBtn" data-cap="view_reports">Reports</button>
-  <button class="nav-btn tl-hide" id="auditBtn" data-cap="view_audit">📋 Activity Log</button>
+  <div class="nav-dropdown" data-cap="view_reports">
+    <button class="nav-btn" id="reportsBtn">Reports ▾</button>
+    <div class="nav-menu" id="reportsMenu">
+      <div class="nav-menu-item" data-page="reports">Report List</div>
+      <div class="nav-menu-item" data-page="analytics">📊 Analytics</div>
+    </div>
+  </div>
   <button class="nav-btn tl-hide" id="napLocatorBtn">NAP Locator</button>
   <div style="position:relative;">
     <button class="nav-btn" id="notifBtn" style="position:relative;">🔔 <span class="notif-badge" id="notifBadge">0</span></button>
@@ -1095,6 +1099,7 @@
       <div class="nav-avatar" id="userAvatarBtn">FB</div>
     </div>
     <div class="nav-menu" id="userMenu" style="right:0;left:auto;min-width:170px;">
+      <div class="nav-menu-item" id="auditBtn" data-cap="view_audit">📋 Activity Log</div>
       <div class="nav-menu-item" id="companiesBtn">Companies</div>
       <div class="nav-menu-item" id="targetsBtn">Targets</div>
       <div class="nav-menu-item" id="teamsBtn">Teams</div>
@@ -1264,7 +1269,7 @@
     <input class="search-input" id="boSearch" type="text" placeholder="Search JO#, name, brgy, muni...">
     <button class="date-nav" id="boPrev">‹</button>
     <button class="date-nav" id="boNext">›</button>
-    <span class="date-label">Date from:</span>
+    <span class="date-label">Turn-in from:</span>
     <input class="date-input" type="date" id="boDateFrom">
     <span class="date-label">to:</span>
     <input class="date-input" type="date" id="boDateTo">
@@ -1274,6 +1279,7 @@
     <button class="view-btn" id="boUploadBtn" data-cap="import" style="background:#1d4ed8;color:#fff;border-color:#1d4ed8;">⬆ Upload File</button>
     <button class="view-btn" id="boPasteBtn" data-cap="import" style="background:#0d9488;color:#fff;border-color:#0d9488;">⚡ Instant Kabit</button>
     <button class="view-btn" id="boBulkBtn" data-cap="import" title="Load historical months straight onto the dispatch board" style="font-size:11px;">Bulk history…</button>
+    <button class="view-btn" id="boSendBtn" data-cap="assign" style="display:none;background:#15803d;color:#fff;border-color:#15803d;">→ Send to Dispatch (<span id="boSendCount">0</span>)</button>
     <div class="filter-spacer"></div>
   </div>
   <div class="bo-tabs">
@@ -1957,6 +1963,32 @@
     <div class="staging-footer">
       <button class="btn btn-close" onclick="closeMigRecordModal()">Close</button>
       <button class="btn btn-save" onclick="saveMigRecordModal()">Save Changes</button>
+    </div>
+  </div>
+</div>
+
+<!-- SEND TO DISPATCH MODAL -->
+<div class="staging-overlay" id="sendOverlay">
+  <div class="staging-modal" style="width:440px;">
+    <div class="staging-header">
+      <span class="team-assign-title">Send to Dispatch</span>
+      <button class="modal-close" onclick="closeSendModal()">✕</button>
+    </div>
+    <div class="staging-body">
+      <div style="font-size:12px;color:#475569;margin-bottom:12px;">
+        <b id="sendCountLabel">0</b> application(s) will be created as job orders and appear
+        on the <b>For Dispatch</b> board for the date below.
+      </div>
+      <label style="font-size:11px;color:#475569;font-weight:600;">Dispatch date
+        <input type="date" id="sendDate" style="width:100%;border:1px solid #cbd5e1;border-radius:8px;padding:8px 10px;font-size:13px;margin-top:4px;">
+      </label>
+      <div style="font-size:11px;color:#94a3b8;margin-top:10px;">
+        They'll arrive unassigned — dispatch picks the installation team from the board.
+      </div>
+    </div>
+    <div class="staging-footer">
+      <button class="btn btn-close" onclick="closeSendModal()">Cancel</button>
+      <button class="btn btn-save" id="sendGo" onclick="confirmSendToDispatch()">→ Create job orders</button>
     </div>
   </div>
 </div>
@@ -4193,9 +4225,22 @@
     });
   });
 
-  /* ── REPORTS ── */
-  safeOn('reportsBtn', 'click', function(){
-    switchPage('reports');
+  /* ── REPORTS DROPDOWN (report list + analytics) ── */
+  safeOn('reportsBtn', 'click', function(e){
+    e.stopPropagation();
+    document.getElementById('reportsMenu').classList.toggle('open');
+    ['niMenu','migMenu','userMenu'].forEach(function(id){
+      var m = document.getElementById(id); if (m) m.classList.remove('open');
+    });
+  });
+  document.querySelectorAll('#reportsMenu .nav-menu-item').forEach(function(item){
+    item.addEventListener('click', function(e){
+      e.stopPropagation();
+      document.querySelectorAll('#reportsMenu .nav-menu-item').forEach(function(x){ x.classList.remove('active'); });
+      this.classList.add('active');
+      switchPage(this.dataset.page);
+      document.getElementById('reportsMenu').classList.remove('open');
+    });
   });
 
   /* ── ANALYTICS ──
@@ -4204,7 +4249,6 @@
      Everything is computed from job_orders over the chosen date range. */
   var anRows = [];
 
-  safeOn('analyticsBtn', 'click', function(){ switchPage('analytics'); });
   safeOn('anRefresh', 'click', loadAnalytics);
 
   window.anPreset = function(days){
@@ -4470,7 +4514,11 @@
      Supervisor view (Manager/Dispatch/Developer) of who changed what, from the audit_log table.
      Read-only; the table itself is append-only in the database, so this can only show history. */
   var auditRows = [];
-  safeOn('auditBtn', 'click', function(){ switchPage('audit'); });
+  safeOn('auditBtn', 'click', function(e){
+    e.stopPropagation();
+    var um = document.getElementById('userMenu'); if (um) um.classList.remove('open');
+    switchPage('audit');
+  });
   safeOn('auditRefreshBtn', 'click', function(){ loadAuditLog(); });
   safeOn('auditSearch', 'input', renderAuditRows);
   safeOn('auditActionFilter', 'change', renderAuditRows);
@@ -5497,6 +5545,104 @@
 
   window.closeEncodeModal = function(){ document.getElementById('encodeOverlay').style.display = 'none'; };
 
+  /* ── BO → DISPATCH ──
+     The bridge that was missing: applications sat in staging with no way to reach the
+     dispatch board. Selecting rows here creates real job orders for a chosen date, so
+     the dispatcher finds them waiting on the For Dispatch board that morning.
+     Deliberately a manual step — someone confirms an application is real before it
+     becomes dispatchable work. */
+  var boSelected = new Set();
+
+  function boRowId(i){ return boData[i] ? String(boData[i].id) : null; }
+
+  function refreshBoSelection(){
+    var btn = document.getElementById('boSendBtn');
+    if (!btn) return;
+    document.getElementById('boSendCount').textContent = boSelected.size;
+    btn.style.display = boSelected.size ? '' : 'none';
+  }
+
+  safeOn('boTableBody', 'change', function(e){
+    if (!e.target.classList || !e.target.classList.contains('bo-checkbox')) return;
+    var tr = e.target.closest('tr');
+    if (!tr) return;
+    var idx = Array.prototype.indexOf.call(tr.parentNode.children, tr);
+    var id = boRowId(idx);
+    if (!id) return;
+    if (e.target.checked) boSelected.add(id); else boSelected.delete(id);
+    refreshBoSelection();
+  });
+
+  safeOn('boSendBtn', 'click', function(){
+    if (!can('assign')) { showToast('You do not have permission to dispatch', 'warning'); return; }
+    if (!boSelected.size) return;
+    document.getElementById('sendCountLabel').textContent = boSelected.size;
+    document.getElementById('sendDate').value = new Date().toISOString().slice(0,10);
+    document.getElementById('sendOverlay').style.display = 'flex';
+  });
+  window.closeSendModal = function(){ document.getElementById('sendOverlay').style.display = 'none'; };
+
+  window.confirmSendToDispatch = async function(){
+    var date = document.getElementById('sendDate').value;
+    if (!date) { showToast('Pick a dispatch date', 'warning'); return; }
+    var rows = boData.filter(function(r){ return boSelected.has(String(r.id)); });
+    if (!rows.length) return;
+
+    var btn = document.getElementById('sendGo');
+    btn.disabled = true; btn.textContent = 'Creating…';
+    try {
+      var jobs = rows.map(function(r){
+        return {
+          jo_number:      r.jo_number || null,
+          reference_id:   r.reference_id || null,
+          account_number: r.account_number,
+          customer_name:  r.customer_name,
+          mobile_number:  r.mobile_number || null,
+          address:        r.address || null,
+          municipality:   r.municipality || null,
+          region:         provinceToRegion(r.province),
+          msa_name:       r.sales_agent || null,
+          plan:           r.plan || null,
+          plan_package:   r.plan_package || null,
+          date_received:  r.turnin_date || null,
+          dispatch_date:  date,
+          status:         'Pending',
+          updated_by:     getCurrentUser().name || 'Unknown'
+        };
+      });
+      var res = await db.from('job_orders').upsert(jobs, { onConflict:'account_number' });
+      if (res.error) throw res.error;
+
+      /* Mark the staging rows so the same application can't be sent twice. */
+      var ids = rows.map(function(r){ return r.id; });
+      var up = await db.from('back_office_imports')
+        .update({ status:'Sent to Dispatch', dispatch_date: date })
+        .in('id', ids);
+      if (up.error) console.error('bo status update', up.error);
+
+      /* Log it — this is the moment an application becomes real work. */
+      try {
+        var user = getCurrentUser();
+        await db.from('audit_log').insert(rows.map(function(r){
+          return {
+            jo_number: r.jo_number || r.reference_id || String(r.account_number),
+            changed_by: user.name || 'Unknown', changed_role: user.role || '',
+            field_name: 'dispatch_date', old_value: '', new_value: date, action: 'assign'
+          };
+        }));
+      } catch(e){ console.error('audit', e); }
+
+      showToast('✓ ' + jobs.length + ' job order(s) sent to dispatch for ' + date, 'success');
+      boSelected.clear(); refreshBoSelection();
+      closeSendModal();
+      if (typeof loadBoImports === 'function') loadBoImports();
+    } catch(err){
+      showToast('Could not send: ' + err.message, 'error');
+    } finally {
+      btn.disabled = false; btn.textContent = '→ Create job orders';
+    }
+  };
+
   /* Both the paste box and the file picker end up here, so a spreadsheet and a
      copy-paste are treated identically — same column matching, same cleanup, same preview. */
   function buildEncodeRows(heads, dataRows){
@@ -6081,7 +6227,7 @@
     var tbody = document.getElementById('boTableBody');
 
     if (boActiveTab === 'imports') {
-      thead.innerHTML = '<tr><th>Count</th><th><input type="checkbox" class="bo-checkbox"></th><th>Turn-in Date</th><th>Reference ID</th><th>JO Number</th><th>Account Number</th><th>Customer Name</th><th>Assigned TL</th><th>Sales Agent</th><th>Status</th><th>Uploaded By</th><th>Action</th></tr>';
+      thead.innerHTML = '<tr><th>Count</th><th><input type="checkbox" id="boSelectAll"></th><th>Turn-in Date</th><th>Reference ID</th><th>JO Number</th><th>Account Number</th><th>Customer Name</th><th>Assigned TL</th><th>Sales Agent</th><th>Status</th><th>Uploaded By</th><th>Action</th></tr>';
     } else {
       thead.innerHTML = '<tr><th>Count</th><th>Turn-in Date</th><th>Dispatch Date</th><th>Reference ID</th><th>JO Number</th><th>Account Number</th><th>Customer Name</th><th>Assigned TL</th><th>Sales Agent</th><th>BO Status</th><th>Uploaded By</th></tr>';
     }
