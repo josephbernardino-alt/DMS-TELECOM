@@ -579,6 +579,8 @@
   .perf-t th:first-child { text-align:left; }
   .perf-t td { padding:5px 8px; text-align:right; border-bottom:1px solid #f1f5f9; white-space:nowrap; }
   .perf-t td:first-child { text-align:left; font-weight:600; color:#334155; }
+  .perf-t tr.perf-group td { background:#ede9fe; font-weight:800; color:#4c1d95; }
+  .perf-t tr.perf-child td:first-child { padding-left:22px; color:#64748b; font-weight:500; }
   .perf-t tr.perf-total td { background:#f8fafc; font-weight:800; border-top:2px solid #e2e8f0; }
   .perf-good { color:#15803d; font-weight:700; }
   .perf-mid  { color:#b45309; font-weight:700; }
@@ -1443,6 +1445,10 @@
     <input type="date" id="anTo" style="border:1px solid #cbd5e1;border-radius:8px;padding:7px 9px;font-size:12px;">
     <button class="view-btn" onclick="anPreset(30)">Last 30 days</button>
     <button class="view-btn" onclick="anPreset(90)">Last 90 days</button>
+    <select id="anGroupBy" style="border:1px solid #cbd5e1;border-radius:8px;padding:7px 9px;font-size:12px;">
+      <option value="area">By area / cluster</option>
+      <option value="municipality">By municipality</option>
+    </select>
     <button class="view-btn" id="anRefresh">↻ Apply</button>
   </div>
   <div style="padding:14px 20px 30px;">
@@ -1450,6 +1456,10 @@
     <div class="an-card" style="margin-bottom:16px;">
       <div class="an-title" id="anPerfTitle">Performance vs Target</div>
       <div id="anPerfTable" style="overflow-x:auto;"></div>
+    </div>
+    <div class="an-card" style="margin-bottom:16px;">
+      <div class="an-title">Top performing agents / teams</div>
+      <div id="anLeaderboard" style="overflow-x:auto;"></div>
     </div>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
       <div class="an-card"><div class="an-title">Where the applications came from</div><div id="anSourceChart"></div></div>
@@ -4426,6 +4436,7 @@
 
   safeOn('anMonth', 'change', function(){ applyMonthToRange(); loadAnalytics(); });
   safeOn('anProduct', 'change', loadAnalytics);
+  safeOn('anGroupBy', 'change', function(){ renderPerfTable(); });
 
   function initAnalytics(){
     fillMonthSelect();
@@ -4512,6 +4523,38 @@
        Installation = actually activated in the month     (date_activated, else Completed status)
      Daily Average divides by days elapsed so far in the month, not the whole month,
      otherwise every figure looks behind until the last day. */
+  /* ── AREA GROUPINGS ──
+     A6 groups municipalities differently depending on the product: BIDA reports on
+     North/South NCR, FiberX on Clusters 1–6. Taken from the actual report sheets rather
+     than invented, so the totals line up with what the team already reviews. */
+  var AREA_GROUPS = {
+    'BIDA FIBER': {
+      'NORTH NCR': ['CALOOCAN','MALABON','NAVOTAS','VALENZUELA','MARIKINA','QUEZON','SAN JUAN'],
+      'SOUTH NCR': ['MANILA','PASIG','MANDALUYONG','TAGUIG','PATEROS','MAKATI','MUNTINLUPA','LAS PINAS','PARANAQUE','PASAY']
+    },
+    'FIBERX': {
+      'CLUSTER 1': ['CALOOCAN','MALABON','NAVOTAS','VALENZUELA'],
+      'CLUSTER 2': ['QUEZON'],
+      'CLUSTER 3': ['MAKATI','TAGUIG','PATEROS'],
+      'CLUSTER 4': ['PASIG','MARIKINA','MANDALUYONG','SAN JUAN'],
+      'CLUSTER 5': ['MUNTINLUPA','PARANAQUE','LAS PINAS','PASAY'],
+      'CLUSTER 6': ['MANILA']
+    }
+  };
+  /* Super Bundle and Netflix ride on the BIDA footprint. */
+  AREA_GROUPS['SUPER BUNDLE'] = AREA_GROUPS['BIDA FIBER'];
+  AREA_GROUPS['NETFLIX BUNDLE'] = AREA_GROUPS['BIDA FIBER'];
+
+  function areaGroupsFor(product){ return AREA_GROUPS[product] || AREA_GROUPS['BIDA FIBER']; }
+  function areaOf(product, muni){
+    var groups = areaGroupsFor(product), m = normMuni(muni);
+    var names = Object.keys(groups);
+    for (var i=0;i<names.length;i++){
+      if (groups[names[i]].indexOf(m) >= 0) return names[i];
+    }
+    return null;   /* provinces and anything unmapped keep their own line */
+  }
+
   function renderPerfTable(){
     var el = document.getElementById('anPerfTable');
     var mv = document.getElementById('anMonth').value;
@@ -4537,11 +4580,8 @@
     anRows.forEach(function(r){
       var b = bucket(keyOf(r));
       b.turnins++;
-      var activated = r.date_activated || (r.status === 'Completed' ? r.dispatch_date : null);
-      if (activated) b.installs++;
+      if (r.date_activated || r.status === 'Completed') b.installs++;
     });
-    /* targets: municipality rows land on that municipality; province-level rows
-       (municipality null) are shown as their own line so nothing is silently dropped */
     anTargets.forEach(function(t){
       var k = t.municipality ? normMuni(t.municipality) : (String(t.province).toUpperCase() + ' (PROVINCE)');
       var b = bucket(k);
@@ -4559,29 +4599,57 @@
       return '<span class="'+cls+'">' + v.toFixed(1) + '%</span>';
     }
     function ave(actual){ return daysElapsed ? (actual/daysElapsed).toFixed(2) : '0.00'; }
+    function cells(b){
+      return '<td>'+(b.tTurn||'—')+'</td><td>'+b.turnins+'</td><td>'+pct(b.turnins,b.tTurn)+'</td><td>'+ave(b.turnins)+'</td>'
+           + '<td>'+(b.tInst||'—')+'</td><td>'+b.installs+'</td><td>'+pct(b.installs,b.tInst)+'</td><td>'+ave(b.installs)+'</td>';
+    }
+    function addTo(dst, src){
+      dst.turnins += src.turnins; dst.installs += src.installs;
+      dst.tTurn   += src.tTurn;   dst.tInst   += src.tInst;
+      return dst;
+    }
 
+    var groupBy = document.getElementById('anGroupBy') ? document.getElementById('anGroupBy').value : 'area';
     var tot = { turnins:0, installs:0, tTurn:0, tInst:0 };
-    var body = keys.map(function(k){
-      var b = acc[k];
-      tot.turnins += b.turnins; tot.installs += b.installs;
-      tot.tTurn += b.tTurn;     tot.tInst += b.tInst;
-      return '<tr><td>'+k+'</td>'
-        + '<td>'+(b.tTurn||'—')+'</td><td>'+b.turnins+'</td><td>'+pct(b.turnins,b.tTurn)+'</td><td>'+ave(b.turnins)+'</td>'
-        + '<td>'+(b.tInst||'—')+'</td><td>'+b.installs+'</td><td>'+pct(b.installs,b.tInst)+'</td><td>'+ave(b.installs)+'</td>'
-        + '</tr>';
-    }).join('');
+    var body = '';
+
+    if (groupBy === 'area') {
+      /* Roll municipalities up into their area, with the detail rows kept underneath —
+         the same shape as the A6 sheets, where a cluster subtotal sits above its members. */
+      var groups = areaGroupsFor(prod || 'BIDA FIBER');
+      var used = {}, order = Object.keys(groups);
+      order.forEach(function(areaName){
+        var members = keys.filter(function(k){ return groups[areaName].indexOf(k) >= 0; });
+        if (!members.length) return;
+        var sub = { turnins:0, installs:0, tTurn:0, tInst:0 };
+        members.forEach(function(k){ addTo(sub, acc[k]); used[k] = true; });
+        addTo(tot, sub);
+        body += '<tr class="perf-group"><td>'+areaName+'</td>'+cells(sub)+'</tr>';
+        members.sort().forEach(function(k){
+          body += '<tr class="perf-child"><td>'+k+'</td>'+cells(acc[k])+'</tr>';
+        });
+      });
+      /* Provinces and anything outside the NCR groupings still get their own line. */
+      keys.filter(function(k){ return !used[k]; }).forEach(function(k){
+        addTo(tot, acc[k]);
+        body += '<tr><td>'+k+'</td>'+cells(acc[k])+'</tr>';
+      });
+    } else {
+      keys.forEach(function(k){
+        addTo(tot, acc[k]);
+        body += '<tr><td>'+k+'</td>'+cells(acc[k])+'</tr>';
+      });
+    }
 
     el.innerHTML = '<table class="perf-t">'
-      + '<thead><tr><th rowspan="2">Municipality</th>'
+      + '<thead><tr><th rowspan="2">'+(groupBy==='area'?'Area / Municipality':'Municipality')+'</th>'
       + '<th colspan="4" style="text-align:center;background:#c2410c;">TURN INS</th>'
       + '<th colspan="4" style="text-align:center;background:#4c1d95;">INSTALLATION</th></tr>'
       + '<tr><th>Target</th><th>Actual</th><th>MTD Perf</th><th>Daily Ave</th>'
       + '<th>Target</th><th>Actual</th><th>MTD Perf</th><th>Daily Ave</th></tr></thead>'
       + '<tbody>' + body
-      + '<tr class="perf-total"><td>TOTAL</td>'
-      + '<td>'+(tot.tTurn||'—')+'</td><td>'+tot.turnins+'</td><td>'+pct(tot.turnins,tot.tTurn)+'</td><td>'+ave(tot.turnins)+'</td>'
-      + '<td>'+(tot.tInst||'—')+'</td><td>'+tot.installs+'</td><td>'+pct(tot.installs,tot.tInst)+'</td><td>'+ave(tot.installs)+'</td>'
-      + '</tr></tbody></table>'
+      + '<tr class="perf-total"><td>TOTAL</td>'+cells(tot)+'</tr>'
+      + '</tbody></table>'
       + '<div style="font-size:10px;color:#94a3b8;margin-top:6px;">Daily average over '
       + daysElapsed + ' day' + (daysElapsed===1?'':'s') + ' elapsed'
       + (isCurrent ? ' this month' : ' in the month') + '.</div>';
@@ -4660,6 +4728,52 @@
       Object.keys(bySeller).map(function(k){ return {label:k, value:bySeller[k]}; })
         .sort(function(a,b){ return b.value - a.value; }),
       ['#1d4ed8','#0ea5e9','#6366f1','#8b5cf6','#0d9488','#f97316']);
+
+    /* ── AGENT / TEAM LEADERBOARD ──
+       Ranked on completed activations, with conversion alongside. The quality grade
+       follows the rule already used in the A6 agent dashboard: volume is what mostly
+       decides the band, with a high conversion rate rescuing a small-volume TL. */
+    var QUALITY_REMARKS = {
+      A: 'Excellent — high volume with strong conversion',
+      B: 'Solid performance with potential for higher consistency',
+      C: 'Moderate results, focus on improving conversion and follow-through',
+      D: 'Performance below expectations, needs guidance and support'
+    };
+    function qualityGrade(act, apps){
+      var conv = apps ? (act / apps * 100) : 0;
+      if (act >= 100 && conv >= 60) return 'A';
+      if (act >= 40) return 'B';
+      if (act >= 10 || conv >= 100) return 'C';
+      return 'D';
+    }
+
+    var byTl = {};
+    rows.forEach(function(r){
+      var name = (r.tl_name || r.assigned_tl || '').trim() || '(no team leader)';
+      if (!byTl[name]) byTl[name] = { apps:0, act:0 };
+      byTl[name].apps++;
+      if (r.date_activated || r.status === 'Completed') byTl[name].act++;
+    });
+    var lb = Object.keys(byTl).map(function(n){
+      var d = byTl[n];
+      return { name:n, apps:d.apps, act:d.act, conv: d.apps ? d.act/d.apps*100 : 0, grade: qualityGrade(d.act, d.apps) };
+    }).sort(function(a,b){ return b.act - a.act || b.conv - a.conv; });
+
+    var gradeColour = { A:'#15803d', B:'#1d4ed8', C:'#b45309', D:'#b91c1c' };
+    document.getElementById('anLeaderboard').innerHTML = lb.length
+      ? '<table class="perf-t"><thead><tr><th>Rank</th><th>Team Leader</th><th>Completed Activations</th>'
+        + '<th>Total Applications</th><th>Conversion Rate</th><th>Quality</th><th style="text-align:left;">Remarks</th></tr></thead><tbody>'
+        + lb.map(function(r,i){
+            return '<tr><td style="text-align:left;">'+(i+1)+'</td>'
+              + '<td style="text-align:left;">'+r.name+'</td>'
+              + '<td>'+r.act+'</td><td>'+r.apps+'</td>'
+              + '<td>'+r.conv.toFixed(2)+'%</td>'
+              + '<td><span style="background:'+gradeColour[r.grade]+'22;color:'+gradeColour[r.grade]
+                +';border-radius:5px;padding:2px 9px;font-weight:800;">'+r.grade+'</span></td>'
+              + '<td style="text-align:left;color:#64748b;">'+QUALITY_REMARKS[r.grade]+'</td></tr>';
+          }).join('')
+        + '</tbody></table>'
+      : '<div style="color:#94a3b8;font-size:12px;">No team leader activity in this period.</div>';
 
     /* SLA — how quickly activations actually happened. Computed from dispatch to
        activation on save, so this is measured rather than self-reported. */
