@@ -17,6 +17,11 @@
   .sticky-placeholder { display: none; }
   .sticky-placeholder.active { display: block; }
   .table-section { display: block; overflow: hidden; }
+  /* The BO page renders one plain table rather than the dashboard's split header/body
+     panes, so it needs its own scroll container — the shared .table-section clips it. */
+  #page-bo .table-section { overflow: visible; }
+  #page-bo .table-wrap { overflow: auto; max-height: calc(100vh - 250px); }
+  #page-bo #boTable thead th { position: sticky; top: 0; z-index: 2; }
   /* Fixed header */
   .table-head-wrap { overflow: hidden; background: #f1f5f9; border-bottom: 2px solid #e2e8f0; width: 100%; }
   .table-head-table { border-collapse: separate; border-spacing: 0; table-layout: fixed; font-size: 12px; }
@@ -1266,6 +1271,7 @@
     <input class="date-input" type="date" id="boDateTo">
     <button class="today-btn" id="boToday">Today</button>
     <button class="view-btn" id="boViewAll" style="margin-left:8px;">View All</button>
+    <button class="view-btn" id="boPasteBtn" data-cap="import" style="background:#1d4ed8;color:#fff;border-color:#1d4ed8;">⎘ Paste from Converge</button>
     <div class="filter-spacer"></div>
   </div>
   <div class="bo-tabs">
@@ -1949,6 +1955,38 @@
     <div class="staging-footer">
       <button class="btn btn-close" onclick="closeMigRecordModal()">Close</button>
       <button class="btn btn-save" onclick="saveMigRecordModal()">Save Changes</button>
+    </div>
+  </div>
+</div>
+
+<!-- ENCODE / PASTE APPLICATIONS MODAL -->
+<div class="staging-overlay" id="encodeOverlay">
+  <div class="staging-modal" style="width:820px;max-width:96vw;">
+    <div class="staging-header">
+      <span class="team-assign-title">Paste Applications from Converge</span>
+      <button class="modal-close" onclick="closeEncodeModal()">✕</button>
+    </div>
+    <div class="staging-body" style="padding:0;">
+      <div style="padding:10px 14px;background:#f8fafc;border-bottom:1px solid #eef2f7;font-size:11px;color:#64748b;">
+        Copy the rows from the portal — <b>including the header row</b> — and paste below.
+        Columns are matched by their headings, so extra or reordered columns are fine.
+        Everything lands in Back Office Imports for checking; nothing reaches the dispatch board until reviewed.
+      </div>
+      <div style="padding:12px 14px;">
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;">
+          <input type="file" id="encFile" accept=".xlsx,.xls,.csv"
+                 style="flex:1;border:1px dashed #cbd5e1;border-radius:8px;padding:9px;font-size:11px;background:#fafcff;">
+          <span style="font-size:11px;color:#94a3b8;">or paste below</span>
+        </div>
+        <textarea id="encPaste" placeholder="Paste here — header row first, then the applications…"
+          style="width:100%;height:150px;border:1px solid #cbd5e1;border-radius:8px;padding:9px;font-size:11px;font-family:monospace;"></textarea>
+        <div id="encSummary" style="margin-top:10px;"></div>
+        <div id="encPreview" style="margin-top:8px;max-height:30vh;overflow:auto;"></div>
+      </div>
+    </div>
+    <div class="staging-footer">
+      <button class="btn btn-close" onclick="closeEncodeModal()">Close</button>
+      <button class="btn btn-save" id="encGo" style="display:none;" onclick="runEncode()">⬆ Add to Back Office</button>
     </div>
   </div>
 </div>
@@ -5390,6 +5428,141 @@
     document.getElementById('importOverlay').style.display = 'flex';
   });
   window.closeImportModal = function(){ document.getElementById('importOverlay').style.display = 'none'; };
+
+  /* ── ENCODER PASTE ──
+     Encoders already type every application into the Converge portal, then copy it into
+     the monitoring sheet. This replaces that second step rather than adding a third:
+     same copy, different destination. Rows land in Back Office Imports for checking —
+     a bad paste shouldn't be able to reach the dispatch board directly. */
+  var encParsed = null;
+
+  var ENCODE_MAP = {
+    'REFERENCE NUMBER':'reference_id', 'REFERENCE ID':'reference_id', 'REFERENCE':'reference_id',
+    'JO NUMBER':'jo_number', 'ACCOUNT NUMBER':'account_number',
+    'SUBSCRIBER NAME':'customer_name', 'CUSTOMER NAME':'customer_name', 'NAME':'customer_name',
+    'MSA NAME':'sales_agent', 'MSA':'sales_agent', 'SALES AGENT':'sales_agent',
+    'DATE RECEIVED':'turnin_date', 'TURNIN DATE':'turnin_date', 'TURN IN DATE':'turnin_date',
+    'ADDRESS':'address', 'MUNICIPALITY':'municipality', 'PROVINCE':'province',
+    'CONTACT DETAILS':'mobile_number', 'CONTACT':'mobile_number', 'MOBILE NUMBER':'mobile_number',
+    'PLAN':'plan', 'PLAN PACKAGE':'plan_package'
+  };
+
+  safeOn('boPasteBtn', 'click', function(){
+    if (!can('import')) { showToast('You do not have permission to encode applications', 'warning'); return; }
+    encParsed = null;
+    document.getElementById('encPaste').value = '';
+    document.getElementById('encSummary').innerHTML = '';
+    document.getElementById('encPreview').innerHTML = '';
+    document.getElementById('encGo').style.display = 'none';
+    document.getElementById('encodeOverlay').style.display = 'flex';
+  });
+  window.closeEncodeModal = function(){ document.getElementById('encodeOverlay').style.display = 'none'; };
+
+  /* Both the paste box and the file picker end up here, so a spreadsheet and a
+     copy-paste are treated identically — same column matching, same cleanup, same preview. */
+  function buildEncodeRows(heads, dataRows){
+    var matched = {}, unmatched = [];
+    heads.forEach(function(h, i){
+      var key = ENCODE_MAP[normHead(h)];
+      if (key) matched[i] = key; else if (String(h||'').trim()) unmatched.push(h);
+    });
+    if (!Object.keys(matched).length) {
+      document.getElementById('encSummary').innerHTML =
+        '<div style="font-size:11px;color:#ef4444;">No columns recognised. Make sure the header row is included.</div>';
+      document.getElementById('encGo').style.display = 'none';
+      encParsed = null; return;
+    }
+    var rows = [], skipped = 0;
+    dataRows.forEach(function(cells){
+      var rec = {};
+      Object.keys(matched).forEach(function(i){
+        var val = cells[i];
+        if (val instanceof Date) val = val.toISOString().slice(0,10);
+        val = (val === null || val === undefined) ? '' : String(val).trim();
+        if (val) rec[matched[i]] = val;
+      });
+      if (!rec.reference_id && !rec.account_number) { skipped++; return; }
+      if (rec.municipality) rec.municipality = normMuni(rec.municipality);
+      if (rec.sales_agent) {
+        var c = findCompany(rec.sales_agent);
+        if (c) rec.sales_agent = c.name;
+      }
+      if (rec.turnin_date) {
+        var d = new Date(rec.turnin_date);
+        rec.turnin_date = isNaN(d) ? null : d.toISOString().slice(0,10);
+      }
+      if (!rec.turnin_date) rec.turnin_date = new Date().toISOString().slice(0,10);
+      rec.status = 'Pending Review';
+      rows.push(rec);
+    });
+    encParsed = rows;
+    document.getElementById('encSummary').innerHTML =
+        '<div style="font-size:12px;font-weight:700;color:#0f2744;">' + rows.length + ' application' + (rows.length===1?'':'s') + ' ready'
+      + (skipped ? ' <span style="color:#b45309;font-weight:600;">(' + skipped + ' skipped — no reference or account number)</span>' : '') + '</div>'
+      + '<div style="font-size:11px;color:#64748b;margin-top:4px;">Matched ' + Object.keys(matched).length + ' columns.'
+      + (unmatched.length ? ' Ignored: ' + unmatched.join(', ') : '') + '</div>';
+    document.getElementById('encPreview').innerHTML = rows.length
+      ? '<table class="perf-t"><thead><tr><th>Reference</th><th>Account</th><th>Customer</th><th>Municipality</th><th>MSA</th><th>Turn-in</th></tr></thead><tbody>'
+        + rows.slice(0,6).map(function(r){
+            return '<tr><td>'+(r.reference_id||'—')+'</td><td>'+(r.account_number||'—')+'</td><td>'+(r.customer_name||'—')+'</td>'
+                 + '<td>'+(r.municipality||'—')+'</td><td>'+(r.sales_agent||'—')+'</td><td>'+(r.turnin_date||'—')+'</td></tr>';
+          }).join('')
+        + '</tbody></table>' + (rows.length>6 ? '<div style="font-size:10px;color:#94a3b8;margin-top:4px;">Showing 6 of '+rows.length+'.</div>' : '')
+      : '';
+    document.getElementById('encGo').style.display = rows.length ? '' : 'none';
+  }
+
+  safeOn('encFile', 'change', function(e){
+    var file = e.target.files[0];
+    if (!file) return;
+    if (typeof XLSX === 'undefined') { showToast('Spreadsheet reader not loaded — check your connection', 'error'); return; }
+    var reader = new FileReader();
+    reader.onload = function(ev){
+      try {
+        var wb = XLSX.read(new Uint8Array(ev.target.result), { type:'array', cellDates:true });
+        var grid = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]], { header:1, defval:null, blankrows:false });
+        if (!grid.length) { showToast('That sheet is empty', 'warning'); return; }
+        buildEncodeRows(grid[0], grid.slice(1));
+      } catch(err){ showToast('Could not read the file: '+err.message, 'error'); }
+    };
+    reader.readAsArrayBuffer(file);
+  });
+
+  safeOn('encPaste', 'input', function(){
+    var lines = (this.value || '').split(/\r?\n/).filter(function(l){ return l.trim(); });
+    if (lines.length < 2) {
+      document.getElementById('encSummary').innerHTML = '<div style="font-size:11px;color:#94a3b8;">Paste a header row and at least one application.</div>';
+      document.getElementById('encGo').style.display = 'none';
+      return;
+    }
+    buildEncodeRows(
+      lines[0].split('\t').map(function(h){ return h.trim(); }),
+      lines.slice(1).map(function(l){ return l.split('\t'); })
+    );
+  });
+
+  window.runEncode = async function(){
+    if (!encParsed || !encParsed.length) return;
+    var btn = document.getElementById('encGo');
+    btn.disabled = true; btn.textContent = 'Adding…';
+    try {
+      var user = getCurrentUser();
+      var payload = encParsed.map(function(r){
+        var o = {}; Object.keys(r).forEach(function(k){ o[k] = r[k]; });
+        o.uploaded_by = user.name || 'Unknown';
+        return o;
+      });
+      var res = await db.from('back_office_imports').insert(payload);
+      if (res.error) throw res.error;
+      showToast('✓ Added ' + payload.length + ' applications to Back Office', 'success');
+      closeEncodeModal();
+      if (typeof loadBoImports === 'function') loadBoImports();
+    } catch(err){
+      showToast('Could not add: ' + err.message, 'error');
+    } finally {
+      btn.disabled = false; btn.textContent = '⬆ Add to Back Office';
+    }
+  };
 
   /* Sheet heading → database column. Headings are normalised (upper, no punctuation)
      before matching, so "Date Received" and "DATE RECEIVED" both land correctly. */
