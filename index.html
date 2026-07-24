@@ -8,6 +8,7 @@
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <style>
   * { margin: 0; padding: 0; box-sizing: border-box; }
   html, body { height: 100%; }
@@ -1091,6 +1092,7 @@
     <div class="nav-menu" id="userMenu" style="right:0;left:auto;min-width:170px;">
       <div class="nav-menu-item" id="companiesBtn">Companies</div>
       <div class="nav-menu-item" id="targetsBtn">Targets</div>
+      <div class="nav-menu-item" id="importBtn">Import Job Orders</div>
       <div class="nav-menu-item" id="teamsBtn">Teams</div>
       <div class="nav-menu-item" id="changePwBtn">Change Password</div>
       <div style="border-top:1px solid #f1f5f9;margin:4px 0;"></div>
@@ -1947,6 +1949,32 @@
     <div class="staging-footer">
       <button class="btn btn-close" onclick="closeMigRecordModal()">Close</button>
       <button class="btn btn-save" onclick="saveMigRecordModal()">Save Changes</button>
+    </div>
+  </div>
+</div>
+
+<!-- IMPORT JOB ORDERS MODAL -->
+<div class="staging-overlay" id="importOverlay">
+  <div class="staging-modal" style="width:760px;max-width:96vw;">
+    <div class="staging-header">
+      <span class="team-assign-title">Import Job Orders</span>
+      <button class="modal-close" onclick="closeImportModal()">✕</button>
+    </div>
+    <div class="staging-body" style="padding:0;">
+      <div style="padding:10px 14px;background:#f8fafc;border-bottom:1px solid #eef2f7;font-size:11px;color:#64748b;">
+        Choose the monthly A6 spreadsheet. Columns are matched by their headings, so the
+        file can be used as-is. Nothing is written until you review the summary and confirm.
+      </div>
+      <div style="padding:14px;">
+        <input type="file" id="impFile" accept=".xlsx,.xls,.csv"
+               style="width:100%;border:1px dashed #cbd5e1;border-radius:8px;padding:14px;font-size:12px;background:#fafcff;">
+        <div id="impSummary" style="margin-top:12px;"></div>
+        <div id="impPreview" style="margin-top:10px;max-height:34vh;overflow:auto;"></div>
+      </div>
+    </div>
+    <div class="staging-footer">
+      <button class="btn btn-close" onclick="closeImportModal()">Close</button>
+      <button class="btn btn-save" id="impGo" style="display:none;" onclick="runImport()">⬆ Import</button>
     </div>
   </div>
 </div>
@@ -4277,7 +4305,7 @@
     var daysInMonth = new Date(y, m, 0).getDate();
     var daysElapsed = isCurrent ? now.getDate() : (new Date(y, m-1, 1) > now ? 0 : daysInMonth);
 
-    function keyOf(r){ return (r.municipality || '(no municipality)').toUpperCase(); }
+    function keyOf(r){ return r.municipality ? normMuni(r.municipality) : '(no municipality)'; }
     var acc = {};
     function bucket(k){
       if (!acc[k]) acc[k] = { turnins:0, installs:0, tTurn:0, tInst:0 };
@@ -4292,7 +4320,7 @@
     /* targets: municipality rows land on that municipality; province-level rows
        (municipality null) are shown as their own line so nothing is silently dropped */
     anTargets.forEach(function(t){
-      var k = (t.municipality || (t.province + ' (province)')).toUpperCase();
+      var k = t.municipality ? normMuni(t.municipality) : (String(t.province).toUpperCase() + ' (PROVINCE)');
       var b = bucket(k);
       b.tTurn += Number(t.target_value) || 0;
       b.tInst += Number(t.target_value) || 0;
@@ -5345,6 +5373,197 @@
   });
   window.closeTargetsModal = function(){ document.getElementById('targetsOverlay').style.display = 'none'; };
 
+  /* ── IMPORT JOB ORDERS ──
+     Reads the monthly A6 spreadsheet as-is. Columns are matched on their headings rather
+     than position, so a reordered or extra column doesn't corrupt the import. */
+  var impParsed = null;
+
+  safeOn('importBtn', 'click', function(e){
+    e.stopPropagation();
+    document.getElementById('userMenu').classList.remove('open');
+    if (!can('import')) { showToast('You do not have permission to import', 'warning'); return; }
+    impParsed = null;
+    document.getElementById('impSummary').innerHTML = '';
+    document.getElementById('impPreview').innerHTML = '';
+    document.getElementById('impGo').style.display = 'none';
+    document.getElementById('impFile').value = '';
+    document.getElementById('importOverlay').style.display = 'flex';
+  });
+  window.closeImportModal = function(){ document.getElementById('importOverlay').style.display = 'none'; };
+
+  /* Sheet heading → database column. Headings are normalised (upper, no punctuation)
+     before matching, so "Date Received" and "DATE RECEIVED" both land correctly. */
+  var IMPORT_MAP = {
+    'DATE RECEIVED':'date_received', 'REFERENCE NUMBER':'reference_id',
+    'JO NUMBER':'jo_number', 'ACCOUNT NUMBER':'account_number', 'MSA NAME':'msa_name',
+    'SUBSCRIBER NAME':'customer_name', 'ADDRESS':'address', 'MUNICIPALITY':'municipality',
+    'CONTACT DETAILS':'mobile_number', 'PROVINCE':'_province',
+    'INSTALLER TEAM':'_installer_team', 'INSTALLER NAME':'installer_name',
+    'DATE DISPATCHED':'dispatch_date', 'DATE ACTIVATED':'date_activated',
+    'MODEM SERIAL NUMBER':'modem_serial', 'IPTV SERIAL NUMBER':'iptv_serial',
+    'STATUS':'status_raw', 'REMARKS':'status_remarks', 'PLAN':'plan',
+    'PLAN PACKAGE':'plan_package', 'MRC':'mrc',
+    'SERVICE LEVEL AGREEMENT':'sla', 'TYPE OF INSTALLATION':'install_type'
+  };
+  /* Municipality names arrive three different ways: non-breaking spaces from the sheet,
+     a "CITY" suffix the target sheets omit, and ñ where the targets use n. Normalising
+     both sides is what makes "PARAÑAQUE CITY" line up with the target row "PARANAQUE" —
+     without it every target match silently fails. */
+  function normMuni(v){
+    return String(v||'')
+      .replace(/\u00a0/g,' ')
+      .toUpperCase()
+      .replace(/Ñ/g,'N')
+      .replace(/\s+/g,' ')
+      .trim()
+      .replace(/\s+CITY$/,'')
+      .trim();
+  }
+
+  function normHead(h){ return String(h||'').toUpperCase().replace(/[^A-Z0-9 ]/g,'').replace(/\s+/g,' ').trim(); }
+
+  /* The sheet carries 25 status values; the board works in four. Keep the original in
+     status_raw so nothing is lost — "why didn't this activate" is a real question. */
+  function mapStatus(raw){
+    var v = String(raw||'').toUpperCase();
+    if (!v) return 'Pending';
+    if (v.indexOf('ACTIVATED') >= 0) return 'Completed';
+    if (v.indexOf('CANCEL') >= 0)    return 'Cancelled';
+    if (v.indexOf('HOLD') >= 0 || v.indexOf('RESCHED') >= 0) return 'Rescheduled';
+    return 'Pending';
+  }
+  function provinceToRegion(p){
+    var v = String(p||'').toUpperCase();
+    if (v.indexOf('CAVITE') >= 0) return 'CAVITE';
+    if (v.indexOf('AKLAN')>=0 || v.indexOf('ILOILO')>=0 || v.indexOf('CAPIZ')>=0 || v.indexOf('ANTIQUE')>=0) return 'PANAY';
+    return 'NCR_RIZAL';
+  }
+  /* Excel stores dates as a serial number; convert those, pass real dates through. */
+  function toDate(v){
+    if (v === null || v === undefined || v === '') return null;
+    if (v instanceof Date && !isNaN(v)) return v.toISOString().slice(0,10);
+    if (typeof v === 'number') {
+      var d = new Date(Date.UTC(1899, 11, 30) + v * 86400000);
+      return isNaN(d) ? null : d.toISOString().slice(0,10);
+    }
+    var p = new Date(v);
+    return isNaN(p) ? null : p.toISOString().slice(0,10);
+  }
+  function toNum(v){
+    if (v === null || v === undefined || v === '') return null;
+    var n = parseFloat(String(v).replace(/[,₱\s]/g,''));
+    return isNaN(n) ? null : n;
+  }
+
+  safeOn('impFile', 'change', function(e){
+    var file = e.target.files[0];
+    if (!file) return;
+    if (typeof XLSX === 'undefined') { showToast('Spreadsheet reader not loaded — check your connection', 'error'); return; }
+    document.getElementById('impSummary').innerHTML = '<div style="font-size:12px;color:#64748b;">Reading ' + file.name + '…</div>';
+    var reader = new FileReader();
+    reader.onload = function(ev){
+      try {
+        var wb = XLSX.read(new Uint8Array(ev.target.result), { type:'array', cellDates:true });
+        var ws = wb.Sheets[wb.SheetNames[0]];
+        var rows = XLSX.utils.sheet_to_json(ws, { defval:null });
+        parseImport(rows, file.name);
+      } catch(err){
+        document.getElementById('impSummary').innerHTML = '<div style="font-size:12px;color:#ef4444;">Could not read the file: '+err.message+'</div>';
+      }
+    };
+    reader.readAsArrayBuffer(file);
+  });
+
+  function parseImport(rows, fname){
+    if (!rows.length) { document.getElementById('impSummary').innerHTML = '<div style="font-size:12px;color:#ef4444;">The sheet is empty.</div>'; return; }
+
+    var heads = Object.keys(rows[0]);
+    var matched = {}, unmatched = [];
+    heads.forEach(function(h){
+      var key = IMPORT_MAP[normHead(h)];
+      if (key) matched[h] = key; else unmatched.push(h);
+    });
+
+    var out = [], skipped = 0, unknownMsa = {}, unknownTeam = {};
+    rows.forEach(function(r){
+      var rec = {};
+      Object.keys(matched).forEach(function(h){ rec[matched[h]] = r[h]; });
+      /* Keyed on account number: it's the only identifier populated on every row
+         (JO number is filled on roughly a quarter, and references have duplicates). */
+      if (!rec.account_number) { skipped++; return; }
+
+      ['date_received','dispatch_date','date_activated'].forEach(function(f){ rec[f] = toDate(rec[f]); });
+      rec.mrc = toNum(rec.mrc);
+      rec.status = mapStatus(rec.status_raw);
+      if (rec.municipality) rec.municipality = normMuni(rec.municipality);
+      rec.region = provinceToRegion(rec._province);
+
+      /* Resolve the selling agency through the companies list so aliases collapse —
+         a row saved as OPTC becomes JF Horizon rather than a new agency. */
+      if (rec.msa_name) {
+        var c = findCompany(rec.msa_name);
+        if (c) rec.msa_name = c.name; else unknownMsa[rec.msa_name] = (unknownMsa[rec.msa_name]||0)+1;
+      }
+      if (rec._installer_team) {
+        var t = (allTeams||[]).find(function(x){
+          return String(x.team_number||'').toUpperCase() === String(rec._installer_team).toUpperCase();
+        });
+        if (t) rec.team_id = t.id; else unknownTeam[rec._installer_team] = (unknownTeam[rec._installer_team]||0)+1;
+      }
+      ['_province','_installer_team'].forEach(function(f){ delete rec[f]; });
+      Object.keys(rec).forEach(function(k){ if (rec[k] === null || rec[k] === '') delete rec[k]; });
+      out.push(rec);
+    });
+
+    impParsed = out;
+    function chips(obj, label, colour){
+      var keys = Object.keys(obj);
+      if (!keys.length) return '';
+      return '<div style="margin-top:8px;font-size:11px;color:#64748b;">'+label+': '
+        + keys.map(function(k){ return '<span style="background:'+colour+';border-radius:5px;padding:1px 7px;margin:0 4px 4px 0;display:inline-block;">'+k+' ('+obj[k]+')</span>'; }).join('')
+        + '</div>';
+    }
+    document.getElementById('impSummary').innerHTML =
+        '<div style="font-size:12px;color:#0f2744;font-weight:700;">'+fname+' — '+out.length+' rows ready'
+        + (skipped ? ' <span style="color:#b45309;font-weight:600;">('+skipped+' skipped, no account number)</span>' : '') + '</div>'
+      + '<div style="margin-top:6px;font-size:11px;color:#64748b;">Matched '+Object.keys(matched).length+' columns.'
+        + (unmatched.length ? ' Ignored: '+unmatched.join(', ') : '') + '</div>'
+      + chips(unknownMsa,  'MSA names not in your Companies list', '#fee2e2')
+      + chips(unknownTeam, 'Installer teams not in your Teams list', '#fef3c7');
+
+    document.getElementById('impPreview').innerHTML =
+      '<table class="perf-t"><thead><tr><th>JO</th><th>Customer</th><th>Municipality</th><th>MSA</th><th>Product</th><th>Status</th><th>Activated</th></tr></thead><tbody>'
+      + out.slice(0,8).map(function(r){
+          return '<tr><td>'+(r.jo_number||'—')+'</td><td>'+(r.customer_name||'—')+'</td><td>'+(r.municipality||'—')+'</td>'
+               + '<td>'+(r.msa_name||'—')+'</td><td>'+(r.plan_package||'—')+'</td><td>'+r.status+'</td><td>'+(r.date_activated||'—')+'</td></tr>';
+        }).join('')
+      + '</tbody></table><div style="font-size:10px;color:#94a3b8;margin-top:5px;">Showing the first 8 of '+out.length+'.</div>';
+
+    document.getElementById('impGo').style.display = out.length ? '' : 'none';
+  }
+
+  window.runImport = async function(){
+    if (!impParsed || !impParsed.length) return;
+    if (!confirm('Import ' + impParsed.length + ' job orders?')) return;
+    var btn = document.getElementById('impGo');
+    btn.disabled = true;
+    var done = 0, failed = 0, firstError = '';
+    /* Sent in batches so one oversized request can't fail the whole file, and so
+       progress is visible on a 2,000-row month. */
+    for (var i = 0; i < impParsed.length; i += 200) {
+      var chunk = impParsed.slice(i, i + 200);
+      btn.textContent = 'Importing ' + Math.min(i + chunk.length, impParsed.length) + '/' + impParsed.length + '…';
+      try {
+        var res = await db.from('job_orders').upsert(chunk, { onConflict:'account_number' });
+        if (res.error) throw res.error;
+        done += chunk.length;
+      } catch(err){ failed += chunk.length; if (!firstError) firstError = err.message; }
+    }
+    btn.disabled = false; btn.textContent = '⬆ Import';
+    if (failed) showToast('Imported '+done+', failed '+failed+' — '+firstError, 'error');
+    else { showToast('✓ Imported '+done+' job orders', 'success'); closeImportModal(); load(); }
+  };
+
   function parseTargetPaste(){
     var text = document.getElementById('tgPaste').value || '';
     var out = [];
@@ -5388,7 +5607,7 @@
         payload.push({
           year: year, month: i + 1, plan_package: product, metric: metric,
           province:     scope === 'province'     ? r.name : 'METRO MANILA',
-          municipality: scope === 'municipality' ? r.name : null,
+          municipality: scope === 'municipality' ? normMuni(r.name) : null,
           target_value: v
         });
       });
