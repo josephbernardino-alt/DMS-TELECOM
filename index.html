@@ -1446,7 +1446,7 @@
     <button class="view-btn" id="anRefresh">↻ Apply</button>
   </div>
   <div style="padding:14px 20px 30px;">
-    <div id="anKpis" style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:16px;"></div>
+    <div id="anKpis" style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:16px;"></div>
     <div class="an-card" style="margin-bottom:16px;">
       <div class="an-title" id="anPerfTitle">Performance vs Target</div>
       <div id="anPerfTable" style="overflow-x:auto;"></div>
@@ -1456,6 +1456,8 @@
       <div class="an-card"><div class="an-title">Job status</div><div id="anStatusChart"></div></div>
       <div class="an-card"><div class="an-title">Sales by company (MSA)</div><div id="anMsaChart"></div></div>
       <div class="an-card"><div class="an-title">Installs by contractor</div><div id="anInstallChart"></div></div>
+      <div class="an-card"><div class="an-title">Activation speed (SLA)</div><div id="anSlaChart"></div></div>
+      <div class="an-card"><div class="an-title">Why jobs haven't activated</div><div id="anBlockerChart"></div></div>
     </div>
   </div>
 </div>
@@ -1968,6 +1970,41 @@
   </div>
 </div>
 
+<!-- RECORD OUTCOME MODAL -->
+<div class="staging-overlay" id="outcomeOverlay">
+  <div class="staging-modal" style="width:480px;">
+    <div class="staging-header">
+      <span class="team-assign-title">Record Outcome</span>
+      <button class="modal-close" onclick="closeOutcomeModal()">✕</button>
+    </div>
+    <div class="staging-body">
+      <div id="outcomeJO" style="font-size:12px;color:#64748b;margin-bottom:12px;"></div>
+
+      <label style="font-size:11px;color:#475569;font-weight:600;">What happened? <span class="req">*</span>
+        <select id="outcomeSelect" style="width:100%;border:1px solid #cbd5e1;border-radius:8px;padding:8px 10px;font-size:13px;margin-top:4px;"></select>
+      </label>
+
+      <div id="outcomeActivatedWrap" style="display:none;margin-top:12px;">
+        <label style="font-size:11px;color:#475569;font-weight:600;">Date activated <span class="req">*</span>
+          <input type="date" id="outcomeDate" style="width:100%;border:1px solid #cbd5e1;border-radius:8px;padding:8px 10px;font-size:13px;margin-top:4px;">
+        </label>
+        <div id="outcomeSla" style="font-size:11px;color:#64748b;margin-top:6px;"></div>
+      </div>
+
+      <label style="font-size:11px;color:#475569;font-weight:600;display:block;margin-top:12px;">Remarks
+        <textarea id="outcomeRemarks" rows="2" placeholder="Optional detail…"
+          style="width:100%;border:1px solid #cbd5e1;border-radius:8px;padding:8px 10px;font-size:12px;margin-top:4px;"></textarea>
+      </label>
+
+      <div id="outcomeMapped" style="font-size:11px;color:#94a3b8;margin-top:10px;"></div>
+    </div>
+    <div class="staging-footer">
+      <button class="btn btn-close" onclick="closeOutcomeModal()">Cancel</button>
+      <button class="btn btn-save" id="outcomeGo" onclick="saveOutcome()">Save outcome</button>
+    </div>
+  </div>
+</div>
+
 <!-- SEND TO DISPATCH MODAL -->
 <div class="staging-overlay" id="sendOverlay">
   <div class="staging-modal" style="width:440px;">
@@ -2438,7 +2475,7 @@
       <button class="btn" id="btnAssignJO" data-cap="assign" style="background:#fff;color:#1d4ed8;border:1px solid #1d4ed8;">⚑ Assign Team</button>
       <button class="btn btn-reschedule" data-cap="edit_jo">↺ Reschedule Job Order</button>
       <button class="btn btn-cancel-jo" data-cap="edit_jo">✕ Cancel Job Order</button>
-      <button class="btn btn-complete" data-cap="edit_jo">✓ Complete Job Order</button>
+      <button class="btn btn-complete" data-cap="edit_jo">✓ Record Outcome</button>
       <button class="btn btn-save" id="btnSaveJO" data-cap="edit_jo">💾 Save Changes</button>
     </div>
   </div>
@@ -3970,30 +4007,91 @@
     openAssignTeamModal(id, 'ni');
   });
 
-  safeOnSel('.btn-complete', 'click', async function() {
+  safeOnSel('.btn-complete', 'click', function() {
     if (!currentJO) return;
     if (!can('edit_jo')) { showToast('You do not have permission to do that', 'warning'); return; }
-    if (!confirm('Mark "' + currentJO.customer_name + '" as Completed?')) return;
+    openOutcomeModal(currentJO);
+  });
+
+  /* ── RECORD OUTCOME ──
+     Replaces the old "mark it Completed" confirm. Completion isn't the only thing that
+     happens to a job — most of the twenty-five real outcomes are reasons it DIDN'T
+     activate, and those reasons are what the reports need. Activation also captures the
+     date, without which Conversion %, MTD Perf and SLA can't be calculated at all. */
+  var outcomeJO = null;
+
+  function openOutcomeModal(rec){
+    outcomeJO = rec;
+    document.getElementById('outcomeJO').innerHTML =
+      '<b>' + (rec.jo_number || rec.account_number || '—') + '</b> — ' + (rec.customer_name || '');
+    var sel = document.getElementById('outcomeSelect');
+    sel.innerHTML = outcomeOptionsHtml(rec.status_raw || '');
+    document.getElementById('outcomeRemarks').value = rec.status_remarks || '';
+    document.getElementById('outcomeDate').value = rec.date_activated || new Date().toISOString().slice(0,10);
+    refreshOutcomeUi();
+    document.getElementById('outcomeOverlay').style.display = 'flex';
+  }
+  window.closeOutcomeModal = function(){ document.getElementById('outcomeOverlay').style.display = 'none'; outcomeJO = null; };
+
+  function refreshOutcomeUi(){
+    var raw = document.getElementById('outcomeSelect').value;
+    var board = raw ? outcomeBoardStatus(raw) : '';
+    var isActivated = board === 'Completed';
+    document.getElementById('outcomeActivatedWrap').style.display = isActivated ? '' : 'none';
+    document.getElementById('outcomeMapped').textContent =
+      raw ? 'Shows on the board as: ' + board : '';
+    if (isActivated && outcomeJO) {
+      var sla = computeSla(outcomeJO.dispatch_date, document.getElementById('outcomeDate').value);
+      document.getElementById('outcomeSla').textContent = sla ? 'SLA: ' + sla : '';
+    }
+  }
+  safeOn('outcomeSelect', 'change', refreshOutcomeUi);
+  safeOn('outcomeDate', 'change', refreshOutcomeUi);
+
+  window.saveOutcome = async function(){
+    if (!outcomeJO) return;
+    var raw = document.getElementById('outcomeSelect').value;
+    if (!raw) { showToast('Pick what happened', 'warning'); return; }
+    var board = outcomeBoardStatus(raw);
+    var activatedDate = document.getElementById('outcomeDate').value;
+    if (board === 'Completed' && !activatedDate) { showToast('Enter the activation date', 'warning'); return; }
+
+    var btn = document.getElementById('outcomeGo');
+    btn.disabled = true; btn.textContent = 'Saving…';
     try {
       var user = getCurrentUser();
       var now = new Date();
-      var timeOut = now.getHours().toString().padStart(2,'0') + ':' + now.getMinutes().toString().padStart(2,'0');
-      var completeUpdates = {
-        status: 'Completed',
-        gofib_status: 'Active',
-        time_out: timeOut,
-        updated_by: user.name,
-        updated_at: now.toISOString()
+      var upd = {
+        status_raw:     raw,
+        status:         board,
+        status_remarks: document.getElementById('outcomeRemarks').value || null,
+        updated_by:     user.name,
+        updated_at:     now.toISOString()
       };
-      var { error } = await db.from('job_orders').update(completeUpdates).eq('id', currentJO.id);
-      if (error) throw error;
-      /* Log this as a 'complete' action — status went to Completed and account went Active/activated. */
-      await writeAudit(currentJO, diffChanges(currentJO, completeUpdates), 'complete');
-      showToast('✓ Job Order marked as Completed!', 'success');
+      if (board === 'Completed') {
+        upd.date_activated = activatedDate;
+        upd.gofib_status   = 'Active';
+        upd.sla            = computeSla(outcomeJO.dispatch_date, activatedDate);
+        upd.time_out       = now.getHours().toString().padStart(2,'0') + ':' + now.getMinutes().toString().padStart(2,'0');
+      } else {
+        /* Only an activation sets an activation date — clearing it here stops a job that
+           was activated and then reopened from still counting as activated. */
+        upd.date_activated = null;
+        upd.sla = null;
+      }
+      var res = await db.from('job_orders').update(upd).eq('id', outcomeJO.id);
+      if (res.error) throw res.error;
+      await writeAudit(outcomeJO, diffChanges(outcomeJO, upd), board === 'Completed' ? 'activate' : 'edit');
+      showToast(board === 'Completed' ? '✓ Activated ' + activatedDate : '✓ Outcome recorded: ' + raw, 'success');
+      closeOutcomeModal();
       closeModal();
       load();
-    } catch(err) { showToast('Error: ' + err.message, 'error'); }
-  });
+    } catch(err){
+      showToast('Error: ' + err.message, 'error');
+    } finally {
+      btn.disabled = false; btn.textContent = 'Save outcome';
+    }
+  };
 
   /* Write an audit trail entry for each changed field.
      `changes` is an array of {field, old, new}. `action` labels the kind of change
@@ -4492,15 +4590,45 @@
   function renderAnalytics(){
     renderPerfTable();
     var rows = anRows;
-    var completed = rows.filter(function(r){ return r.status === 'Completed'; }).length;
     var pending   = rows.filter(function(r){ return r.status === 'Pending'; }).length;
     var cancelled = rows.filter(function(r){ return r.status === 'Cancelled'; }).length;
 
+    /* Activated means an actual activation date, not merely "Completed". Falls back to
+       the board status only for records imported before outcomes were captured. */
+    var activatedRows = rows.filter(function(r){ return r.date_activated || r.status === 'Completed'; });
+    var activated = activatedRows.length;
+    var applications = rows.length;
+    /* Conversion % — activated ÷ applications, the headline figure on every A6 report. */
+    var conversion = applications ? (activated / applications * 100) : 0;
+
+    /* Target and pace, taken from the same targets the table below uses. */
+    var totalTarget = anTargets.reduce(function(a,t){ return a + (Number(t.target_value)||0); }, 0);
+    var mv = document.getElementById('anMonth').value;
+    var y = mv ? +mv.split('-')[0] : new Date().getFullYear();
+    var m = mv ? +mv.split('-')[1] : new Date().getMonth()+1;
+    var now = new Date();
+    var isCurrent = (now.getFullYear() === y && (now.getMonth()+1) === m);
+    var daysInMonth = new Date(y, m, 0).getDate();
+    var daysElapsed = isCurrent ? now.getDate() : (new Date(y, m-1, 1) > now ? 0 : daysInMonth);
+    /* Projected: today's pace carried to the end of the month. Only meaningful mid-month —
+       for a finished month the projection IS the actual, so we don't pretend otherwise. */
+    var projected = (isCurrent && daysElapsed) ? Math.round(activated / daysElapsed * daysInMonth) : activated;
+    var targetPerf = totalTarget ? (activated / totalTarget * 100) : null;
+
+    function kpiColour(pct){ return pct >= 100 ? '#15803d' : pct >= 70 ? '#b45309' : '#b91c1c'; }
+
     document.getElementById('anKpis').innerHTML =
-        '<div class="an-kpi"><div class="n">'+rows.length+'</div><div class="l">Job Orders</div></div>'
-      + '<div class="an-kpi"><div class="n" style="color:#15803d;">'+completed+'</div><div class="l">Completed</div></div>'
+        '<div class="an-kpi"><div class="n">'+applications+'</div><div class="l">Applications</div></div>'
+      + '<div class="an-kpi"><div class="n" style="color:#15803d;">'+activated+'</div><div class="l">Activated</div></div>'
+      + '<div class="an-kpi"><div class="n" style="color:#1d4ed8;">'+conversion.toFixed(1)+'%</div><div class="l">Conversion</div></div>'
+      + '<div class="an-kpi"><div class="n" style="color:'+(targetPerf===null?'#94a3b8':kpiColour(targetPerf))+';">'
+        + (targetPerf===null ? '—' : targetPerf.toFixed(0)+'%') + '</div><div class="l">Target Perf'
+        + (totalTarget ? ' <span style="font-weight:400;text-transform:none;">('+totalTarget+')</span>' : '') + '</div></div>'
       + '<div class="an-kpi"><div class="n" style="color:#b45309;">'+pending+'</div><div class="l">Pending</div></div>'
-      + '<div class="an-kpi"><div class="n" style="color:#b91c1c;">'+cancelled+'</div><div class="l">Cancelled</div></div>';
+      + '<div class="an-kpi"><div class="n" style="color:#b91c1c;">'+cancelled+'</div><div class="l">Cancelled</div></div>'
+      + '<div class="an-kpi"><div class="n">'+(daysElapsed ? (activated/daysElapsed).toFixed(1) : '0.0')+'</div><div class="l">Daily Average</div></div>'
+      + '<div class="an-kpi"><div class="n" style="color:#6366f1;">'+projected+'</div><div class="l">'
+        + (isCurrent ? 'Projected Month' : 'Month Total') + '</div></div>';
 
     /* In-house vs external — the split Joseph asked for. Resolved through the company
        aliases, so a row saved as "OPTC" counts as JF Horizon, not as unknown. */
@@ -4516,7 +4644,7 @@
       anDonut(srcParts, ['#15803d','#1d4ed8','#cbd5e1']);
 
     document.getElementById('anStatusChart').innerHTML =
-      anDonut([{label:'Completed',value:completed},{label:'Pending',value:pending},
+      anDonut([{label:'Activated',value:activated},{label:'Pending',value:pending},
                {label:'Cancelled',value:cancelled},
                {label:'Rescheduled',value:rows.filter(function(r){return r.status==='Rescheduled';}).length}],
               ['#16a34a','#f59e0b','#ef4444','#3b82f6']);
@@ -4533,10 +4661,36 @@
         .sort(function(a,b){ return b.value - a.value; }),
       ['#1d4ed8','#0ea5e9','#6366f1','#8b5cf6','#0d9488','#f97316']);
 
+    /* SLA — how quickly activations actually happened. Computed from dispatch to
+       activation on save, so this is measured rather than self-reported. */
+    var slaBuckets = { 'Within 24 hours':0, '24 to 48 hours':0, 'More than 48 hours':0, 'Not recorded':0 };
+    activatedRows.forEach(function(r){
+      var k = r.sla && slaBuckets.hasOwnProperty(r.sla) ? r.sla : 'Not recorded';
+      slaBuckets[k]++;
+    });
+    document.getElementById('anSlaChart').innerHTML = anDonut(
+      Object.keys(slaBuckets).map(function(k){ return {label:k, value:slaBuckets[k]}; })
+        .filter(function(p){ return p.value > 0; }),
+      ['#15803d','#f59e0b','#ef4444','#cbd5e1']);
+
+    /* The question the reports are really asking: of everything that did NOT activate,
+       what stopped it? Uses the real recorded reason, grouped by who owns the problem. */
+    var blockers = {};
+    rows.filter(function(r){ return !(r.date_activated || r.status === 'Completed'); })
+        .forEach(function(r){
+          var reason = r.status_raw || (r.status === 'Cancelled' ? 'Cancelled (no reason recorded)' : 'No outcome recorded');
+          blockers[reason] = (blockers[reason] || 0) + 1;
+        });
+    var blockerRows = Object.keys(blockers).map(function(k){ return {label:k, value:blockers[k]}; })
+                        .sort(function(a,b){ return b.value - a.value; }).slice(0, 8);
+    document.getElementById('anBlockerChart').innerHTML = blockerRows.length
+      ? anBars(blockerRows, ['#b91c1c','#dc2626','#ea580c','#d97706','#ca8a04','#65a30d','#0d9488','#0891b2'])
+      : '<div style="color:#15803d;font-size:12px;padding:8px 0;">Everything in this period activated.</div>';
+
     /* Installs per contractor — counts completed work only, since that's what was
        actually delivered rather than merely assigned. */
     var byInstaller = {};
-    rows.filter(function(r){ return r.status === 'Completed'; }).forEach(function(r){
+    activatedRows.forEach(function(r){
       var co = r.company || teamCompany(r.team_id, r.team_number);
       /* Resolve through the companies list so aliases collapse — a team recorded as
          "Opticore" counts toward JF Horizon rather than showing as a separate contractor. */
@@ -5037,6 +5191,77 @@
 
   /* The set of statuses offered in the dropdown depends on which kind of record it is —
      job orders don't use Visited/Called/Done, migration records do. */
+  /* ── REAL OUTCOME VOCABULARY ──
+     The board works in four states, but the operation records twenty-five reasons.
+     Flattening them loses the answer to "why didn't this activate", which is the
+     question the reports are really asking. So we store the real value in status_raw
+     and map it to a board status for the dashboard. Grouped by who owns the problem,
+     because that's how the KPI cards already break Cancelled and Rescheduled down. */
+  var JOB_OUTCOMES = [
+    ['Activated', [
+      ['ACTIVATED', 'Completed']
+    ]],
+    ['Waiting on the customer', [
+      ['CLIENT UNCONTACTED', 'Pending'],
+      ['HOLD BY CLIENT', 'Pending'],
+      ['HOUSE CLOSED', 'Pending'],
+      ['VISITED/UNKNOWN PERSON', 'Pending'],
+      ['PERMIT ISSUE C/O CLIENT', 'Pending'],
+      ['HOLD BY ADMIN / HOA', 'Pending'],
+      ['WRONG PLAN/PACKAGE', 'Pending'],
+      ['FOR BUSINESS USE', 'Pending'],
+      ['FOR ACTIVATION', 'Pending']
+    ]],
+    ['Facility or technical', [
+      ['PORT ISSUE', 'Pending'],
+      ['NO FACILITIES (DUE TO WRONG MAPPING)', 'Pending'],
+      ['NAP NO POWER', 'Pending'],
+      ['NAP NOT YET RFS', 'Pending'],
+      ['ASSIGNED NAP NOT YET APPTESTED', 'Pending'],
+      ['OVER SPAN', 'Pending'],
+      ['CONDUIT', 'Pending'],
+      ['PASSING PRIVATE PROPERTY', 'Pending'],
+      ['CROSSING BUSY ROAD (PASSING 6 LANES)', 'Pending'],
+      ['HIGH LOSS', 'Pending']
+    ]],
+    ['Rescheduled', [
+      ['RE-SCHEDULE', 'Rescheduled']
+    ]],
+    ['Cancelled', [
+      ['CANCELLED BY CLIENT', 'Cancelled'],
+      ['CANCELLED', 'Cancelled'],
+      ['CANCEL WITH EXISTING CONVERGE ACCOUNT', 'Cancelled'],
+      ['INSTALLED BY OTHER CONTRACTOR', 'Cancelled']
+    ]]
+  ];
+
+  function outcomeBoardStatus(raw){
+    for (var i=0;i<JOB_OUTCOMES.length;i++){
+      var found = JOB_OUTCOMES[i][1].find(function(o){ return o[0] === raw; });
+      if (found) return found[1];
+    }
+    return 'Pending';
+  }
+  function outcomeOptionsHtml(selected){
+    return '<option value="">— Select outcome —</option>' + JOB_OUTCOMES.map(function(g){
+      return '<optgroup label="'+g[0]+'">' + g[1].map(function(o){
+        return '<option value="'+o[0]+'"'+(o[0]===selected?' selected':'')+'>'+o[0]+'</option>';
+      }).join('') + '</optgroup>';
+    }).join('');
+  }
+
+  /* SLA is the gap between the day it was dispatched and the day it actually went live.
+     A6 already reports on these three buckets, so we compute rather than ask. */
+  function computeSla(dispatchDate, activatedDate){
+    if (!dispatchDate || !activatedDate) return null;
+    var d = new Date(dispatchDate), a = new Date(activatedDate);
+    if (isNaN(d) || isNaN(a)) return null;
+    var hours = (a - d) / 3600000;
+    if (hours <= 24) return 'Within 24 hours';
+    if (hours <= 48) return '24 to 48 hours';
+    return 'More than 48 hours';
+  }
+
   var STATUS_OPTIONS_BY_FIELD = {
     status:    ['Pending','Completed','Rescheduled','Cancelled'],
     jo_status: ['Pending','Visited','Called','Completed','Done','Rescheduled','Cancelled']
@@ -5052,9 +5277,16 @@
     if (!wrap) return;
     if (!can('update_status') || !info) { wrap.style.display = 'none'; return; }
     var sel = document.getElementById('chatStatusSelect');
-    var opts = STATUS_OPTIONS_BY_FIELD[info.field] || STATUS_OPTIONS_BY_FIELD.status;
-    var current = info.rec[info.field] || 'Pending';
-    sel.innerHTML = opts.map(function(s){ return '<option value="'+s+'"'+(s===current?' selected':'')+'>'+s+'</option>'; }).join('');
+    /* Job orders use the real outcome vocabulary so a team leader can report exactly what
+       they found on site — "PORT ISSUE" rather than a vague "Pending". Migration records
+       keep their simpler list. */
+    if (info.field === 'status') {
+      sel.innerHTML = outcomeOptionsHtml(info.rec.status_raw || '');
+    } else {
+      var opts = STATUS_OPTIONS_BY_FIELD[info.field] || STATUS_OPTIONS_BY_FIELD.status;
+      var current = info.rec[info.field] || 'Pending';
+      sel.innerHTML = opts.map(function(s){ return '<option value="'+s+'"'+(s===current?' selected':'')+'>'+s+'</option>'; }).join('');
+    }
     wrap.style.display = 'flex';
   }
 
@@ -5066,15 +5298,36 @@
     var info = findChatRecord(chatOpenJobId);
     if (!info) return;
     var sel = document.getElementById('chatStatusSelect');
-    var newStatus = sel.value;
-    var oldStatus = info.rec[info.field] || 'Pending';
-    if (newStatus === oldStatus) { showToast('Status is already '+newStatus, 'warning'); return; }
+    var picked = sel.value;
+    if (!picked) { showToast('Pick what happened', 'warning'); return; }
+    var isJO = info.field === 'status';
+    /* The picker offers the real outcome; the board needs its four-state equivalent. */
+    var newStatus = isJO ? outcomeBoardStatus(picked) : picked;
+    var oldStatus = (isJO ? (info.rec.status_raw || info.rec.status) : info.rec[info.field]) || 'Pending';
+    if (picked === oldStatus) { showToast('Already recorded as '+picked, 'warning'); return; }
 
     info.rec[info.field] = newStatus;
+    if (isJO) info.rec.status_raw = picked;
 
     if (db && !DEMO_MODE) {
       try {
         var upd = {}; upd[info.field] = newStatus;
+        if (isJO) {
+          upd.status_raw = picked;
+          if (newStatus === 'Completed') {
+            /* Reported activated from the field: stamp today and work out the SLA, so the
+               reports have the date they depend on without anyone going back to fill it in. */
+            var todayStr = new Date().toISOString().slice(0,10);
+            upd.date_activated = todayStr;
+            upd.gofib_status = 'Active';
+            upd.sla = computeSla(info.rec.dispatch_date, todayStr);
+            info.rec.date_activated = todayStr;
+          } else {
+            upd.date_activated = null;
+            upd.sla = null;
+            info.rec.date_activated = null;
+          }
+        }
         var r = await db.from(info.table).update(upd).eq('id', chatOpenJobId);
         if (r.error) throw r.error;
       } catch (err) {
@@ -5090,7 +5343,7 @@
     var sysMsg = {
       jo_number: chatOpenJoNumber,
       sender_name: currentUser.name, sender_role: currentUser.role,
-      body: 'Changed status: '+oldStatus+' → '+newStatus,
+      body: 'Changed status: '+oldStatus+' → '+picked,
       is_system: true, read: true
     };
     if (db) {
