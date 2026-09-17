@@ -6127,7 +6127,6 @@
           mobile_number:  r.mobile_number || null,
           address:        r.address || null,
           municipality:   r.municipality || null,
-          region:         provinceToRegion(r.province),
           msa_name:       r.sales_agent || null,
           plan:           r.plan || null,
           plan_package:   r.plan_package || null,
@@ -6256,7 +6255,7 @@
       rec.mrc = toNum(rec.mrc);
       rec.status = mapStatus(rec.status_raw);
       if (rec.municipality) rec.municipality = normMuni(rec.municipality);
-      rec.region = provinceToRegion(rec._province);
+      // rec.region = provinceToRegion(rec._province); // removed because column doesn't exist
 
       /* Resolve the selling agency through the companies list so aliases collapse —
          a row saved as OPTC becomes JF Horizon rather than a new agency. */
