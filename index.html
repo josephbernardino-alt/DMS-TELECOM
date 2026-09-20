@@ -1127,6 +1127,11 @@
     <option value="CAVITE">Cavite</option>
     <option value="PANAY">Panay</option>
   </select>
+  <select id="partnerViewFilter" style="display:none; border:1px solid #1d4ed8; color:#1d4ed8; font-weight:600; border-radius:8px; padding:8px 10px; font-size:12px; background:#eff6ff; margin-left:5px;">
+    <option value="all">All My Jobs</option>
+    <option value="sli">My Installs (SLI)</option>
+    <option value="msa">My Sales (MSA)</option>
+  </select>
   <select id="muniFilter" class="tl-hide" style="border:1px solid #cbd5e1;border-radius:8px;padding:8px 10px;font-size:12px;background:#fff;max-width:170px;">
     <option value="">All Municipalities</option>
   </select>
@@ -2222,9 +2227,17 @@
     <div class="staging-body">
       <div id="assignCustomerName" style="display:none;"></div>
 
-      <label class="team-assign-label">Installation Team <span class="req">*</span></label>
+      <label class="team-assign-label" id="lblAssignMsa">MSA (Selling Agency) <span style="color:#94a3b8;font-weight:400;">(optional)</span></label>
+      <select class="team-assign-select" id="assignMsaSelect" style="margin-bottom:14px;">
+        <option value="">- Leave unchanged -</option>
+      </select>
+
+      <label class="team-assign-label">Assigned TL (Sales Team Leader) <span style="color:#94a3b8;font-weight:400;">(optional)</span></label>
+      <input type="text" class="team-assign-select" id="assignTlInput" style="margin-bottom:14px; width:100%; box-sizing:border-box;" placeholder="- Leave unchanged -">
+
+      <label class="team-assign-label">Installation Team (SLI) <span class="req">*</span></label>
       <select class="team-assign-select" id="assignTeamSelect">
-        <option value="">— Select Team —</option>
+        <option value="">- Select Team -</option>
       </select>
 
       <label class="team-assign-label">Personnel 1 <span style="color:#94a3b8;font-weight:400;">(optional)</span></label>
@@ -3453,6 +3466,7 @@
   safeOn('searchInput', 'input', applyFilters);
   safeOn('muniFilter', 'change', applyFilters);
   safeOn('provFilter', 'change', applyFilters);
+  safeOn('partnerViewFilter', 'change', function() { load(); });
 
   /* ── BACKLOG ──
      The date-filtered board is right for planning today, but it hides work that was
@@ -3600,7 +3614,7 @@
 
     var detailsHtml =
       sec('Job Information',
-        g3(fld('JO Number',r.jo_number),fld('Date',r.dispatch_date),fld('Installation Team',tn))
+        g3(afld('JO Number',r.jo_number,'editJoNumber'),fld('Date',r.dispatch_date),fld('Installation Team',tn))
       )+
       sec('',
         g3(afld('Account Number',r.account_number,'editAccountNumber'),afld('Reference ID',r.reference_id,'editReferenceId'),afld('Customer Name',r.customer_name,'editCustomerName'))+
@@ -3851,7 +3865,7 @@
   /* Convenience: apply BOTH scopes (region then team) in one call, since most
      data loads want both. A TL is region-scoped AND team-scoped. */
   function scopeRecords(records) {
-    return filterByMsa(filterByCompany(filterByTeam(filterByRegion(records))));
+    return filterByPartner(filterByTeam(filterByRegion(records)));
   }
 
   /* Which contractor a job belongs to comes from the team it's assigned to.
@@ -3871,23 +3885,24 @@
      Unassigned job orders (no team yet) are also hidden — nobody has been given that work. */
   /* An MSA sees the jobs THEY sold — matched through company aliases so historical
      rows saved as "OPTC" still resolve to JF Horizon. Fails closed like the others. */
-  function filterByMsa(records) {
-    if (!currentUser || currentUser.role !== 'msa') return records;
+  function filterByPartner(records) {
+    if (!currentUser || (currentUser.role !== 'subcon' && currentUser.role !== 'msa')) return records;
     if (!currentUser.company) return [];
-    var mine = findCompany(currentUser.company);
-    return (records || []).filter(function(r){
-      if (!r.msa_name) return false;
-      var c = findCompany(r.msa_name);
-      return c && mine && String(c.id) === String(mine.id);
-    });
-  }
+    var myCompany = currentUser.company;
+    var mine = findCompany(myCompany);
+    
+    var viewPref = document.getElementById('partnerViewFilter') ? document.getElementById('partnerViewFilter').value : 'all';
 
-  function filterByCompany(records) {
-    if (!currentUser || currentUser.role !== 'subcon') return records;
-    if (!currentUser.company) return [];
     return (records || []).filter(function(r) {
-      var c = r.company || teamCompany(r.team_id, r.team_number);
-      return c && c === currentUser.company;
+      var cInst = r.company || teamCompany(r.team_id, r.team_number);
+      var isInstaller = !!(cInst && cInst === myCompany);
+      
+      var cSell = r.msa_name ? findCompany(r.msa_name) : null;
+      var isSeller = !!(cSell && mine && String(cSell.id) === String(mine.id));
+      
+      if (viewPref === 'msa') return isSeller;
+      if (viewPref === 'sli') return isInstaller;
+      return isInstaller || isSeller;
     });
   }
 
@@ -3977,6 +3992,9 @@
     /* Subcons get the same nav restrictions as a TL, but keep the full table layout —
        they're an office user at another company, not a field tech on a phone. */
     document.body.classList.toggle('subcon-view', currentUser.role === 'subcon' || currentUser.role === 'msa');
+
+    var pvf = document.getElementById('partnerViewFilter');
+    if (pvf) pvf.style.display = (currentUser.role === 'subcon' || currentUser.role === 'msa') ? 'inline-block' : 'none';
 
     /* Backstop: if the page currently on screen needs a capability this user doesn't
        have, send them to the dashboard. Hiding the nav button alone isn't enough —
@@ -4162,7 +4180,7 @@
       /* Account fields — only included if the user has edit_account AND the input exists on the form. */
       if (can('edit_account')) {
         var acctMap = {
-          customer_name:'editCustomerName', account_number:'editAccountNumber', reference_id:'editReferenceId',
+          jo_number:'editJoNumber', customer_name:'editCustomerName', account_number:'editAccountNumber', reference_id:'editReferenceId',
           mobile_number:'editMobileNumber', alt_mobile_number:'editAltMobile', address:'editAddress',
           municipality:'editMunicipality', barangay:'editBarangay', plan:'editPlan',
           modem_serial:'editModemSerial', iptv_serial:'editIptvSerial', msa_name:'editMsa'
@@ -4187,7 +4205,7 @@
   safeOnSel('.btn-reschedule', 'click', function() {
     if (!currentJO) return;
     if (!can('edit_jo')) { showToast('You do not have permission to do that', 'warning'); return; }
-    document.getElementById('reschedJO').value = currentJO.jo_number;
+    document.getElementById('reschedJO').value = currentJO.jo_number || '';
     var tomorrow = new Date();
     tomorrow.setDate(tomorrow.getDate() + 1);
     document.getElementById('reschedDate').value = tomorrow.toISOString().split('T')[0];
@@ -6261,7 +6279,16 @@
          a row saved as OPTC becomes JF Horizon rather than a new agency. */
       if (rec.msa_name) {
         var c = findCompany(rec.msa_name);
-        if (c) rec.msa_name = c.name; else unknownMsa[rec.msa_name] = (unknownMsa[rec.msa_name]||0)+1;
+        if (c) {
+          rec.msa_name = c.name;
+          // Auto-fill Rule: if it is an external subcontractor, auto-set the Assigned TL to the MSA name.
+          if (!c.in_house) {
+            rec.tl_name = c.name;
+            rec.assigned_tl = c.name; // legacy support
+          }
+        } else {
+          unknownMsa[rec.msa_name] = (unknownMsa[rec.msa_name]||0)+1;
+        }
       }
       if (rec._installer_team) {
         var t = (allTeams||[]).find(function(x){
@@ -8721,13 +8748,21 @@
       if (t.company && subconNames.indexOf(t.company) >= 0) subs.push(t); else inhouse.push(t);
     });
     function opt(t, label){ return '<option value="'+t.team_number+'">'+label+'</option>'; }
-    teamSelect.innerHTML = '<option value="">— Select Installation Team —</option>'
+    teamSelect.innerHTML = '<option value="">- Select Installation Team (SLI) -</option>'
       + (subs.length ? '<optgroup label="Subcontractors">' + subs.map(function(t){
-          return opt(t, t.team_number === t.company ? t.company : t.team_number + '  ·  ' + t.company);
+          return opt(t, t.team_number === t.company ? t.company : t.team_number + '  —  ' + t.company);
         }).join('') + '</optgroup>' : '')
       + (inhouse.length ? '<optgroup label="In-house Teams">' + inhouse.map(function(t){
           return opt(t, t.team_number);
         }).join('') + '</optgroup>' : '');
+        
+    var msaSelect = document.getElementById('assignMsaSelect');
+    if (msaSelect) {
+      msaSelect.innerHTML = '<option value="">- Leave unchanged -</option>' + companiesThatSell().map(function(c){
+        return '<option value="'+c.name+'">'+c.name+(c.in_house?' (in-house)':'')+'</option>';
+      }).join('');
+    }
+
     var p1 = document.getElementById('assignPersonnel1Select');
     var p2 = document.getElementById('assignPersonnel2Select');
     var personnelOptions = allPersonnel.map(function(p){
@@ -8756,37 +8791,89 @@
 
   window.confirmAssignTeam = async function() {
     var teamVal = document.getElementById('assignTeamSelect').value;
+    var msaSelect = document.getElementById('assignMsaSelect');
+    var msaVal  = msaSelect ? msaSelect.value : '';
+    var tlInput = document.getElementById('assignTlInput');
+    var tlVal   = tlInput ? tlInput.value.trim() : '';
     var p1Val   = document.getElementById('assignPersonnel1Select').value;
     var p2Val   = document.getElementById('assignPersonnel2Select').value;
 
-    if (!teamVal) { showToast('Installation Team is required', 'warning'); return; }
+    if (!teamVal && !msaVal && !tlVal) { showToast('Please select a Team, an MSA, or enter a TL', 'warning'); return; }
 
     var personnelStr = [p1Val, p2Val].filter(Boolean).join(', ');
+
+    // The Auto-fill Rule: if MSA is provided and it is NOT an in-house company,
+    // we strictly override the TL to match the MSA name.
+    if (msaVal) {
+      var mObj = findCompany(msaVal);
+      if (mObj && !mObj.in_house) {
+        tlVal = msaVal;
+      }
+    }
 
     /* ---- BULK: one team applied to every ticked job order, in a single update ---- */
     if (assignContext === 'ni-bulk') {
       if (!pendingAssignIds || !pendingAssignIds.length) return;
-      var teamObjB = allTeams.find(function(t){ return t.team_number === teamVal; });
-      if (!teamObjB) { showToast('Unknown team', 'error'); return; }
+      
+      var updB = {};
+      var msgParts = [];
+      var teamObjB = null;
+      
+      if (teamVal) {
+        teamObjB = allTeams.find(function(t){ return t.team_number === teamVal; });
+        if (!teamObjB) { showToast('Unknown team', 'error'); return; }
+        updB.team_id = teamObjB.id;
+        updB.personnel = personnelStr;
+        msgParts.push('Team ' + teamVal + (teamObjB.company ? ' ('+teamObjB.company+')' : ''));
+      }
+      if (msaVal) {
+        updB.msa_name = msaVal;
+        msgParts.push('MSA ' + msaVal);
+      }
+      if (tlVal) {
+        updB.tl_name = tlVal;
+        updB.assigned_tl = tlVal; // legacy support
+        msgParts.push('TL ' + tlVal);
+      }
+      
       try {
-        var updB = { team_id: teamObjB.id, personnel: personnelStr };
         var rB = await db.from('job_orders').update(updB).in('id', pendingAssignIds);
         if (rB.error) throw rB.error;
-        /* One audit row per job order, inserted in one call — the trail shows exactly
-           which dispatcher handed which jobs to which contractor's team, and when. */
+        /* One audit row per job order per field changed */
         var user = getCurrentUser();
-        var auditRows = pendingAssignIds.map(function(id){
+        var auditRows = [];
+        pendingAssignIds.forEach(function(id){
           var rec = allOrders.find(function(o){ return String(o.id)===String(id); }) || {};
-          return {
-            job_order_id: id, jo_number: rec.jo_number || String(id),
-            changed_by: user.name || 'Unknown', changed_role: user.role || '',
-            field_name: 'team_number', old_value: rec.team_number || '',
-            new_value: teamVal, action: 'assign'
-          };
+          if (teamVal) {
+            auditRows.push({
+              job_order_id: id, jo_number: rec.jo_number || String(id),
+              changed_by: user.name || 'Unknown', changed_role: user.role || '',
+              field_name: 'team_number', old_value: rec.team_number || '',
+              new_value: teamVal, action: 'assign'
+            });
+          }
+          if (msaVal) {
+            auditRows.push({
+              job_order_id: id, jo_number: rec.jo_number || String(id),
+              changed_by: user.name || 'Unknown', changed_role: user.role || '',
+              field_name: 'msa_name', old_value: rec.msa_name || '',
+              new_value: msaVal, action: 'assign'
+            });
+          }
+          if (tlVal) {
+            auditRows.push({
+              job_order_id: id, jo_number: rec.jo_number || String(id),
+              changed_by: user.name || 'Unknown', changed_role: user.role || '',
+              field_name: 'tl_name', old_value: rec.tl_name || rec.assigned_tl || '',
+              new_value: tlVal, action: 'assign'
+            });
+          }
         });
-        var rA = await db.from('audit_log').insert(auditRows);
-        if (rA.error) console.error('bulk audit', rA.error);
-        showToast('✓ '+pendingAssignIds.length+' job orders → '+teamVal + (teamObjB.company? ' ('+teamObjB.company+')':''), 'success');
+        if (auditRows.length > 0) {
+          var rA = await db.from('audit_log').insert(auditRows);
+          if (rA.error) console.error('bulk audit', rA.error);
+        }
+        showToast('✓ ' + pendingAssignIds.length + ' job orders assigned: ' + msgParts.join(' & '), 'success');
         bulkClear();
         pendingAssignIds = null;
         closeAssignTeamModal();
