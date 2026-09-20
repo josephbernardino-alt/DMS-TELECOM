@@ -1285,7 +1285,7 @@
     <button class="view-btn" id="boViewAll" style="margin-left:8px;">View All</button>
     <button class="view-btn" id="boTemplateBtn" data-cap="import">⬇ Template</button>
     <button class="view-btn" id="boUploadBtn" data-cap="import" style="background:#1d4ed8;color:#fff;border-color:#1d4ed8;">⬆ Upload File</button>
-    <button class="view-btn" id="boPasteBtn" data-cap="import" style="background:#0d9488;color:#fff;border-color:#0d9488;">⚡ Instant Kabit</button>
+    <button class="view-btn" id="boPasteBtn" data-cap="import" style="background:#0d9488;color:#fff;border-color:#0d9488;">+ Single Application</button>
     <button class="view-btn" id="boBulkBtn" data-cap="import" title="Load historical months straight onto the dispatch board" style="font-size:11px;">Bulk history…</button>
     <button class="view-btn" id="boSendBtn" data-cap="assign" style="display:none;background:#15803d;color:#fff;border-color:#15803d;">→ Send to Dispatch (<span id="boSendCount">0</span>)</button>
     <div class="filter-spacer"></div>
@@ -2061,13 +2061,29 @@
         dispatch board until reviewed.</span>
       </div>
       <div style="padding:12px 14px;">
-        <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;">
-          <input type="file" id="encFile" accept=".xlsx,.xls,.csv"
-                 style="flex:1;border:1px dashed #cbd5e1;border-radius:8px;padding:9px;font-size:11px;background:#fafcff;">
-          <span style="font-size:11px;color:#94a3b8;">or paste below</span>
+        
+        <!-- FILE UPLOAD WRAPPER -->
+        <div id="encFileWrap" style="display:none;margin-bottom:10px;">
+          <input type="file" id="encFile" accept=".xlsx,.xls,.csv" style="width:100%;border:1px dashed #cbd5e1;border-radius:8px;padding:12px;font-size:12px;background:#fafcff;">
         </div>
-        <textarea id="encPaste" placeholder="Paste here — header row first, then the applications…"
-          style="width:100%;height:150px;border:1px solid #cbd5e1;border-radius:8px;padding:9px;font-size:11px;font-family:monospace;"></textarea>
+        
+        <!-- SINGLE ENTRY FORM -->
+        <div id="encSingleWrap" style="display:none;">
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px;">
+            <div><label style="display:block;font-size:10px;font-weight:700;color:#64748b;margin-bottom:4px;">REFERENCE NUMBER *</label><input type="text" id="seRef" class="modal-input" placeholder="Required" autocomplete="off"></div>
+            <div><label style="display:block;font-size:10px;font-weight:700;color:#64748b;margin-bottom:4px;">ACCOUNT NUMBER</label><input type="text" id="seAcc" class="modal-input" placeholder="Leave blank if pending" autocomplete="off"></div>
+            <div><label style="display:block;font-size:10px;font-weight:700;color:#64748b;margin-bottom:4px;">CUSTOMER NAME</label><input type="text" id="seName" class="modal-input" autocomplete="off"></div>
+            <div><label style="display:block;font-size:10px;font-weight:700;color:#64748b;margin-bottom:4px;">MOBILE NUMBER</label><input type="text" id="seMobile" class="modal-input" autocomplete="off"></div>
+            <div><label style="display:block;font-size:10px;font-weight:700;color:#64748b;margin-bottom:4px;">ADDRESS</label><input type="text" id="seAddr" class="modal-input" autocomplete="off"></div>
+            <div><label style="display:block;font-size:10px;font-weight:700;color:#64748b;margin-bottom:4px;">MUNICIPALITY</label><input type="text" id="seMuni" class="modal-input" autocomplete="off"></div>
+            <div><label style="display:block;font-size:10px;font-weight:700;color:#64748b;margin-bottom:4px;">MSA NAME</label><input type="text" id="seMsa" class="modal-input" placeholder="e.g. A6, OPTICORE" autocomplete="off"></div>
+            <div><label style="display:block;font-size:10px;font-weight:700;color:#64748b;margin-bottom:4px;">PLAN</label><input type="text" id="sePlan" class="modal-input" autocomplete="off"></div>
+          </div>
+        </div>
+
+        <textarea id="encPaste" placeholder="Paste here - header row first, then the applications."
+          style="display:none;width:100%;height:150px;border:1px solid #cbd5e1;border-radius:8px;padding:9px;font-size:11px;font-family:monospace;box-sizing:border-box;"></textarea>
+          
         <div id="encSummary" style="margin-top:10px;"></div>
         <div id="encPreview" style="margin-top:8px;max-height:30vh;overflow:auto;"></div>
       </div>
@@ -2487,7 +2503,7 @@
     </div>
     <div class="modal-tabs">
       <button class="modal-tab active" id="tabDetails" onclick="switchTab('details')">Job Order Details</button>
-      <button class="modal-tab" id="tabHistory" onclick="switchTab('history')">Reschedule History <span class="tab-badge" id="reschedBadge" style="display:none">0</span></button>
+      <button class="modal-tab" id="tabHistory" onclick="switchTab('history')">Activity Timeline <span class="tab-badge" id="reschedBadge" style="display:none">0</span></button>
     </div>
     <div class="modal-body">
       <div class="tab-panel active" id="panelDetails"></div>
@@ -3264,9 +3280,25 @@
       var r = data[i];
       var tn = teamNum(r.team_id);
       var rc = r.reschedule_count||0;
-      var pendingHtml = r.status==='Pending'
-        ? '<span class="status-badge s-pending">Pending<sup class="resched-count">'+rc+'</sup></span>'
-        : (r.status?'<span class="status-badge '+sBadge(r.status)+'">'+r.status+'</span>':'—');
+      var isAgeing = false;
+      if (r.status === 'New' && r.created_at) {
+        var daysOld = (new Date() - new Date(r.created_at)) / (1000 * 60 * 60 * 24);
+        if (daysOld > 3) isAgeing = true;
+      } else if (r.status === 'New' && r.date_received) {
+        var daysOld = (new Date() - new Date(r.date_received)) / (1000 * 60 * 60 * 24);
+        if (daysOld > 3) isAgeing = true;
+      }
+      
+      var pendingHtml = '';
+      if (isAgeing) {
+        pendingHtml = '<span class="status-badge" style="background:#ef4444;color:white;padding:3px 8px;border-radius:6px;font-weight:700;">Ageing</span>';
+      } else if (r.status === 'New') {
+        pendingHtml = '<span class="status-badge" style="background:#3b82f6;color:white;padding:3px 8px;border-radius:6px;font-weight:700;">New</span>';
+      } else if (r.status === 'Pending') {
+        pendingHtml = '<span class="status-badge s-pending">Pending<sup class="resched-count">'+rc+'</sup></span>';
+      } else {
+        pendingHtml = (r.status?'<span class="status-badge '+sBadge(r.status)+'">'+r.status+'</span>':'—');
+      }
       html += '<tr data-idx="'+i+'">'
         +'<td class="count-cell">'
           +(canAssign ? '<input type="checkbox" class="row-sel" data-id="'+r.id+'"'+(bulkSelected.has(String(r.id))?' checked':'')+'> ' : '')
@@ -3636,27 +3668,83 @@
 
     document.getElementById('panelDetails').innerHTML = detailsHtml;
 
-    /* Load reschedule history */
+    /* Load Unified Activity Timeline (Audit Log + Chat Messages) */
     var historyHtml = '';
-    var reschedCount = 0;
+    var timelineItems = [];
+    
     try {
-      var rh = await db.from('reschedule_history').select('*').eq('jo_number', r.jo_number).order('rescheduled_at',{ascending:false});
-      if (!rh.error && rh.data && rh.data.length > 0) {
-        reschedCount = rh.data.length;
-        rh.data.forEach(function(h,i){
-          var dt = new Date(h.rescheduled_at);
-          var dateStr = (dt.getMonth()+1)+'/'+dt.getDate()+'/'+dt.getFullYear()+', '+dt.toLocaleTimeString();
-          historyHtml += '<div class="resched-entry">'
-            +'<div class="resched-entry-title">Sched '+(i+1)+' — rescheduled on '+dateStr+'</div>'
-            +g3(fld('JO Number',h.jo_number),fld('Date',h.previous_date),fld('Team Number','—'))
-            +g3(fld('Reason',h.reason),fld('Rescheduled By',h.rescheduled_by),fld('New Date',h.new_date))
-            +'</div>';
+      if (db) {
+        /* Fetch audit log entries */
+        var al = await db.from('audit_log').select('*').eq('job_order_id', r.id);
+        if (!al.error && al.data) {
+          al.data.forEach(function(a) {
+            timelineItems.push({
+              ts: new Date(a.created_at),
+              type: 'audit',
+              data: a
+            });
+          });
+        }
+        
+        /* Fetch chat messages/remarks */
+        var msgs = await db.from('messages').select('*').eq('job_order_id', r.id);
+        if (!msgs.error && msgs.data) {
+          msgs.data.forEach(function(m) {
+            timelineItems.push({
+              ts: new Date(m.created_at),
+              type: 'message',
+              data: m
+            });
+          });
+        }
+      }
+      
+      if (timelineItems.length > 0) {
+        /* Sort descending (newest first) */
+        timelineItems.sort(function(a,b) { return b.ts - a.ts; });
+        
+        historyHtml += '<div style="padding:10px 0;">';
+        timelineItems.forEach(function(item) {
+          var dateStr = item.ts.toLocaleString();
+          
+          if (item.type === 'audit') {
+            var a = item.data;
+            var actionTitle = a.action ? a.action.toUpperCase() : 'EDIT';
+            var detailText = 'Changed <b>' + (a.field_name||'field') + '</b> from <i>' + (a.old_value||'empty') + '</i> to <b>' + (a.new_value||'empty') + '</b>';
+            if (a.action === 'assign') {
+              actionTitle = 'ASSIGNED TEAM';
+              detailText = 'Assigned for ' + (a.new_value||'date');
+            } else if (a.action === 'update_status') {
+              actionTitle = 'STATUS UPDATE';
+              detailText = 'Status changed to <b>' + (a.new_value||'') + '</b>';
+            }
+            
+            historyHtml += '<div style="margin-bottom:12px;padding:12px;background:#f8fafc;border-left:3px solid #3b82f6;border-radius:4px;box-shadow:0 1px 2px rgba(0,0,0,0.05);">'
+              +'<div style="font-size:11px;color:#64748b;margin-bottom:4px;">'+dateStr+' &middot; by <b>'+(a.changed_by||'System')+'</b> ('+(a.changed_role||'')+')</div>'
+              +'<div style="font-size:13px;font-weight:600;color:#0f172a;margin-bottom:4px;">'+actionTitle+'</div>'
+              +'<div style="font-size:13px;color:#334155;">'+detailText+'</div>'
+              +'</div>';
+              
+          } else if (item.type === 'message') {
+            var m = item.data;
+            var isSys = m.is_system;
+            var borderCol = isSys ? '#eab308' : '#10b981';
+            var title = isSys ? 'SYSTEM NOTE' : 'REMARK / CHAT';
+            
+            historyHtml += '<div style="margin-bottom:12px;padding:12px;background:#f8fafc;border-left:3px solid '+borderCol+';border-radius:4px;box-shadow:0 1px 2px rgba(0,0,0,0.05);">'
+              +'<div style="font-size:11px;color:#64748b;margin-bottom:4px;">'+dateStr+' &middot; by <b>'+(m.sender_name||'System')+'</b></div>'
+              +'<div style="font-size:13px;font-weight:600;color:#0f172a;margin-bottom:4px;">'+title+'</div>'
+              +'<div style="font-size:13px;color:#334155;">'+(m.content||'')+'</div>'
+              +'</div>';
+          }
         });
+        historyHtml += '</div>';
       } else {
-        historyHtml = '<div style="padding:30px;text-align:center;color:#94a3b8;">No reschedule history found.</div>';
+        historyHtml = '<div style="padding:30px;text-align:center;color:#94a3b8;">No timeline history found for this application.</div>';
       }
     } catch(e) {
-      historyHtml = '<div style="padding:30px;text-align:center;color:#94a3b8;">No reschedule history found.</div>';
+      console.error(e);
+      historyHtml = '<div style="padding:30px;text-align:center;color:#94a3b8;">Error loading history.</div>';
     }
 
     document.getElementById('panelHistory').innerHTML = historyHtml;
@@ -5119,12 +5207,29 @@
     box.innerHTML = data.map(function(o){
       var st = o.status || 'Pending';
       var sClass = 's-' + st.toLowerCase();
+      
+      var isAgeing = false;
+      if (st === 'New') {
+        var dStart = o.created_at || o.date_received;
+        if (dStart) {
+          var daysOld = (new Date() - new Date(dStart)) / (1000 * 60 * 60 * 24);
+          if (daysOld > 3) isAgeing = true;
+        }
+      }
+      
+      var badgeHtml = migStatusBadge(st);
+      if (isAgeing) {
+        badgeHtml = '<span class="mig-status" style="background:#ef4444;color:white;">Ageing</span>';
+      } else if (st === 'New') {
+        badgeHtml = '<span class="mig-status" style="background:#3b82f6;color:white;">New</span>';
+      }
+      
       var chatN = chatThread(o.jo_number||o.id).filter(function(m){return !m.read;}).length;
       var args = "'"+o.id+"','"+(o.jo_number||'')+"','"+(o.customer_name||'').replace(/'/g,'')+"','"+(o.dispatch_date||'')+"','"+st+"'";
       return '<div class="tl-card '+sClass+'">'
         +'<div class="tl-card-top">'
-          +'<span class="tl-card-name">'+(o.customer_name||'—')+'</span>'
-          +migStatusBadge(st)
+          +'<span class="tl-card-name">'+(o.customer_name||'-')+'</span>'
+          +badgeHtml
         +'</div>'
         +'<div class="tl-card-jo">JO '+(o.jo_number||'—')+' · '+(o.account_number||'')+'</div>'
         +'<div class="tl-card-addr">◉ '+(o.address||o.barangay||'')+(o.municipality?', '+o.municipality:'')+'</div>'
@@ -5462,8 +5567,14 @@
         }
         var r = await db.from(info.table).update(upd).eq('id', chatOpenJobId);
         if (r.error) throw r.error;
+        
+        /* Also write to the formal audit log so managers can see it in the Timeline */
+        if (isJO) {
+          await writeAudit(info.rec, [{ field: 'status', old: oldStatus, new: picked }], 'update_status');
+        }
       } catch (err) {
         info.rec[info.field] = oldStatus;   /* roll back so the UI doesn't lie about what's saved */
+        if (isJO) info.rec.status_raw = oldStatus;
         showToast('Error saving status: '+err.message, 'error');
         return;
       }
@@ -5945,18 +6056,35 @@
   function openEncode(mode){
     if (!can('import')) { showToast('You do not have permission to encode applications', 'warning'); return; }
     encParsed = null;
+    
+    document.getElementById('encFileWrap').style.display = mode === 'file' ? 'block' : 'none';
+    document.getElementById('encPaste').style.display = mode === 'paste' ? 'block' : 'none';
+    document.getElementById('encSingleWrap').style.display = mode === 'single' ? 'block' : 'none';
+    
     document.getElementById('encPaste').value = '';
     document.getElementById('encFile').value = '';
+    /* Clear single entry fields */
+    ['seRef','seAcc','seName','seMobile','seAddr','seMuni','seMsa','sePlan'].forEach(function(id) {
+       document.getElementById(id).value = '';
+    });
+    
     document.getElementById('encSummary').innerHTML = '';
     document.getElementById('encPreview').innerHTML = '';
-    document.getElementById('encGo').style.display = 'none';
-    document.getElementById('encTitle').textContent =
-      mode === 'paste' ? 'Instant Kabit — paste applications' : 'Upload encoder sheet';
+    document.getElementById('encGo').style.display = mode === 'single' ? 'inline-block' : 'none';
+    
+    if (mode === 'single') document.getElementById('encGo').textContent = '💾 Save Application';
+    else document.getElementById('encGo').textContent = '📥 Add to Back Office';
+    
+    var title = 'Upload encoder sheet';
+    if (mode === 'paste') title = 'Instant Kabit - paste applications';
+    if (mode === 'single') title = 'New Application (Single Entry)';
+    
+    document.getElementById('encTitle').textContent = title;
     document.getElementById('encodeOverlay').style.display = 'flex';
-    /* Put the cursor where they're going to work, so a quick walk-in entry is
-       paste-and-go rather than hunting for the right box. */
+    
     setTimeout(function(){
       if (mode === 'paste') document.getElementById('encPaste').focus();
+      if (mode === 'single') document.getElementById('seRef').focus();
     }, 60);
   }
 
@@ -5966,7 +6094,7 @@
     document.getElementById('importOverlay').style.display = 'flex';
   });
 
-  safeOn('boPasteBtn', 'click', function(){ openEncode('paste'); });
+  safeOn('boPasteBtn', 'click', function(){ openEncode('single'); });
 
   window.closeEncodeModal = function(){ document.getElementById('encodeOverlay').style.display = 'none'; };
 
@@ -6070,7 +6198,11 @@
         val = (val === null || val === undefined) ? '' : String(val).trim();
         if (val) rec[matched[i]] = val;
       });
-      if (!rec.reference_id && !rec.account_number) { skipped++; return; }
+      /* 1. Reference ID is the absolute minimum requirement.
+         2. You cannot have a JO number without an Account Number (paid). */
+      if (!rec.reference_id) { skipped++; return; }
+      if (rec.jo_number && !rec.account_number) { skipped++; return; }
+      
       if (rec.municipality) rec.municipality = normMuni(rec.municipality);
       if (rec.sales_agent) {
         var c = findCompany(rec.sales_agent);
@@ -6131,16 +6263,36 @@
   });
 
   window.runEncode = async function(){
-    if (!encParsed || !encParsed.length) return;
-    var btn = document.getElementById('encGo');
-    btn.disabled = true; btn.textContent = 'Adding…';
-    try {
-      var user = getCurrentUser();
-      var payload = encParsed.map(function(r){
+    var isSingle = document.getElementById('encSingleWrap').style.display === 'block';
+    var payload = [];
+    var user = getCurrentUser();
+    
+    if (isSingle) {
+      var ref = document.getElementById('seRef').value.trim();
+      var acc = document.getElementById('seAcc').value.trim();
+      if (!ref) { showToast('Reference Number is required', 'warning'); return; }
+      
+      payload.push({
+        reference_id:   ref || null,
+        account_number: acc || null,
+        customer_name:  document.getElementById('seName').value.trim() || null,
+        mobile_number:  document.getElementById('seMobile').value.trim() || null,
+        address:        document.getElementById('seAddr').value.trim() || null,
+        municipality:   normMuni(document.getElementById('seMuni').value.trim()) || null,
+        msa_name:       document.getElementById('seMsa').value.trim() || null,
+        plan:           document.getElementById('sePlan').value.trim() || null,
+        date_received:  new Date().toISOString().slice(0,10),
+        dispatch_date:  null,
+        status:         'New',
+        updated_by:     user.name || 'Unknown'
+      });
+    } else {
+      if (!encParsed || !encParsed.length) return;
+      payload = encParsed.map(function(r){
         return {
           reference_id:   r.reference_id || null,
           jo_number:      r.jo_number || null,
-          account_number: r.account_number,
+          account_number: r.account_number || null,
           customer_name:  r.customer_name || null,
           mobile_number:  r.mobile_number || null,
           address:        r.address || null,
@@ -6149,16 +6301,42 @@
           plan:           r.plan || null,
           plan_package:   r.plan_package || null,
           date_received:  r.turnin_date || null,
-          dispatch_date:  null,          /* unscheduled until dispatch picks a date */
-          status:         'Pending',
+          dispatch_date:  null,
+          status:         'New',
           updated_by:     user.name || 'Unknown'
         };
       });
-      /* Straight onto the board as UNSCHEDULED work: dispatch_date stays null, which is
-         what puts them in the turn-in queue rather than on a particular day's board. */
+    }
+
+    var btn = document.getElementById('encGo');
+    btn.disabled = true; btn.textContent = 'Saving...';
+    try {
+      /* Straight onto the board as UNSCHEDULED work */
       var res = await db.from('job_orders').upsert(payload, { onConflict:'account_number' });
       if (res.error) throw res.error;
-      showToast('✓ Added ' + payload.length + ' application(s) — waiting for scheduling', 'success');
+      
+      /* Create an audit log entry for this creation */
+      try {
+        var createdIds = payload.map(function(p){ return p.reference_id; });
+        var createdRes = await db.from('job_orders').select('id, reference_id, jo_number, account_number').in('reference_id', createdIds);
+        if (!createdRes.error && createdRes.data) {
+          var auditRows = createdRes.data.map(function(r){
+            return {
+              job_order_id: r.id,
+              jo_number: r.jo_number || r.reference_id || String(r.account_number),
+              changed_by: user.name || 'Unknown',
+              changed_role: user.role || '',
+              field_name: 'Application',
+              old_value: '',
+              new_value: 'Encoded',
+              action: 'create'
+            };
+          });
+          await db.from('audit_log').insert(auditRows);
+        }
+      } catch(e) {}
+      
+      showToast('Saved ' + payload.length + ' application(s)', 'success');
       closeEncodeModal();
       if (typeof loadBoImports === 'function') loadBoImports();
     } catch(err){
@@ -6265,9 +6443,10 @@
     rows.forEach(function(r){
       var rec = {};
       Object.keys(matched).forEach(function(h){ rec[matched[h]] = r[h]; });
-      /* Keyed on account number: it's the only identifier populated on every row
-         (JO number is filled on roughly a quarter, and references have duplicates). */
-      if (!rec.account_number) { skipped++; return; }
+      /* 1. Reference ID is the absolute minimum requirement.
+         2. You cannot have a JO number without an Account Number (paid). */
+      if (!rec.reference_id) { skipped++; return; }
+      if (rec.jo_number && !rec.account_number) { skipped++; return; }
 
       ['date_received','dispatch_date','date_activated'].forEach(function(f){ rec[f] = toDate(rec[f]); });
       rec.mrc = toNum(rec.mrc);
