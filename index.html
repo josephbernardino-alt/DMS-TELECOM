@@ -3671,6 +3671,7 @@
     /* Load Unified Activity Timeline (Audit Log + Chat Messages) */
     var historyHtml = '';
     var timelineItems = [];
+    var reschedCount = timelineItems.length; /* or just 0, but let's define it so it doesn't crash */
     
     try {
       if (db) {
@@ -3750,9 +3751,10 @@
     document.getElementById('panelHistory').innerHTML = historyHtml;
 
     var badge = document.getElementById('reschedBadge');
-    if (reschedCount > 0 || rc > 0) {
+    var actCount = timelineItems.length;
+    if (actCount > 0 || rc > 0) {
       badge.style.display = 'inline-block';
-      badge.textContent = reschedCount || rc;
+      badge.textContent = actCount || rc;
     } else { badge.style.display = 'none'; }
 
     switchTab('details');
