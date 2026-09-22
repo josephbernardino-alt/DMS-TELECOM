@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8">
@@ -722,7 +722,6 @@
     /* Map pages: side panels stack under the map instead of squeezing it */
     #migMapContainer { flex-direction: column; }
     .map-sidebar-right, .map-sidebar-left { width: 100%; max-height: 300px; border-left: none; border-top: 1px solid #e5eaf2; box-sizing: border-box; }
-    #leafletMap, #migLeafletMap { min-height: 280px; }
 
     /* Modals nearly full-width */
     .staging-modal, .modal { width: 96vw !important; max-width: 96vw !important; }
@@ -890,7 +889,6 @@
 
   /* MIGRATION DISPATCH MAP */
   #migMapContainer { display: flex; position: fixed; left: 0; right: 0; bottom: 0; z-index: 1; }
-  #migLeafletMap { flex: 1; position: relative; z-index: 1; }
   .mig-team-card { border-bottom: 1px solid #f1f5f9; padding: 10px 14px; }
   .mig-team-card-head { display: flex; align-items: center; gap: 8px; cursor: pointer; }
   .mig-team-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
@@ -1045,16 +1043,6 @@
       <div class="nav-menu-item" data-page="dashboard" data-view="table">For Dispatch</div>
     </div>
   </div>
-  <div class="nav-dropdown tl-hide">
-    <button class="nav-btn" id="migBtn">Migration ▾</button>
-    <div class="nav-menu" id="migMenu">
-      <div class="nav-menu-item" data-migpage="dispatch">Migration Dispatch</div>
-      <div class="nav-menu-item" data-migpage="uploaded">Uploaded for Migration</div>
-      <div class="nav-menu-item" data-migpage="calling">For Calling/Scheduling</div>
-      <div class="nav-menu-item" data-migpage="fordispatch">For Dispatch</div>
-      <div class="nav-menu-item" data-migpage="completed">Completed/Visited/Called</div>
-      <div class="nav-menu-item" data-migpage="overall">Overall Migration Progress</div>
-    </div>
   </div>
   <div class="nav-dropdown" data-cap="view_reports">
     <button class="nav-btn" id="reportsBtn">Reports ▾</button>
@@ -1735,17 +1723,6 @@
 </div>
 
 <!-- 1. MIGRATION DISPATCH (MAP VIEW) -->
-<div class="page-view" id="page-mig-dispatch">
-  <div class="filterbar sticky-top">
-    <input class="search-input" id="migDispSearch" type="text" placeholder="Search...">
-    <button class="date-nav" id="migDispPrev">‹</button>
-    <button class="date-nav" id="migDispNext">›</button>
-    <span class="date-label">Date from:</span>
-    <input class="date-input" type="date" id="migDispDateFrom">
-    <span class="date-label">to:</span>
-    <input class="date-input" type="date" id="migDispDateTo">
-    <button class="today-btn" id="migDispToday">Today</button>
-    <div class="filter-spacer"></div>
     <div class="teams-badge">TEAMS <span id="migDispTeamCount">0</span></div>
     <button class="view-btn active" id="migDispTableBtn">⊞ Table</button>
     <button class="view-btn active" style="background:#16a34a;border-color:#16a34a;color:white;">🗺 Map</button>
@@ -1767,14 +1744,6 @@
         </label>
       </div>
       <div id="migDeployedTeamsList"></div>
-    </div>
-    <!-- MAP -->
-    <div id="migLeafletMap">
-      <div id="migSetLocBanner" style="display:none;position:absolute;top:14px;left:50%;transform:translateX(-50%);z-index:600;background:#1e293b;color:white;border-radius:8px;padding:8px 12px;align-items:center;gap:10px;box-shadow:0 4px 14px rgba(0,0,0,0.25);font-size:12px;font-weight:600;">
-        <span>◉ Click on the map to set new location</span>
-        <button onclick="migSetLocSave()" style="background:#16a34a;color:white;border:none;border-radius:6px;padding:5px 12px;font-size:12px;font-weight:700;cursor:pointer;">Save</button>
-        <button onclick="migSetLocCancel()" style="background:#3b82f6;color:white;border:none;border-radius:6px;padding:5px 12px;font-size:12px;font-weight:700;cursor:pointer;">Cancel</button>
-      </div>
     </div>
     <!-- RIGHT SIDEBAR -->
     <div class="map-sidebar-right">
@@ -2277,10 +2246,6 @@
 </div>
 
 <!-- 2. UPLOADED FOR MIGRATION -->
-<div class="page-view" id="page-mig-uploaded">
-  <div class="filterbar sticky-top">
-    <input class="search-input" id="migUpSearch" type="text" placeholder="Search account, name, barangay...">
-    <div class="filter-spacer"></div>
     <button class="today-btn" id="migUpDownloadTemplate" style="background:white;color:#1e293b;border:1px solid #e2e8f0;">⬇ Download Template</button>
     <button class="today-btn" id="migUpImportBtn">⬆ Import Migration</button>
     <input type="file" id="migUpImportFile" accept=".csv,.xlsx,.xls" style="display:none;">
@@ -2308,19 +2273,6 @@
 </div>
 
 <!-- 3. FOR CALLING/SCHEDULING -->
-<div class="page-view" id="page-mig-calling">
-  <div class="filterbar sticky-top">
-    <input class="search-input" id="migCallSearch" type="text" placeholder="Search account, name, address...">
-    <button class="date-nav" id="migCallPrev" title="Previous day">‹</button>
-    <button class="date-nav" id="migCallNext" title="Next day">›</button>
-    <span class="date-label">Date from:</span>
-    <input class="date-input" type="date" id="migCallDateFrom" autocomplete="off">
-    <span class="date-label">to:</span>
-    <input class="date-input" type="date" id="migCallDateTo" autocomplete="off">
-    <button class="today-btn" id="migCallToday">Today</button>
-    <select class="filter-select" id="migCallBundle"><option value="">All Bundle Types</option></select>
-    <select class="filter-select" id="migCallUpdatedBy"><option value="">All Updated By</option></select>
-    <div class="filter-spacer"></div>
     <div style="position:relative;">
       <button class="columns-btn" id="migCallColsBtn">▦ Columns</button>
       <div class="callcols-menu" id="migCallColsMenu"></div>
@@ -2355,17 +2307,6 @@
 </div>
 
 <!-- 4. FOR DISPATCH -->
-<div class="page-view" id="page-mig-fordispatch">
-  <div class="filterbar sticky-top">
-    <input class="search-input" id="migFDSearch" type="text" placeholder="Search account, name, team...">
-    <button class="date-nav" id="migFDPrev">‹</button>
-    <button class="date-nav" id="migFDNext">›</button>
-    <span class="date-label">Date from:</span>
-    <input class="date-input" type="date" id="migFDDateFrom">
-    <span class="date-label">to:</span>
-    <input class="date-input" type="date" id="migFDDateTo">
-    <button class="today-btn" id="migFDToday">Today</button>
-    <div class="filter-spacer"></div>
   </div>
   <div class="mig-kpi-strip sticky-top">
     <button class="mig-header-btn">🚀 FOR DISPATCH</button>
@@ -2390,17 +2331,6 @@
 </div>
 
 <!-- 5. COMPLETED/VISITED/CALLED -->
-<div class="page-view" id="page-mig-completed">
-  <div class="filterbar sticky-top">
-    <input class="search-input" id="migCompSearch" type="text" placeholder="Search account, name, barangay...">
-    <button class="date-nav" id="migCompPrev">‹</button>
-    <button class="date-nav" id="migCompNext">›</button>
-    <span class="date-label">Date from:</span>
-    <input class="date-input" type="date" id="migCompDateFrom">
-    <span class="date-label">to:</span>
-    <input class="date-input" type="date" id="migCompDateTo">
-    <button class="today-btn" id="migCompToday">Today</button>
-    <div class="filter-spacer"></div>
   </div>
   <div class="mig-kpi-strip sticky-top">
     <button class="mig-header-btn">✅ COMPLETED / VISITED / CALLED</button>
@@ -2425,11 +2355,6 @@
 </div>
 
 <!-- 6. OVERALL MIGRATION PROGRESS -->
-<div class="page-view" id="page-mig-overall">
-  <div class="mig-dash-head">
-    <span class="mig-dash-badge">⇄ MIGRATION</span>
-    <span class="mig-dash-title">Migration Progress Dashboard</span>
-  </div>
   <div class="filterbar">
     <input class="search-input" id="migOvSearch" type="text" placeholder="Search Old Acct No. or Name..." style="max-width:340px;">
     <select class="filter-select" id="migOvMuni"><option value="">All Municipalities</option></select>
@@ -2856,27 +2781,23 @@
     }
 
     // Migration Dispatch map page: same fill-viewport treatment
-    var migDispPage = document.getElementById('page-mig-dispatch');
+    
     var migMapContainer = document.getElementById('migMapContainer');
-    if (migDispPage && migMapContainer && migDispPage.classList.contains('active')) {
       var nav2 = document.querySelector('.topnav');
       var navH2 = nav2 ? nav2.offsetHeight : 0;
       var threshold2 = navH2;
-      Array.prototype.forEach.call(migDispPage.children, function(el){
         if (el.classList && el.classList.contains('sticky-top')) threshold2 += el.offsetHeight;
       });
       migMapContainer.style.top = threshold2 + 'px';
-      if (migLeafletMap) setTimeout(function(){ migLeafletMap.invalidateSize(); }, 50);
+      
     }
 
     // Migration Progress Dashboard map page: fill remaining viewport below header/filter/KPIs
-    var migOvPage = document.getElementById('page-mig-overall');
+    
     var migOvContainer = document.getElementById('migOvMapContainer');
-    if (migOvPage && migOvContainer && migOvPage.classList.contains('active')) {
       var nav3 = document.querySelector('.topnav');
       var navH3 = nav3 ? nav3.offsetHeight : 0;
       var threshold3 = navH3;
-      Array.prototype.forEach.call(migOvPage.children, function(el){
         if (el.id === 'migOvMapContainer') return;
         threshold3 += el.offsetHeight;
       });
@@ -3338,7 +3259,10 @@
     document.getElementById('rowCount').textContent = data.length;
   applyColumnVisibility();
   setTimeout(refreshLayout, 50);
-  setTimeout(syncTableHeader, 100);
+  /* Two-pass sync: 300ms catches most renders, 700ms is the safety net
+     for slow machines or large datasets where the browser paint is delayed. */
+  setTimeout(syncTableHeader, 300);
+  setTimeout(syncTableHeader, 700);
   }
 
   /* ── ACTIVE FILTER STATE ── */
@@ -4486,20 +4410,12 @@
   });
 
   /* ── MIGRATION DROPDOWN ── */
-  safeOn('migBtn', 'click', function(e){
-    e.stopPropagation();
-    document.getElementById('migMenu').classList.toggle('open');
-    document.getElementById('niMenu').classList.remove('open');
-    var um = document.getElementById('userMenu');
-    if(um) um.classList.remove('open');
-  });
-  document.querySelectorAll('#migMenu .nav-menu-item').forEach(function(item){
+    document.querySelectorAll('#migMenu .nav-menu-item').forEach(function(item){
     item.addEventListener('click', function(e){
       e.stopPropagation();
       document.querySelectorAll('#migMenu .nav-menu-item').forEach(function(x){x.classList.remove('active');});
       this.classList.add('active');
       var pg = this.dataset.migpage;
-      switchMigPage(pg);
       document.getElementById('migMenu').classList.remove('open');
     });
   });
@@ -5636,7 +5552,7 @@
     /* Refresh whichever list is on screen so the badge/card outside the popup doesn't go stale.
        render(shown) also re-renders the TL card list internally when the logged-in user is a TL. */
     if (info.table === 'job_orders' && typeof render === 'function') { render(shown); summary(shown); }
-    else if (info.table === 'migration_orders' && typeof renderMigPage === 'function') { renderMigPage(currentMigPage); }
+    
 
     showToast('✓ Status updated to '+newStatus, 'success');
   };
@@ -7140,15 +7056,45 @@
 
     var statusColors = {
       'Completed':'#16a34a','Pending':'#f59e0b',
-      'Rescheduled':'#f97316','Cancelled':'#ef4444'
+      'Rescheduled':'#f97316','Cancelled':'#ef4444',
+      'New':'#3b82f6'
     };
     var teamPositions = {};
 
+    /* Municipality fallback centres — used when the exact barangay is not
+       in BRGY_COORDS (e.g. Rizal province towns, outer Metro areas). */
+    var MUNI_FALLBACK = {
+      'QUEZON CITY':[14.6760,121.0437],'QUEZON':[14.6760,121.0437],
+      'PASIG':[14.5764,121.0851],'MANDALUYONG':[14.5794,121.0359],
+      'MARIKINA':[14.6507,121.1029],'SAN JUAN':[14.6019,121.0355],
+      'MAKATI':[14.5547,121.0244],'TAGUIG':[14.5176,121.0509],
+      'PATEROS':[14.5410,121.0689],'MANILA':[14.5995,120.9842],
+      'MALABON':[14.6628,120.9572],'NAVOTAS':[14.6667,120.9417],
+      'VALENZUELA':[14.7011,120.9830],'CALOOCAN':[14.6495,120.9670],
+      'LAS PINAS':[14.4445,120.9942],'MUNTINLUPA':[14.4081,121.0415],
+      'PARANAQUE':[14.4793,121.0198],'PARAÑAQUE':[14.4793,121.0198],
+      'CAINTA':[14.5786,121.1222],'ANTIPOLO':[14.6255,121.1245],
+      'ANGONO':[14.5236,121.1542],'BINANGONAN':[14.4681,121.1977],
+      'TAYTAY':[14.5564,121.1339],'MORONG':[14.3131,121.2750],
+      'CAVITE CITY':[14.4791,120.9040],'BACOOR':[14.4580,120.9407],
+      'IMUS':[14.4297,120.9365],'DASMARIÑAS':[14.3294,120.9367],
+      'DASMARINAS':[14.3294,120.9367],'GENERAL TRIAS':[14.3833,120.8833],
+      'ILOILO CITY':[10.7202,122.5621],'ILOILO':[10.7202,122.5621],
+      'ROXAS CITY':[11.5833,122.7500],'KALIBO':[11.7083,122.3667],
+      'PANAY':[11.1667,122.5000]
+    };
+
     orders.forEach(function(o) {
-      var coords = BRGY_COORDS[o.barangay];
-      if (!coords) return;
-      var lat = coords[0] + (Math.random()-0.5)*0.007;
-      var lng = coords[1] + (Math.random()-0.5)*0.007;
+      var brgy = (o.barangay || '').trim().toUpperCase();
+      var muni = (o.municipality || '').trim().toUpperCase();
+      var coords = BRGY_COORDS[brgy]
+                || BRGY_COORDS[o.barangay]
+                || MUNI_FALLBACK[muni]
+                || null;
+      if (!coords) return; /* truly unknown location — skip */
+      var jitter = coords === MUNI_FALLBACK[muni] ? 0.018 : 0.007; /* spread muni-level pins wider */
+      var lat = coords[0] + (Math.random()-0.5)*jitter;
+      var lng = coords[1] + (Math.random()-0.5)*jitter;
       var color = statusColors[o.status] || '#64748b';
       var marker = L.marker([lat,lng], { icon: houseIcon(color) }).addTo(leafletMap);
       marker._jobId  = o.id;
@@ -7760,1353 +7706,6 @@
     if (remaining > 100) bodyWrap.style.height = remaining + 'px';
   }
 
-  /* ════════════ MIGRATION ════════════ */
-  var migData = [];
-  var MIG_TABLE = 'migration_orders';
-
-  /* Migration dropdown wired below near niBtn */
-
-  /* ── Page switcher ── */
-  var currentMigPage = 'dispatch';
-  function switchMigPage(pg) {
-    document.querySelectorAll('.page-view').forEach(function(p){ p.classList.remove('active'); });
-    var pageMap = {
-      'dispatch':    'page-mig-dispatch',
-      'uploaded':    'page-mig-uploaded',
-      'calling':     'page-mig-calling',
-      'fordispatch': 'page-mig-fordispatch',
-      'completed':   'page-mig-completed',
-      'overall':     'page-mig-overall'
-    };
-    var pageId = pageMap[pg];
-    if (!pageId) return;
-    currentMigPage = pg;
-    document.getElementById(pageId).classList.add('active');
-    setTimeout(refreshLayout, 60);
-    if (pg === 'dispatch') setTimeout(initMigMap, 100);
-    if (pg === 'overall') setTimeout(initMigOvMap, 100);
-    loadMigData(pg);
-  }
-
-  /* ── Load data ── */
-  async function loadMigData(pg) {
-    if (!db) {
-      if (DEMO_MODE) { migData = scopeRecords(demoMigForPage(pg)); renderMigPage(pg); }
-      return;
-    }
-    try {
-      var query = db.from(MIG_TABLE).select('*').limit(1000);
-
-      /* Filter by page type */
-      if (pg === 'calling') {
-        query = query.or('jo_status.is.null,jo_status.eq.Pending');
-      } else if (pg === 'fordispatch') {
-        query = query.not('team_number', 'is', null);
-      } else if (pg === 'completed') {
-        query = query.in('jo_status', ['Done','Completed','Visited','Called']);
-      }
-
-      var r = await query.order('name', { ascending: true });
-      if (r.error) throw r.error;
-      migData = r.data || [];
-      if (DEMO_MODE && !migData.length) migData = demoMigForPage(pg);
-      migData = scopeRecords(migData);   /* scope migration data to the user's region */
-      renderMigPage(pg);
-    } catch(err) {
-      console.log('Migration load error:', err);
-      migData = DEMO_MODE ? scopeRecords(demoMigForPage(pg)) : [];
-      renderMigPage(pg);
-    }
-  }
-
-  /* ── Render helpers ── */
-  function migStatusBadge(status) {
-    if (!status) return '<span class="mig-status pending">Pending</span>';
-    var s = status.toLowerCase();
-    if (s==='done'||s==='completed') return '<span class="mig-status done">'+status+'</span>';
-    if (s==='rescheduled') return '<span class="mig-status rescheduled">'+status+'</span>';
-    if (s==='cancelled') return '<span class="mig-status cancelled">'+status+'</span>';
-    if (s==='visited') return '<span class="mig-status visited">'+status+'</span>';
-    if (s==='called') return '<span class="mig-status called">'+status+'</span>';
-    return '<span class="mig-status pending">'+status+'</span>';
-  }
-
-  function mv(val) { return val || '—'; }
-
-  /* ── Sales Remarks on migration records ──
-     The dispatcher SEES the sales admin's note (read-only); Sales Admin / Manager /
-     Developer can edit it via a small popup. This is how the sales admin communicates
-     to dispatch, who then coordinates with the team leaders and agents. */
-  function salesRemarkCell(r) {
-    var txt = r.sales_remarks || '';
-    var safe = txt.replace(/</g,'&lt;');
-    if (can('edit_sales_remarks')) {
-      /* editable: show text (or "+ Add") and a pencil to edit */
-      var shown = txt ? safe : '<span style="color:#94a3b8;">+ Add</span>';
-      return '<td style="max-width:200px;overflow:hidden;text-overflow:ellipsis;cursor:pointer;color:#1d4ed8;" '
-        + 'onclick="openSalesRemark(\''+r.id+'\')" title="Click to edit sales remark">'+shown+' ✎</td>';
-    }
-    /* read-only for dispatch and others */
-    return '<td style="max-width:200px;overflow:hidden;text-overflow:ellipsis;">'+(txt?safe:'—')+'</td>';
-  }
-
-  window.openSalesRemark = function(recordId) {
-    if (!can('edit_sales_remarks')) return;
-    var r = (migData||[]).find(function(x){ return String(x.id)===String(recordId); });
-    if (!r) return;
-    document.getElementById('salesRemarkRecId').value = recordId;
-    document.getElementById('salesRemarkText').value = r.sales_remarks || '';
-    document.getElementById('salesRemarkWho').textContent = (r.name||'') + ' · Acct ' + (r.old_acct_no||'—');
-    document.getElementById('salesRemarkOverlay').style.display = 'flex';
-    setTimeout(function(){ document.getElementById('salesRemarkText').focus(); }, 50);
-  };
-  window.closeSalesRemark = function(){ document.getElementById('salesRemarkOverlay').style.display='none'; };
-  safeOn('salesRemarkOverlay', 'click', function(e){ if(e.target===this) closeSalesRemark(); });
-  window.saveMigSalesRemark = async function() {
-    var recId = document.getElementById('salesRemarkRecId').value;
-    var text = document.getElementById('salesRemarkText').value.trim();
-    var r = (migData||[]).find(function(x){ return String(x.id)===String(recId); });
-    if (r) r.sales_remarks = text;
-    if (db && !DEMO_MODE) {
-      try { var res = await db.from(MIG_TABLE).update({ sales_remarks: text }).eq('id', recId); if (res.error) throw res.error; }
-      catch(err){ showToast('Error: '+err.message, 'error'); return; }
-    }
-    closeSalesRemark();
-    renderMigPage(currentMigPage);   /* re-render so the new remark shows in the cell */
-    showToast('✓ Sales remark saved', 'success');
-  };
-
-  /* ── Call status pill (For Calling page) ── */
-  function callStatusBadge(status) {
-    if (!status) return '—';
-    var s = String(status).trim();
-    var ls = s.toLowerCase();
-    var cls;
-    if (ls.indexOf('other') === 0) cls = 's-other';
-    else if (ls.indexOf('kor') === 0) cls = 's-kor';
-    else if (ls.indexOf('cbr') === 0) cls = 's-cbr';
-    else if (ls === 'unattended') cls = 's-unattended';
-    else if (ls === 'confirmed') cls = 's-confirmed';
-    else if (ls.indexOf('callback') !== -1) cls = 's-for-callback';
-    else if (ls.indexOf('no answer') !== -1) cls = 's-no-answer';
-    else cls = 's-other';
-    return '<span class="status-badge '+cls+'">'+s+'</span>';
-  }
-
-  /* ── For Calling page filter state ── */
-  var migCallFilters = { search:'', bundle:'', updatedBy:'', dateFrom:'', dateTo:'' };
-  var migCallDropdownsBuilt = false;
-  var migCallColsBuilt = false;
-  /* column key -> visible */
-  var migCallColVis = {
-    num:true, chat:true, endorsed:true, callstatus:true, callremarks:true,
-    attempts:true, acct:true, bundle:true, name:true, decomm:true,
-    muni:true, brgy:true, address:true, updatedby:true
-  };
-  var migCallColLabels = {
-    num:'#', chat:'Chat', endorsed:'Date Endorsed', callstatus:'Call Status',
-    callremarks:'Call Remarks', attempts:'Call Attempts', acct:'Old Account No.',
-    bundle:'Bundle Type', name:'Name', decomm:'Decomm', muni:'Municipality',
-    brgy:'Barangay', address:'Address', updatedby:'Updated By'
-  };
-
-  /* Populate Bundle Type + Updated By dropdowns from current data (once per load) */
-  function buildMigCallDropdowns() {
-    var bundleSel = document.getElementById('migCallBundle');
-    var updSel    = document.getElementById('migCallUpdatedBy');
-    if (!bundleSel || !updSel) return;
-    var bundles = {}, updaters = {};
-    migData.forEach(function(r){
-      if (r.bundle_type) bundles[r.bundle_type] = true;
-      var u = r.updated_by || r.updatedBy;
-      if (u) updaters[u] = true;
-    });
-    var bKeys = Object.keys(bundles).sort();
-    var uKeys = Object.keys(updaters).sort();
-    bundleSel.innerHTML = '<option value="">All Bundle Types</option>' +
-      bKeys.map(function(b){ return '<option value="'+b.replace(/"/g,'&quot;')+'">'+b+'</option>'; }).join('');
-    updSel.innerHTML = '<option value="">All Updated By</option>' +
-      uKeys.map(function(u){ return '<option value="'+u.replace(/"/g,'&quot;')+'">'+u+'</option>'; }).join('');
-    /* restore current selections */
-    bundleSel.value = migCallFilters.bundle;
-    updSel.value = migCallFilters.updatedBy;
-    migCallDropdownsBuilt = true;
-  }
-
-  /* Build the Columns toggle menu (once) */
-  function buildMigCallColsMenu() {
-    var menu = document.getElementById('migCallColsMenu');
-    if (!menu || migCallColsBuilt) return;
-    var order = ['chat','endorsed','callstatus','callremarks','attempts','acct','bundle','name','decomm','muni','brgy','address','updatedby'];
-    menu.innerHTML = order.map(function(k){
-      return '<label class="callcols-item"><input type="checkbox" data-colkey="'+k+'" '+(migCallColVis[k]?'checked':'')+'> '+migCallColLabels[k]+'</label>';
-    }).join('');
-    menu.querySelectorAll('input[data-colkey]').forEach(function(cb){
-      cb.addEventListener('change', function(){
-        migCallColVis[this.getAttribute('data-colkey')] = this.checked;
-        applyMigCallColVis();
-      });
-    });
-    migCallColsBuilt = true;
-  }
-
-  /* Show/hide columns per migCallColVis */
-  function applyMigCallColVis() {
-    var keys = ['num','chat','endorsed','callstatus','callremarks','attempts','acct','bundle','name','decomm','muni','brgy','address','updatedby'];
-    keys.forEach(function(k){
-      var vis = migCallColVis[k];
-      var head = document.querySelector('#migCallHeadRow td[data-col="'+k+'"]');
-      if (head) head.style.display = vis ? '' : 'none';
-      document.querySelectorAll('#migCallBody td[data-col="'+k+'"]').forEach(function(td){
-        td.style.display = vis ? '' : 'none';
-      });
-    });
-    setTimeout(function(){ syncMigHeader('migCallBodyWrap','migCallHeadWrap','migCallHeadRow'); }, 30);
-  }
-
-  /* "Date endorsed" — bound directly to the real date_endorsed column */
-  function migCallDate(r) {
-    return r.date_endorsed || '';
-  }
-  /* Normalize a date string to YYYY-MM-DD for safe comparison (handles ISO, YYYY-MM-DD, MM-DD-YYYY, MM/DD/YYYY) */
-  function normDate(s) {
-    if (!s) return '';
-    s = String(s).trim();
-    var m = s.match(/^(\d{4})-(\d{2})-(\d{2})/);
-    if (m) return m[1]+'-'+m[2]+'-'+m[3];
-    m = s.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})/);
-    if (m) return m[3]+'-'+String(m[1]).padStart(2,'0')+'-'+String(m[2]).padStart(2,'0');
-    return '';
-  }
-  /* Display format: YYYY-MM-DD -> MM/DD/YYYY for the table */
-  function fmtCallDate(s) {
-    var n = normDate(s);
-    if (!n) return '—';
-    var parts = n.split('-');
-    return parts[1]+'/'+parts[2]+'/'+parts[0];
-  }
-
-  /* Ensure the date inputs and migCallFilters always agree. The very first
-     time this page is shown in a session, force both to today — this
-     overrides any stale value the browser may have auto-restored into the
-     date inputs (browsers can repopulate <input type="date"> from history
-     even before our JS runs). On later visits within the same session,
-     trust whatever the user actually left in the inputs. */
-  var migCallDateInitDone = false;
-  function syncMigCallDateInputs() {
-    var f = document.getElementById('migCallDateFrom');
-    var t = document.getElementById('migCallDateTo');
-    if (!f || !t) return;
-    if (!migCallDateInitDone) {
-      var d = today();
-      f.value = d; t.value = d;
-      migCallFilters.dateFrom = d; migCallFilters.dateTo = d;
-      migCallDateInitDone = true;
-    } else {
-      /* Trust whatever is actually visible in the inputs over stale JS state */
-      migCallFilters.dateFrom = f.value || '';
-      migCallFilters.dateTo = t.value || '';
-    }
-  }
-
-  /* Apply filters + render rows */
-  function renderMigCallRows() {
-    var tbody = document.getElementById('migCallBody');
-    if (!tbody) return;
-    var q  = migCallFilters.search.toLowerCase().trim();
-    var bf = migCallFilters.bundle;
-    var uf = migCallFilters.updatedBy;
-    var df = migCallFilters.dateFrom;
-    var dt = migCallFilters.dateTo;
-
-    var rows = migData.filter(function(r){
-      if (bf && r.bundle_type !== bf) return false;
-      if (uf && (r.updated_by||r.updatedBy) !== uf) return false;
-      /* Filter by date_endorsed. Records with no endorsed date yet are never
-         hidden by the date range — only ones with a date outside the range. */
-      if (df || dt) {
-        var d = normDate(migCallDate(r));
-        if (d) {
-          if (df && d < df) return false;
-          if (dt && d > dt) return false;
-        }
-      }
-      if (q) {
-        var hay = [r.old_acct_no, r.name, r.address, r.barangay, r.municipality, r.contact_info]
-          .map(function(x){return (x||'').toLowerCase();}).join(' ');
-        if (hay.indexOf(q) === -1) return false;
-      }
-      return true;
-    });
-
-    document.getElementById('migCallCount').textContent = rows.length;
-
-    if (!rows.length) {
-      tbody.innerHTML = '<tr class="loading-row"><td colspan="14" style="text-align:center;padding:40px;color:#94a3b8;">No records match the current filters.</td></tr>';
-      return;
-    }
-
-    tbody.innerHTML = rows.map(function(r,i){
-      var chatCell = (r.chat_count>0)
-        ? '<div class="chat-badge">'+r.chat_count+'</div>'
-        : '<span style="color:#e2e8f0;">0</span>';
-      var decomm = (r.decomm===true||r.decomm==='Y'||r.decomm==='Yes') ? 'Y' : 'N';
-      return '<tr>'
-        +'<td class="count-cell" data-col="num">'+(i+1)+'</td>'
-        +'<td style="text-align:center;min-width:46px;" data-col="chat">'+chatCell+'</td>'
-        +'<td style="white-space:nowrap;min-width:104px;" data-col="endorsed">'+fmtCallDate(migCallDate(r))+'</td>'
-        +'<td style="min-width:120px;" data-col="callstatus">'+callStatusBadge(r.call_status)+'</td>'
-        +'<td style="font-size:11px;min-width:120px;max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" data-col="callremarks" title="'+(r.call_remarks||'').replace(/"/g,'&quot;')+'">'+mv(r.call_remarks)+'</td>'
-        +'<td class="count-cell" style="min-width:96px;" data-col="attempts">'+(r.call_attempts!=null?r.call_attempts:'—')+'</td>'
-        +'<td style="white-space:nowrap;min-width:120px;" data-col="acct">'+mv(r.old_acct_no)+'</td>'
-        +'<td style="min-width:104px;" data-col="bundle">'+mv(r.bundle_type)+'</td>'
-        +'<td style="min-width:150px;" data-col="name"><span class="mig-name-link" onclick="openMigRecordModal(\''+r.id+'\')">'+mv(r.name)+'</span></td>'
-        +'<td style="text-align:center;min-width:72px;" data-col="decomm">'+decomm+'</td>'
-        +'<td style="white-space:nowrap;min-width:108px;" data-col="muni">'+mv(r.municipality)+'</td>'
-        +'<td style="white-space:nowrap;min-width:100px;" data-col="brgy">'+mv(r.barangay)+'</td>'
-        +'<td style="min-width:160px;max-width:240px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" data-col="address" title="'+(r.address||'').replace(/"/g,'&quot;')+'">'+mv(r.address)+'</td>'
-        +'<td style="white-space:nowrap;min-width:92px;" data-col="updatedby">'+mv(r.updated_by||r.updatedBy)+'</td>'
-        +'</tr>';
-    }).join('');
-    applyMigCallColVis();
-    setTimeout(function(){ syncMigHeader('migCallBodyWrap','migCallHeadWrap','migCallHeadRow'); }, 80);
-  }
-
-
-  /* ── Sync migration split header ── */
-  function syncMigHeader(bodyWrapId, headWrapId, headRowId) {
-    var bodyWrap = document.getElementById(bodyWrapId);
-    var headWrap = document.getElementById(headWrapId);
-    if (!bodyWrap || !headWrap) return;
-    var bodyTable = bodyWrap.querySelector('table');
-    if (!bodyTable) return;
-    var firstRow = bodyTable.querySelector('tbody tr:not(.loading-row)');
-    if (!firstRow) return;
-    var tds = firstRow.querySelectorAll('td');
-    var headerCells = document.querySelectorAll('#'+headRowId+' td');
-    for (var i = 0; i < headerCells.length; i++) {
-      if (tds[i]) {
-        var w = tds[i].getBoundingClientRect().width;
-        headerCells[i].style.width = w + 'px';
-        headerCells[i].style.minWidth = w + 'px';
-      }
-    }
-    var headTable = headWrap.querySelector('table');
-    if (headTable) headTable.style.width = bodyTable.offsetWidth + 'px';
-    bodyWrap.onscroll = function() { headWrap.scrollLeft = bodyWrap.scrollLeft; };
-    /* Set height */
-    var rect = bodyWrap.getBoundingClientRect();
-    var remaining = window.innerHeight - rect.top - 40;
-    if (remaining > 100) bodyWrap.style.height = remaining + 'px';
-  }
-
-  /* ── Render per page ── */
-  function renderMigPage(pg) {
-    var emptyRow = '<tr class="loading-row"><td colspan="12" style="text-align:center;padding:40px;color:#94a3b8;">No migration records found. Import data to populate this page.</td></tr>';
-
-    if (pg === 'dispatch') {
-      var pending   = migData.filter(function(r){return !r.jo_status||r.jo_status==='Pending';});
-      var completed = migData.filter(function(r){var s=r.jo_status||''; return s==='Done'||s==='Completed';});
-      var resched   = migData.filter(function(r){return r.jo_status==='Rescheduled';});
-      var cancel    = migData.filter(function(r){return r.jo_status==='Cancelled';});
-      var withTeam  = migData.filter(function(r){return r.team_number;});
-      var noTeam    = migData.filter(function(r){return !r.team_number;});
-
-      function setME(id,v){ var el=document.getElementById(id); if(el) el.textContent=v; }
-      setME('migDispPending',   pending.length);
-      setME('migDispCompleted', completed.length);
-      setME('migDispResched',   resched.length);
-      setME('migDispCancelled', cancel.length);
-      setME('migDispWT',  withTeam.length+' w/ Team');
-      setME('migDispWOT', noTeam.length+' w/o Team');
-
-      buildDeployedTeams(withTeam);
-      buildNoTeamsPanel(noTeam);
-      if (migLeafletMap) renderMigMapPins(migData);
-
-    } else if (pg === 'fordispatch') {
-      var pending   = migData.filter(function(r){return !r.jo_status||r.jo_status==='Pending';});
-      var completed = migData.filter(function(r){var s=r.jo_status||''; return s==='Done'||s==='Completed';});
-      var resched   = migData.filter(function(r){return r.jo_status==='Rescheduled';});
-      var cancel    = migData.filter(function(r){return r.jo_status==='Cancelled';});
-      var withTeam  = migData.filter(function(r){return r.team_number;});
-      var noTeam    = migData.filter(function(r){return !r.team_number;});
-
-      function setMF(id,v){ var el=document.getElementById(id); if(el) el.textContent=v; }
-      setMF('migFDCount',     migData.length);
-      setMF('migFDPending',   pending.length);
-      setMF('migFDCompleted', completed.length);
-      setMF('migFDResched',   resched.length);
-      setMF('migFDCancelled', cancel.length);
-      setMF('migFDWT',  withTeam.length+' w/ Team');
-      setMF('migFDWOT', noTeam.length+' w/o Team');
-
-      var tbody = document.getElementById('migFDBody');
-      if (!tbody) return;
-      if (!migData.length) { tbody.innerHTML = emptyRow; return; }
-      tbody.innerHTML = migData.map(function(r,i){
-        return '<tr>'
-          +'<td class="count-cell">'+(i+1)+'</td>'
-          +'<td>'+mv(r.old_acct_no)+'</td>'
-          +'<td style="min-width:160px;font-weight:600;color:#1e293b;">'+mv(r.name)+'</td>'
-          +'<td>'+mv(r.municipality)+'</td>'
-          +'<td>'+mv(r.barangay)+'</td>'
-          +'<td>'+mv(r.contact_info)+'</td>'
-          +'<td>'+mv(r.bundle_type)+'</td>'
-          +'<td>'+(r.team_number?'<span class="team-badge ats">'+r.team_number+'</span>':'—')+'</td>'
-          +'<td>'+mv(r.personnel)+'</td>'
-          +migStatusBadge(r.jo_status)+'</td>'
-          +'<td style="max-width:200px;overflow:hidden;text-overflow:ellipsis;">'+mv(r.remarks)+'</td>'
-          +salesRemarkCell(r)
-          +'<td>'+mv(r.date_completed)+'</td>'
-          +'</tr>';
-      }).join('');
-      setTimeout(function(){ syncMigHeader('migFDBodyWrap', 'migFDHeadWrap', 'migFDHeadRow'); }, 80);
-
-    } else if (pg === 'uploaded') {
-      var tbody = document.getElementById('migUpBody');
-      if (!tbody) return;
-      function setME(id,v){ var el=document.getElementById(id); if(el) el.textContent=v; }
-      setME('migUpTotal', migData.length);
-      setME('migUpCompleted', migData.filter(function(r){var s=r.jo_status||''; return s==='Done'||s==='Completed';}).length);
-      setME('migUpPending', migData.filter(function(r){return !r.jo_status||r.jo_status==='Pending';}).length);
-      setME('migUpCancelled', migData.filter(function(r){return r.jo_status==='Cancelled';}).length);
-      setME('migUpCount', migData.length);
-      if (!migData.length) { tbody.innerHTML = emptyRow; return; }
-      tbody.innerHTML = migData.map(function(r,i){
-        return '<tr onclick="openMigRecordModal(\''+r.id+'\')" style="cursor:pointer;">'
-          +'<td class="count-cell">'+(i+1)+'</td>'
-          +'<td>'+mv(r.old_acct_no)+'</td>'
-          +'<td style="min-width:160px;font-weight:600;color:#1e293b;">'+mv(r.name)+'</td>'
-          +'<td>'+mv(r.municipality)+'</td>'
-          +'<td>'+mv(r.barangay)+'</td>'
-          +'<td>'+mv(r.bundle_type)+'</td>'
-          +'<td>'+mv(r.play_type)+'</td>'
-          +'<td>'+mv(r.network_type)+'</td>'
-          +'<td>'+mv(r.node_no_sky)+'</td>'
-          +'<td>'+(r.decomm||'N')+'</td>'
-          +'<td>'+migStatusBadge(r.jo_status)+'</td>'
-          +'<td>'+mv(r.remarks)+'</td>'
-          +'</tr>';
-      }).join('');
-      setTimeout(function(){ syncMigHeader('migUpBodyWrap','migUpHeadWrap','migUpHeadRow'); }, 80);
-
-    } else if (pg === 'calling') {
-      buildMigCallDropdowns();
-      buildMigCallColsMenu();
-      syncMigCallDateInputs();
-      renderMigCallRows();
-
-    } else if (pg === 'completed') {
-      var tbody = document.getElementById('migCompBody');
-      if (!tbody) return;
-      function setME(id,v){ var el=document.getElementById(id); if(el) el.textContent=v; }
-      setME('migCompCompleted', migData.filter(function(r){var s=r.jo_status||''; return s==='Done'||s==='Completed';}).length);
-      setME('migCompVisited', migData.filter(function(r){return r.jo_status==='Visited';}).length);
-      setME('migCompCalled', migData.filter(function(r){return r.jo_status==='Called';}).length);
-      setME('migCompCancelled', migData.filter(function(r){return r.jo_status==='Cancelled';}).length);
-      setME('migCompCount', migData.length);
-      if (!migData.length) { tbody.innerHTML = emptyRow; return; }
-      tbody.innerHTML = migData.map(function(r,i){
-        return '<tr>'
-          +'<td class="count-cell">'+(i+1)+'</td>'
-          +'<td>'+mv(r.old_acct_no)+'</td>'
-          +'<td style="min-width:160px;font-weight:600;color:#1e293b;">'+mv(r.name)+'</td>'
-          +'<td>'+mv(r.municipality)+'</td>'
-          +'<td>'+mv(r.barangay)+'</td>'
-          +'<td style="color:#1d4ed8;">'+mv(r.contact_info)+'</td>'
-          +'<td>'+mv(r.bundle_type)+'</td>'
-          +'<td>'+(r.team_number?'<span class="team-badge ats">'+r.team_number+'</span>':'—')+'</td>'
-          +'<td>'+mv(r.personnel)+'</td>'
-          +'<td>'+migStatusBadge(r.jo_status)+'</td>'
-          +'<td>'+mv(r.date_completed)+'</td>'
-          +'<td>'+mv(r.remarks)+'</td>'
-          +'</tr>';
-      }).join('');
-      setTimeout(function(){ syncMigHeader('migCompBodyWrap','migCompHeadWrap','migCompHeadRow'); }, 80);
-
-    } else if (pg === 'overall') {
-      buildMigOvFilters();
-      renderMigOverall();
-    }
-  }
-
-  /* ════════════ MIGRATION PROGRESS DASHBOARD ════════════ */
-  var OV_COLORS = { completed:'#16a34a', cancelled:'#ef4444', rescheduled:'#f97316', pending:'#f59e0b', notvisited:'#9ca3af' };
-  var migOvMap = null, migOvMapInit = false, migOvLayers = {}, migOvMarkers = [];
-  var migOvFilters = { search:'', muni:'', brgy:'', status:'', bundle:'', decomm:'' };
-
-  function ovStatusClass(r) {
-    var s = (r.jo_status||'').trim();
-    if (s==='Done'||s==='Completed'||s==='Visited'||s==='Called') return 'completed';
-    if (s==='Cancelled') return 'cancelled';
-    if (s==='Rescheduled') return 'rescheduled';
-    if (s==='Pending') return 'pending';
-    return 'notvisited';
-  }
-
-  /* SVG pie divIcon sized by total record count in a barangay */
-  function ovPieIcon(counts) {
-    var order = ['completed','cancelled','rescheduled','pending','notvisited'];
-    var total = order.reduce(function(a,k){ return a+(counts[k]||0); }, 0);
-    if (!total) return null;
-    var r = total<5?11 : total<20?15 : total<60?20 : 26;
-    var cx=r, cy=r, ang=-Math.PI/2, paths='';
-    order.forEach(function(k){
-      var val = counts[k]||0; if (!val) return;
-      if (val===total) { paths += '<circle cx="'+cx+'" cy="'+cy+'" r="'+r+'" fill="'+OV_COLORS[k]+'"/>'; return; }
-      var frac = val/total, a2 = ang+frac*2*Math.PI;
-      var x1=cx+r*Math.cos(ang), y1=cy+r*Math.sin(ang);
-      var x2=cx+r*Math.cos(a2),  y2=cy+r*Math.sin(a2);
-      var large = frac>0.5?1:0;
-      paths += '<path d="M'+cx+','+cy+' L'+x1.toFixed(2)+','+y1.toFixed(2)+' A'+r+','+r+' 0 '+large+' 1 '+x2.toFixed(2)+','+y2.toFixed(2)+' Z" fill="'+OV_COLORS[k]+'"/>';
-      ang = a2;
-    });
-    var size = 2*r+4;
-    var svg = '<svg xmlns="http://www.w3.org/2000/svg" width="'+size+'" height="'+size+'" viewBox="-2 -2 '+size+' '+size+'">'
-      + paths
-      + '<circle cx="'+cx+'" cy="'+cy+'" r="'+r+'" fill="none" stroke="white" stroke-width="2"/></svg>';
-    return L.divIcon({ html:svg, className:'', iconSize:[size,size], iconAnchor:[size/2,size/2] });
-  }
-
-  /* Populate filter dropdowns from data */
-  function buildMigOvFilters() {
-    function fill(id, obj, allLabel, cur) {
-      var el = document.getElementById(id); if (!el) return;
-      var keys = Object.keys(obj).sort();
-      el.innerHTML = '<option value="">'+allLabel+'</option>' +
-        keys.map(function(k){ return '<option value="'+k.replace(/"/g,'&quot;')+'">'+k+'</option>'; }).join('');
-      el.value = cur;
-    }
-    var muni={}, brgy={}, bundle={};
-    migData.forEach(function(r){
-      if (r.municipality) muni[r.municipality]=1;
-      if (r.barangay) brgy[r.barangay]=1;
-      if (r.bundle_type) bundle[r.bundle_type]=1;
-    });
-    fill('migOvMuni', muni, 'All Municipalities', migOvFilters.muni);
-    fill('migOvBrgy', brgy, 'All Barangays', migOvFilters.brgy);
-    fill('migOvBundle', bundle, 'All Bundle Types', migOvFilters.bundle);
-    var stEl = document.getElementById('migOvStatus');
-    if (stEl && stEl.options.length <= 1) {
-      ['Completed','Cancelled','Rescheduled','Pending','Not Yet Visited'].forEach(function(s){
-        var o=document.createElement('option'); o.value=s; o.textContent=s; stEl.appendChild(o);
-      });
-      stEl.value = migOvFilters.status;
-    }
-  }
-
-  function getMigOvFiltered() {
-    var q = migOvFilters.search.toLowerCase().trim();
-    var statusMap = { 'Completed':'completed','Cancelled':'cancelled','Rescheduled':'rescheduled','Pending':'pending','Not Yet Visited':'notvisited' };
-    return migData.filter(function(r){
-      if (migOvFilters.muni   && r.municipality !== migOvFilters.muni) return false;
-      if (migOvFilters.brgy   && r.barangay !== migOvFilters.brgy) return false;
-      if (migOvFilters.bundle && r.bundle_type !== migOvFilters.bundle) return false;
-      if (migOvFilters.decomm) { var d=(r.decomm==='Y'||r.decomm===true||r.decomm==='Yes')?'Y':'N'; if (d!==migOvFilters.decomm) return false; }
-      if (migOvFilters.status && ovStatusClass(r) !== statusMap[migOvFilters.status]) return false;
-      if (q) { var hay=((r.old_acct_no||'')+' '+(r.name||'')).toLowerCase(); if (hay.indexOf(q)===-1) return false; }
-      return true;
-    });
-  }
-
-  function renderMigOverall() {
-    var rows = getMigOvFiltered();
-    function setN(id,v){ var el=document.getElementById(id); if (el) el.textContent=Number(v).toLocaleString(); }
-
-    /* KPI cards */
-    var calling = rows.filter(function(r){ return !r.jo_status||r.jo_status==='Pending'; }).length;
-    var dispatch = rows.filter(function(r){ return r.team_number && (ovStatusClass(r)==='pending'||ovStatusClass(r)==='notvisited'); }).length;
-    var completed = rows.filter(function(r){ return ovStatusClass(r)==='completed'; }).length;
-    var subsSet={}; rows.forEach(function(r){ if (r.old_acct_no) subsSet[r.old_acct_no]=1; });
-    setN('migOvKpiUploaded', rows.length);
-    setN('migOvKpiCalling', calling);
-    setN('migOvKpiDispatch', dispatch);
-    setN('migOvKpiCompleted', completed);
-    setN('migOvKpiSubs', Object.keys(subsSet).length);
-
-    /* Legend counts */
-    var leg = { completed:0, cancelled:0, rescheduled:0, pending:0, notvisited:0 };
-    rows.forEach(function(r){ leg[ovStatusClass(r)]++; });
-    setN('migOvLegCompleted', leg.completed);
-    setN('migOvLegCancelled', leg.cancelled);
-    setN('migOvLegResched', leg.rescheduled);
-    setN('migOvLegPending', leg.pending);
-    setN('migOvLegNotVisited', leg.notvisited);
-
-    /* Top barangays (pending + not visited) */
-    var brgyAgg={};
-    rows.forEach(function(r){
-      var b=r.barangay; if (!b) return;
-      if (!brgyAgg[b]) brgyAgg[b]={ muni:r.municipality||'', n:0 };
-      var sc=ovStatusClass(r);
-      if (sc==='pending'||sc==='notvisited') brgyAgg[b].n++;
-    });
-    var topEl=document.getElementById('migOvTopBrgy');
-    if (topEl) {
-      var sorted=Object.keys(brgyAgg).filter(function(b){return brgyAgg[b].n>0;})
-        .sort(function(a,b){return brgyAgg[b].n-brgyAgg[a].n;}).slice(0,10);
-      topEl.innerHTML = sorted.length ? sorted.map(function(b,i){
-        return '<div class="top-brgy-row"><span class="top-brgy-rank">'+(i+1)+'</span>'
-          +'<span class="top-brgy-name">'+b+'</span>'
-          +'<span class="top-brgy-muni">'+brgyAgg[b].muni+'</span>'
-          +'<span class="top-brgy-count">'+brgyAgg[b].n+'</span></div>';
-      }).join('') : '<div style="padding:16px;color:#94a3b8;font-size:12px;">No pending records</div>';
-    }
-
-    /* Municipality panel */
-    var munAgg={};
-    rows.forEach(function(r){ var m=r.municipality||'Unknown'; if(!munAgg[m]) munAgg[m]={total:0,done:0}; munAgg[m].total++; if(ovStatusClass(r)==='completed') munAgg[m].done++; });
-    var munEl=document.getElementById('migOvMuniList');
-    if (munEl) {
-      var mk=Object.keys(munAgg).sort(function(a,b){return munAgg[b].total-munAgg[a].total;});
-      munEl.innerHTML = mk.length ? mk.map(function(m){ var d=munAgg[m]; var pct=d.total?Math.round(d.done/d.total*100):0;
-        return '<div class="mun-row"><span class="mun-name">'+m+'</span><span style="color:#64748b;">'+d.done+'/'+d.total+'</span>'
-          +'<span class="mun-bar-wrap"><span class="mun-bar" style="width:'+pct+'%"></span></span><span class="mun-pct">'+pct+'%</span></div>';
-      }).join('') : '<div style="padding:8px;color:#94a3b8;font-size:11px;">No data</div>';
-    }
-
-    renderMigOvPins(rows);
-  }
-
-  function renderMigOvPins(rows) {
-    if (!migOvMap) return;
-    migOvMarkers.forEach(function(m){ migOvMap.removeLayer(m); });
-    migOvMarkers = [];
-    var byBrgy={};
-    rows.forEach(function(r){
-      var b=r.barangay; if (!b||!BRGY_COORDS[b]) return;
-      if (!byBrgy[b]) byBrgy[b]={ completed:0,cancelled:0,rescheduled:0,pending:0,notvisited:0 };
-      byBrgy[b][ovStatusClass(r)]++;
-    });
-    Object.keys(byBrgy).forEach(function(b){
-      var c=byBrgy[b], coords=BRGY_COORDS[b];
-      var icon=ovPieIcon(c); if (!icon) return;
-      var total=c.completed+c.cancelled+c.rescheduled+c.pending+c.notvisited;
-      var m=L.marker(coords,{icon:icon}).addTo(migOvMap);
-      m.bindPopup('<div style="font-size:12px;min-width:170px;"><b style="font-size:13px;">'+b+'</b><br>'
-        +'<div style="margin-top:4px;line-height:1.5;">'
-        +'<span style="color:#16a34a;">● Completed: <b>'+c.completed+'</b></span><br>'
-        +'<span style="color:#ef4444;">● Cancelled: <b>'+c.cancelled+'</b></span><br>'
-        +'<span style="color:#f97316;">● Rescheduled: <b>'+c.rescheduled+'</b></span><br>'
-        +'<span style="color:#d97706;">● Pending: <b>'+c.pending+'</b></span><br>'
-        +'<span style="color:#6b7280;">● Not Yet Visited: <b>'+c.notvisited+'</b></span>'
-        +'</div><div style="border-top:1px solid #e2e8f0;margin-top:5px;padding-top:4px;"><b>Total: '+total+'</b></div></div>');
-      migOvMarkers.push(m);
-    });
-  }
-
-  function ovSwitchTab(which) {
-    [['migOvTabLayers','migOvLayersPanel','layers'],['migOvTabSubscriber','migOvSubscriberPanel','subscriber'],['migOvTabMuni','migOvMuniPanel','muni']]
-      .forEach(function(t){
-        var tab=document.getElementById(t[0]), panel=document.getElementById(t[1]);
-        if (tab) tab.classList.toggle('active', t[2]===which);
-        if (panel) panel.style.display = (t[2]===which)?'':'none';
-      });
-  }
-
-  function initMigOvMap() {
-    var nav=document.querySelector('.topnav'); var navH=nav?nav.offsetHeight:0;
-    var page=document.getElementById('page-mig-overall');
-    var threshold=navH;
-    Array.prototype.forEach.call(page.children, function(el){
-      if (el.id==='migOvMapContainer') return;
-      threshold += el.offsetHeight;
-    });
-    var container=document.getElementById('migOvMapContainer');
-    if (container) container.style.top=threshold+'px';
-
-    if (!migOvMapInit) {
-      migOvMap = L.map('migOvMap', { zoomControl:false }).setView(MAP_CENTER, 12);
-      L.control.zoom({ position:'bottomleft' }).addTo(migOvMap);
-      migOvLayers.street = L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', { attribution:'© Carto © OSM', maxZoom:19, subdomains:'abcd' }).addTo(migOvMap);
-      migOvLayers.satellite = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', { attribution:'© Esri', maxZoom:19 });
-      migOvLayers.streetNames = L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager_only_labels/{z}/{x}/{y}{r}.png', { attribution:'© Carto', maxZoom:19, subdomains:'abcd', opacity:0.9 }).addTo(migOvMap);
-      migOvLayers.landmarks = L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', { attribution:'© Carto', maxZoom:19, subdomains:'abcd', opacity:0.6 });
-
-      var brgyFeatures = Object.keys(BRGY_COORDS).map(function(name){
-        var c=BRGY_COORDS[name]; var d=0.008;
-        return { "type":"Feature","properties":{"name":name},"geometry":{"type":"Polygon","coordinates":[[[c[1]-d,c[0]-d],[c[1]+d,c[0]-d],[c[1]+d,c[0]+d],[c[1]-d,c[0]+d],[c[1]-d,c[0]-d]]]}};
-      });
-      migOvLayers.cityBoundaries = L.geoJSON({"type":"FeatureCollection","features":brgyFeatures}, { style:{ color:'#1d4ed8', weight:2.5, fill:false, opacity:0.8, dashArray:'6,4' } }).addTo(migOvMap);
-      migOvLayers.brgyBoundaries = L.geoJSON({"type":"FeatureCollection","features":brgyFeatures}, { style:{ color:'#60a5fa', weight:1, fill:false, opacity:0.6 } });
-      migOvLayers.brgyNames = L.layerGroup(Object.keys(BRGY_COORDS).map(function(name){
-        var c=BRGY_COORDS[name];
-        return L.marker([c[0],c[1]], { icon:L.divIcon({ html:'<div style="font-size:9px;font-weight:700;color:#1e40af;background:rgba(255,255,255,0.85);padding:1px 4px;border-radius:3px;white-space:nowrap;box-shadow:0 1px 3px rgba(0,0,0,0.2);">'+name+'</div>', className:'', iconAnchor:[0,0] }), interactive:false });
-      })).addTo(migOvMap);
-
-      function wire(id, layer, base) {
-        var chk=document.getElementById(id); if (!chk) return;
-        chk.addEventListener('change', function(){
-          if (this.checked) {
-            if (base==='satellite') { if (migOvMap.hasLayer(migOvLayers.street)) migOvMap.removeLayer(migOvLayers.street); document.getElementById('migOvLayerStreet').checked=false; layer.addTo(migOvMap); }
-            else if (base==='street') { if (migOvMap.hasLayer(migOvLayers.satellite)) migOvMap.removeLayer(migOvLayers.satellite); document.getElementById('migOvLayerSatellite').checked=false; layer.addTo(migOvMap); }
-            else layer.addTo(migOvMap);
-          } else { if (migOvMap.hasLayer(layer)) migOvMap.removeLayer(layer); }
-        });
-      }
-      wire('migOvLayerSatellite', migOvLayers.satellite, 'satellite');
-      wire('migOvLayerStreet', migOvLayers.street, 'street');
-      wire('migOvLayerStreetNames', migOvLayers.streetNames, false);
-      wire('migOvLayerLandmarks', migOvLayers.landmarks, false);
-      wire('migOvLayerCityBound', migOvLayers.cityBoundaries, false);
-      wire('migOvLayerBrgyBound', migOvLayers.brgyBoundaries, false);
-      wire('migOvLayerBrgyNames', migOvLayers.brgyNames, false);
-
-      /* Right-panel tabs */
-      var tl=document.getElementById('migOvTabLayers'); if (tl) tl.addEventListener('click', function(){ ovSwitchTab('layers'); });
-      var ts=document.getElementById('migOvTabSubscriber'); if (ts) ts.addEventListener('click', function(){ ovSwitchTab('subscriber'); });
-      var tm=document.getElementById('migOvTabMuni'); if (tm) tm.addEventListener('click', function(){ ovSwitchTab('muni'); });
-
-      /* Filters */
-      function onFilter(id, key) {
-        var el=document.getElementById(id); if (!el) return;
-        var ev = el.tagName==='SELECT' ? 'change' : 'input';
-        el.addEventListener(ev, function(){ migOvFilters[key]=this.value; renderMigOverall(); });
-      }
-      onFilter('migOvSearch','search');
-      onFilter('migOvMuni','muni');
-      onFilter('migOvBrgy','brgy');
-      onFilter('migOvStatus','status');
-      onFilter('migOvBundle','bundle');
-      onFilter('migOvDecomm','decomm');
-
-      migOvMapInit = true;
-    }
-    setTimeout(function(){ if (migOvMap) { migOvMap.invalidateSize(); renderMigOvPins(getMigOvFiltered()); } }, 220);
-  }
-
-  /* ════════════ MIGRATION DISPATCH MAP ════════════ */
-  var migLeafletMap = null;
-  var migMapInitialized = false;
-  var migMapMarkers = [];
-  var migMapLayers = {};
-  var pendingAssignRecord = null;
-
-  function initMigMap() {
-    var nav = document.querySelector('.topnav');
-    var navH = nav ? nav.offsetHeight : 0;
-    var page = document.getElementById('page-mig-dispatch');
-    var threshold = navH;
-    Array.prototype.forEach.call(page.children, function(el){
-      if (el.classList && el.classList.contains('sticky-top')) threshold += el.offsetHeight;
-    });
-    var container = document.getElementById('migMapContainer');
-    if (container) container.style.top = threshold + 'px';
-
-    if (!migMapInitialized) {
-      migLeafletMap = L.map('migLeafletMap', { zoomControl: false }).setView(MAP_CENTER, 13);
-      L.control.zoom({ position: 'bottomleft' }).addTo(migLeafletMap);
-
-      migMapLayers.street = L.tileLayer(
-        'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png',
-        { attribution: '© Carto © OSM', maxZoom: 19, subdomains: 'abcd' }
-      ).addTo(migLeafletMap);
-      migMapLayers.satellite = L.tileLayer(
-        'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
-        { attribution: '© Esri', maxZoom: 19 }
-      );
-      migMapLayers.streetNames = L.tileLayer(
-        'https://{s}.basemaps.cartocdn.com/rastertiles/voyager_only_labels/{z}/{x}/{y}{r}.png',
-        { attribution: '© Carto', maxZoom: 19, subdomains: 'abcd', opacity: 0.9 }
-      ).addTo(migLeafletMap);
-      migMapLayers.landmarks = L.tileLayer(
-        'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png',
-        { attribution: '© Carto', maxZoom: 19, subdomains: 'abcd', opacity: 0.6 }
-      );
-
-      var cityStyle = { color: '#1d4ed8', weight: 2.5, fill: false, opacity: 0.8, dashArray: '6,4' };
-      var brgyStyle = { color: '#60a5fa', weight: 1, fill: false, opacity: 0.6 };
-      var cityGeoJSON = {
-        "type":"FeatureCollection","features":[
-          {"type":"Feature","properties":{"name":"PASIG"},"geometry":{"type":"Polygon","coordinates":[[[121.063,14.530],[121.095,14.530],[121.102,14.550],[121.095,14.595],[121.078,14.608],[121.060,14.595],[121.048,14.570],[121.063,14.530]]]}},
-          {"type":"Feature","properties":{"name":"MARIKINA"},"geometry":{"type":"Polygon","coordinates":[[[121.090,14.625],[121.118,14.625],[121.130,14.650],[121.125,14.690],[121.100,14.700],[121.080,14.685],[121.075,14.655],[121.090,14.625]]]}},
-          {"type":"Feature","properties":{"name":"MANDALUYONG"},"geometry":{"type":"Polygon","coordinates":[[[121.025,14.570],[121.050,14.570],[121.058,14.590],[121.050,14.610],[121.030,14.608],[121.018,14.590],[121.025,14.570]]]}},
-          {"type":"Feature","properties":{"name":"SAN JUAN"},"geometry":{"type":"Polygon","coordinates":[[[121.025,14.595],[121.048,14.595],[121.055,14.610],[121.048,14.625],[121.025,14.620],[121.018,14.608],[121.025,14.595]]]}}
-        ]
-      };
-      migMapLayers.cityBoundaries = L.geoJSON(cityGeoJSON, { style: cityStyle }).addTo(migLeafletMap);
-
-      var brgyFeatures = Object.keys(BRGY_COORDS).map(function(name){
-        var c = BRGY_COORDS[name]; var d = 0.008;
-        return { "type":"Feature","properties":{"name":name},"geometry":{"type":"Polygon","coordinates":[[
-          [c[1]-d,c[0]-d],[c[1]+d,c[0]-d],[c[1]+d,c[0]+d],[c[1]-d,c[0]+d],[c[1]-d,c[0]-d]
-        ]]}};
-      });
-      migMapLayers.brgyBoundaries = L.geoJSON({"type":"FeatureCollection","features":brgyFeatures}, { style: brgyStyle });
-
-      migMapLayers.brgyNames = L.layerGroup(
-        Object.keys(BRGY_COORDS).map(function(name){
-          var c = BRGY_COORDS[name];
-          return L.marker([c[0],c[1]], {
-            icon: L.divIcon({
-              html: '<div style="font-size:9px;font-weight:700;color:#1e40af;background:rgba(255,255,255,0.85);padding:1px 4px;border-radius:3px;white-space:nowrap;box-shadow:0 1px 3px rgba(0,0,0,0.2);">'+name+'</div>',
-              className:'', iconAnchor:[0,0]
-            }), interactive:false
-          });
-        })
-      ).addTo(migLeafletMap);
-
-      migMapLayers.teamLabels = L.layerGroup();
-      migMapLayers.mobileUsers = L.layerGroup();
-
-      function wireMigLayer(checkboxId, layer, isBase) {
-        var chk = document.getElementById(checkboxId);
-        if (!chk) return;
-        chk.addEventListener('change', function(){
-          if (this.checked) {
-            if (isBase === 'satellite') {
-              if (migLeafletMap.hasLayer(migMapLayers.street)) migLeafletMap.removeLayer(migMapLayers.street);
-              document.getElementById('migLayerStreet').checked = false;
-              layer.addTo(migLeafletMap);
-            } else if (isBase === 'street') {
-              if (migLeafletMap.hasLayer(migMapLayers.satellite)) migLeafletMap.removeLayer(migMapLayers.satellite);
-              document.getElementById('migLayerSatellite').checked = false;
-              layer.addTo(migLeafletMap);
-            } else { layer.addTo(migLeafletMap); }
-          } else {
-            if (migLeafletMap.hasLayer(layer)) migLeafletMap.removeLayer(layer);
-          }
-        });
-      }
-      wireMigLayer('migLayerSatellite', migMapLayers.satellite, 'satellite');
-      wireMigLayer('migLayerStreet', migMapLayers.street, 'street');
-      wireMigLayer('migLayerStreetNames', migMapLayers.streetNames, false);
-      wireMigLayer('migLayerLandmarks', migMapLayers.landmarks, false);
-      wireMigLayer('migLayerCityBound', migMapLayers.cityBoundaries, false);
-      wireMigLayer('migLayerBrgyBound', migMapLayers.brgyBoundaries, false);
-      wireMigLayer('migLayerBrgyNames', migMapLayers.brgyNames, false);
-      wireMigLayer('migLayerTeamLabels', migMapLayers.teamLabels, false);
-      wireMigLayer('migLayerMobileUsers', migMapLayers.mobileUsers, false);
-
-      migMapInitialized = true;
-    }
-    setTimeout(function(){
-      migLeafletMap.invalidateSize();
-      /* Ensure client pins are drawn once the map exists (covers first-visit race
-         where renderMigPage ran before the map was initialized). */
-      if (migData && migData.length) renderMigMapPins(migData);
-    }, 200);
-  }
-
-  function renderMigMapPins(data) {
-    if (!migLeafletMap) return;
-    migMapMarkers.forEach(function(m){ migLeafletMap.removeLayer(m); });
-    migMapMarkers = [];
-    migMapLayers.teamLabels.clearLayers();
-
-    var statusColors = { 'Done':'#16a34a','Completed':'#16a34a','Pending':'#f59e0b','Rescheduled':'#f97316','Cancelled':'#ef4444' };
-    var teamPositions = {};
-
-    /* Municipality centers — fallback when a record's barangay isn't in BRGY_COORDS */
-    var MUNI_CENTERS = {
-      'PASIG':[14.5764,121.0851], 'MANDALUYONG':[14.5794,121.0359], 'MARIKINA':[14.6507,121.1029],
-      'SAN JUAN':[14.6019,121.0355], 'QUEZON CITY':[14.6760,121.0437], 'MAKATI':[14.5547,121.0244],
-      'TAGUIG':[14.5176,121.0509], 'PATEROS':[14.5410,121.0689], 'MANILA':[14.5995,120.9842],
-      'CAINTA':[14.5786,121.1222], 'ANTIPOLO':[14.6255,121.1245]
-    };
-    function lookupCoords(r){
-      var b = (r.barangay||'').toString().trim().toUpperCase();
-      if (b && BRGY_COORDS[b]) return BRGY_COORDS[b];
-      var m = (r.municipality||'').toString().trim().toUpperCase();
-      if (m && MUNI_CENTERS[m]) return MUNI_CENTERS[m];
-      /* last resort: keep the client visible near the metro center rather than dropping it */
-      return MAP_CENTER;
-    }
-    var plotted = 0, skipped = 0;
-
-    data.forEach(function(r){
-      var coords = lookupCoords(r);
-      if (!coords) { skipped++; return; }
-      plotted++;
-      var lat = coords[0] + (Math.random()-0.5)*0.007;
-      var lng = coords[1] + (Math.random()-0.5)*0.007;
-      var color = statusColors[r.jo_status] || '#f59e0b';
-      var marker = L.marker([lat,lng], { icon: houseIcon(color) }).addTo(migLeafletMap);
-      marker.bindPopup('<div style="font-size:12px;min-width:170px;"><span style="color:#64748b">'+(r.old_acct_no||'')+'</span><br><b style="color:#7c3aed;">'+(r.name||'—')+'</b><br><span style="font-weight:700;color:'+color+'">● '+(r.jo_status||'Pending')+'</span><br>'+(r.address||r.barangay||'')+'<br><span style="color:#94a3b8;">'+(r.barangay||'')+(r.municipality?', '+r.municipality:'')+'</span>'+(r.team_number?'':'<br><span style="color:#94a3b8;font-style:italic;">No team assigned</span>')+'</div>');
-      marker.on('click', function(){ showSubscriberDetail(r.id); });
-      migMapMarkers.push(marker);
-      if (r.team_number) {
-        if (!teamPositions[r.team_number]) teamPositions[r.team_number] = { lats:[], lngs:[] };
-        teamPositions[r.team_number].lats.push(lat);
-        teamPositions[r.team_number].lngs.push(lng);
-      }
-    });
-
-    var teamColors = ['#ef4444','#8b5cf6','#0d9488','#f59e0b','#3b82f6','#ec4899'];
-    var ti = 0;
-    Object.keys(teamPositions).forEach(function(tn){
-      var pos = teamPositions[tn];
-      var avgLat = pos.lats.reduce(function(a,b){return a+b;},0)/pos.lats.length;
-      var avgLng = pos.lngs.reduce(function(a,b){return a+b;},0)/pos.lngs.length;
-      var col = teamColors[ti++ % teamColors.length];
-      var label = L.marker([avgLat,avgLng], {
-        icon: L.divIcon({
-          html: '<div style="background:'+col+';color:white;padding:3px 10px;border-radius:5px;font-size:11px;font-weight:700;white-space:nowrap;box-shadow:0 2px 6px rgba(0,0,0,0.35);">'+tn+'</div>',
-          className:'', iconAnchor:[0,0]
-        }), interactive:false, zIndexOffset:1000
-      });
-      migMapLayers.teamLabels.addLayer(label);
-    });
-  }
-
-  /* ── Deployed Teams sidebar (left) ── */
-  function buildDeployedTeams(withTeamRecords) {
-    var byTeam = {};
-    withTeamRecords.forEach(function(r){
-      var tn = r.team_number;
-      if (!byTeam[tn]) byTeam[tn] = { records: [], personnel: r.personnel };
-      byTeam[tn].records.push(r);
-    });
-    var teamColors = ['#ef4444','#8b5cf6','#0d9488','#f59e0b','#3b82f6','#ec4899'];
-    var keys = Object.keys(byTeam);
-    var totalEl = document.getElementById('migDeployedTotal');
-    if (totalEl) totalEl.textContent = keys.length;
-
-    var list = document.getElementById('migDeployedTeamsList');
-    if (!list) return;
-    if (!keys.length) { list.innerHTML = '<div style="padding:16px;color:#94a3b8;font-size:12px;">No teams deployed for this date range</div>'; return; }
-
-    list.innerHTML = keys.map(function(tn, i){
-      var t = byTeam[tn];
-      var p = t.records.filter(function(r){return !r.jo_status||r.jo_status==='Pending';}).length;
-      var c = t.records.filter(function(r){var s=r.jo_status||''; return s==='Done'||s==='Completed';}).length;
-      var rs = t.records.filter(function(r){return r.jo_status==='Rescheduled';}).length;
-      var x = t.records.filter(function(r){return r.jo_status==='Cancelled';}).length;
-      var col = teamColors[i % teamColors.length];
-      var jobCards = t.records.map(function(r){
-        return '<div class="mig-team-job" onclick="showSubscriberDetail(\''+r.id+'\', event)">'
-          +'<div class="no-teams-acct"><span>'+(r.old_acct_no||'—')+'</span>'+migStatusBadge(r.jo_status)+'</div>'
-          +'<div class="no-teams-name">'+(r.name||'—')+'</div>'
-          +'<div class="no-teams-loc">'+(r.barangay||'')+(r.municipality?', '+r.municipality:'')+'</div>'
-          +'<div class="no-teams-addr">'+(r.address||'')+'</div>'
-          +'</div>';
-      }).join('');
-      return '<div class="mig-team-card" data-team="'+tn+'">'
-        +'<div class="mig-team-card-head" onclick="toggleDeployedTeam(this)">'
-        +'<span class="mig-team-dot" style="background:'+col+'"></span>'
-        +'<span class="mig-team-name">'+tn+'</span>'
-        +'<span class="mig-team-count-badge">'+t.records.length+'</span>'
-        +'<span class="mig-team-stats">P:'+p+' C:'+c+' R:'+rs+' X:'+x+'</span>'
-        +'<span class="mig-team-chevron">▾</span>'
-        +'</div>'
-        +(t.personnel ? '<div class="mig-team-personnel">'+t.personnel+'</div>' : '')
-        +'<div class="mig-team-jobs" style="display:none;">'+jobCards+'</div>'
-        +'</div>';
-    }).join('');
-  }
-
-  window.toggleDeployedTeam = function(head){
-    var card = head.closest('.mig-team-card');
-    if (!card) return;
-    var jobs = card.querySelector('.mig-team-jobs');
-    var chev = head.querySelector('.mig-team-chevron');
-    if (!jobs) return;
-    var open = jobs.style.display !== 'none';
-    jobs.style.display = open ? 'none' : 'block';
-    if (chev) chev.style.transform = open ? '' : 'rotate(180deg)';
-  };
-
-  /* ── No Teams sidebar (right) ── */
-  function buildNoTeamsPanel(noTeamRecords) {
-    var countEl = document.getElementById('migNoTeamsCount');
-    if (countEl) countEl.textContent = noTeamRecords.length;
-    var list = document.getElementById('migNoTeamsList');
-    if (!list) return;
-    if (!noTeamRecords.length) { list.innerHTML = '<div style="padding:16px;color:#94a3b8;font-size:12px;">All records have teams assigned</div>'; return; }
-
-    list.innerHTML = noTeamRecords.slice(0, 100).map(function(r){
-      return '<div class="no-teams-card" onclick="showSubscriberDetail(\'' + r.id + '\', event)" style="cursor:pointer;">'
-        +'<div class="no-teams-acct"><span>'+(r.old_acct_no||'—')+'</span>'+migStatusBadge(r.jo_status)+'</div>'
-        +'<div class="no-teams-name">'+(r.name||'—')+'</div>'
-        +'<div class="no-teams-loc">'+(r.barangay||'')+(r.municipality?', '+r.municipality:'')+'</div>'
-        +'<div class="no-teams-addr">'+(r.address||'')+'</div>'
-        +'<button class="no-teams-assign-btn" onclick="event.stopPropagation();openAssignTeamModal(\'' + r.id + '\')">+ Assign team</button>'
-        +'</div>';
-    }).join('');
-  }
-
-  /* ── Subscriber detail view ── */
-  window.showSubscriberDetail = function(recordId, evt) {
-    if (evt) evt.stopPropagation();
-    var r = migData.find(function(rec){ return String(rec.id) === String(recordId); });
-    if (!r) return;
-
-    document.querySelectorAll('#page-mig-dispatch .map-tab').forEach(function(t){t.classList.remove('active');});
-    document.getElementById('migTabSubscriber').classList.add('active');
-    document.getElementById('migLayersPanel').style.display = 'none';
-    document.getElementById('migSubscriberPanel').style.display = 'block';
-    document.getElementById('migNoTeamsPanel').style.display = 'none';
-
-    function row(label, val) {
-      return '<div class="subscriber-detail-row"><span class="subscriber-detail-label">'+label+'</span><span class="subscriber-detail-value">'+(val||'—')+'</span></div>';
-    }
-    function sectionTitle(t){ return '<div class="layer-section-title" style="margin-top:14px;">'+t+'</div>'; }
-
-    var initials = (r.name||'?').split(/[\s,]+/).filter(Boolean).map(function(w){return w[0];}).slice(0,2).join('').toUpperCase();
-    var st = r.jo_status || 'Pending';
-    var statusColor = ({Done:'#16a34a',Completed:'#16a34a',Visited:'#4338ca',Called:'#0f766e',Pending:'#f59e0b',Rescheduled:'#f97316',Cancelled:'#ef4444'})[st] || '#64748b';
-    var p = (r.personnel||'').split(',').map(function(s){return s.trim();});
-    var decomm = (r.decomm===true||r.decomm==='Y'||r.decomm==='Yes') ? 'Y' : 'N';
-
-    var resultSection = '';
-    if (r.remarks || r.date_completed || ['Rescheduled','Cancelled','Done','Completed'].indexOf(st)>=0) {
-      resultSection = sectionTitle('Result')
-        + row('Action Result', st)
-        + row('Date Completed', r.date_completed)
-        + row('Remarks', r.remarks);
-    }
-
-    document.getElementById('migSubscriberContent').outerHTML =
-      '<div id="migSubscriberContent">'
-      +'<div style="background:linear-gradient(135deg,#7c3aed,#6d28d9);color:white;border-radius:10px;padding:12px 14px;margin-bottom:12px;">'
-        +'<div style="display:flex;align-items:center;gap:10px;">'
-          +'<div style="width:34px;height:34px;border-radius:50%;background:rgba(255,255,255,0.2);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:12px;flex-shrink:0;">'+initials+'</div>'
-          +'<div style="min-width:0;"><div style="font-weight:700;font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">'+(r.name||'—')+'</div>'
-          +'<div style="font-size:11px;opacity:0.85;">Acct #'+(r.old_acct_no||'—')+'</div></div>'
-        +'</div>'
-        +'<div style="font-size:11px;margin-top:8px;opacity:0.9;">◉ '+(r.barangay||'')+(r.municipality?', '+r.municipality:'')+'</div>'
-      +'</div>'
-      +'<div style="display:flex;gap:8px;margin-bottom:4px;">'
-        +'<div style="flex:1;"><div class="subscriber-detail-label">STATUS</div><div style="font-weight:600;color:'+statusColor+';font-size:12px;">● '+st+'</div></div>'
-        +'<div style="flex:1;"><div class="subscriber-detail-label">TEAM</div><div style="font-weight:600;font-size:12px;">'+(r.team_number||'—')+'</div></div>'
-      +'</div>'
-      +sectionTitle('Account')
-      +row('Old Acct No.', r.old_acct_no)
-      +row('Bundle Type', r.bundle_type)
-      +row('Address', r.address)
-      +sectionTitle('Schedule &amp; Crew')
-      +row('Dispatch Date', r.date_visited || r.date_endorsed)
-      +row('Personnel 1', p[0])
-      +row('Personnel 2', p[1])
-      +row('Call Status', r.call_status)
-      +sectionTitle('Location')
-      +row('Municipality', r.municipality)
-      +row('Barangay', r.barangay)
-      +row('Contact', r.contact_info)
-      +row('Decomm', decomm)
-      +resultSection
-      +'<button class="no-teams-assign-btn" style="margin-top:14px;" onclick="napMigSetLocation(\''+r.id+'\')">◉ Set location on map</button>'
-      +'</div>';
-  };
-
-  /* "Set location on map" mode — shows the click-to-set banner over the migration map */
-  var migSetLocationFor = null;
-  window.napMigSetLocation = function(recordId) {
-    migSetLocationFor = recordId;
-    var banner = document.getElementById('migSetLocBanner');
-    if (banner) banner.style.display = 'flex';
-    showToast('Click on the map to set the new location', 'warning');
-  };
-  window.migSetLocSave = function() {
-    var banner = document.getElementById('migSetLocBanner');
-    if (banner) banner.style.display = 'none';
-    migSetLocationFor = null;
-    showToast('✓ Location saved', 'success');
-  };
-  window.migSetLocCancel = function() {
-    var banner = document.getElementById('migSetLocBanner');
-    if (banner) banner.style.display = 'none';
-    migSetLocationFor = null;
-  };
-
-  /* ── Right sidebar tab switching ── */
-  safeOn('migTabLayers', 'click', function(){
-    document.querySelectorAll('#page-mig-dispatch .map-tab').forEach(function(t){t.classList.remove('active');});
-    this.classList.add('active');
-    document.getElementById('migLayersPanel').style.display = 'block';
-    document.getElementById('migSubscriberPanel').style.display = 'none';
-    document.getElementById('migNoTeamsPanel').style.display = 'none';
-  });
-  safeOn('migTabSubscriber', 'click', function(){
-    document.querySelectorAll('#page-mig-dispatch .map-tab').forEach(function(t){t.classList.remove('active');});
-    this.classList.add('active');
-    document.getElementById('migLayersPanel').style.display = 'none';
-    document.getElementById('migSubscriberPanel').style.display = 'block';
-    document.getElementById('migNoTeamsPanel').style.display = 'none';
-  });
-  safeOn('migTabNoTeams', 'click', function(){
-    document.querySelectorAll('#page-mig-dispatch .map-tab').forEach(function(t){t.classList.remove('active');});
-    this.classList.add('active');
-    document.getElementById('migLayersPanel').style.display = 'none';
-    document.getElementById('migSubscriberPanel').style.display = 'none';
-    document.getElementById('migNoTeamsPanel').style.display = 'block';
-  });
-
-  /* Subscriber search (client-side over current migData) */
-  var migSubSearchEl = document.getElementById('migSubSearch');
-  if (migSubSearchEl) {
-    migSubSearchEl.addEventListener('input', function(){
-      var q = this.value.toLowerCase().trim();
-      var listEl = document.getElementById('migSubscriberList');
-      if (!q) { listEl.innerHTML = '<span style="color:#94a3b8;">Type to search subscribers</span>'; return; }
-      var matches = migData.filter(function(r){
-        return (r.name||'').toLowerCase().includes(q) || (r.old_acct_no||'').toLowerCase().includes(q);
-      }).slice(0, 20);
-      if (!matches.length) { listEl.innerHTML = '<span style="color:#94a3b8;">No matches</span>'; return; }
-      listEl.innerHTML = matches.map(function(r){
-        return '<div style="padding:8px 0;border-bottom:1px solid #f1f5f9;">'
-          +'<div style="font-weight:700;color:#1e293b;">'+(r.name||'—')+'</div>'
-          +'<div style="color:#64748b;">'+(r.old_acct_no||'')+' — '+(r.barangay||'')+'</div>'
-          +'</div>';
-      }).join('');
-    });
-  }
-
-  /* ── Assign Team Modal ── */
-  function personnelLabel(p) {
-    return p.name || p.full_name || (p.first_name ? (p.first_name+' '+(p.last_name||'')) : null) || p.username || ('Personnel '+p.id);
-  }
-
-  /* ════════════ MIGRATION RECORD DETAIL MODAL ════════════ */
-  var currentMigRecord = null;
-
-  window.openMigRecordModal = function(recordId) {
-    if (textIsSelected()) return;
-    var r = migData.find(function(rec){ return String(rec.id) === String(recordId); });
-    if (!r) return;
-    currentMigRecord = r;
-
-    document.getElementById('migRecordTitle').textContent = 'Migration Record Details — ' + (r.name || r.old_acct_no || '');
-
-    function setVal(id, val) { var el = document.getElementById(id); if (el) el.value = val || ''; }
-
-    setVal('mrDateEndorsed', normDate(r.date_endorsed));
-    setVal('mrDispatchDate', r.date_visited);
-    setVal('mrJOStatus', r.jo_status || 'Pending');
-    setVal('mrDecomm', r.decomm || 'N');
-
-    /* Team / Personnel dropdowns */
-    var teamSel = document.getElementById('mrTeamNumber');
-    teamSel.innerHTML = '<option value="">— Select Team —</option>' +
-      allTeams.map(function(t){ return '<option value="'+t.team_number+'"'+(t.team_number===r.team_number?' selected':'')+'>'+t.team_number+'</option>'; }).join('');
-
-    var p1Sel = document.getElementById('mrPersonnel1');
-    var p2Sel = document.getElementById('mrPersonnel2');
-    var personnelOptions = allPersonnel.map(function(p){
-      var lbl = personnelLabel(p);
-      return '<option value="'+lbl+'">'+lbl+'</option>';
-    }).join('');
-    var existingPersonnel = (r.personnel || '').split(',').map(function(s){return s.trim();});
-    p1Sel.innerHTML = '<option value="">— Select Personnel 1 —</option>' + personnelOptions;
-    p2Sel.innerHTML = '<option value="">None</option>' + personnelOptions;
-    if (existingPersonnel[0]) p1Sel.value = existingPersonnel[0];
-    if (existingPersonnel[1]) p2Sel.value = existingPersonnel[1];
-
-    /* NAP / completion fields - not yet in schema, show blank/placeholder */
-    setVal('mrNapCode', '');
-    setVal('mrNapId', '');
-    setVal('mrNapPort', '');
-    setVal('mrVacantPorts', '');
-    setVal('mrModemSerial', '');
-    setVal('mrIptvSerial', '');
-
-    setVal('mrJORemarks', r.remarks);
-
-    /* Subscriber info */
-    setVal('mrOldAcctNo', r.old_acct_no);
-    setVal('mrName', r.name);
-    setVal('mrPlayType', r.play_type);
-    setVal('mrBundleType', r.bundle_type);
-    setVal('mrMunicipality', r.municipality);
-    setVal('mrBarangay', r.barangay);
-    setVal('mrSduMdu', r.sdu_mdu);
-    setVal('mrOldNode', r.old_node);
-    setVal('mrAddress', r.address);
-    setVal('mrVillage', r.village);
-    setVal('mrContactInfo', r.contact_info);
-
-    /* Network / Service */
-    setVal('mrNetworkType', r.network_type);
-    setVal('mrTypeOfCustomer', r.type_of_customer);
-    setVal('mrSubStatus', r.subscriber_status);
-    setVal('mrServiceType', r.service_type);
-    setVal('mrDeployType', r.deployment_type);
-    setVal('mrNodeNoSky', r.node_no_sky);
-
-    /* Migration / Completion */
-    setVal('mrMigration', r.migration);
-    setVal('mrDateCompleted', r.date_completed);
-    setVal('mrMonthCompleted', r.month_completed);
-    setVal('mrWeekCompleted', r.week_completed);
-
-    /* Decommission */
-    setVal('mrOldHub', r.old_hub);
-    setVal('mrDecommDate', r.decomm_date);
-    setVal('mrDecommSched', r.decomm_sched);
-    setVal('mrDecommWeek', r.decomm_week);
-
-    /* Location / Area */
-    setVal('mrQuadrant', r.quadrant);
-    setVal('mrNewQuad', r.new_quad);
-    setVal('mrMsp', r.msp);
-    setVal('mrMspCluster', r.msp_cluster);
-    setVal('mrSector', r.sector);
-    setVal('mrArea', r.area);
-    setVal('mrFma', r.fma);
-
-    switchMigRecordTab('detail');
-    document.getElementById('migRecordOverlay').style.display = 'flex';
-  };
-
-  window.closeMigRecordModal = function() {
-    document.getElementById('migRecordOverlay').style.display = 'none';
-    currentMigRecord = null;
-  };
-
-  window.switchMigRecordTab = function(tab) {
-    document.getElementById('migRecTabDetail').classList.toggle('active', tab === 'detail');
-    document.getElementById('migRecTabHistory').classList.toggle('active', tab === 'history');
-    document.getElementById('migRecDetailPane').style.display = tab === 'detail' ? 'block' : 'none';
-    document.getElementById('migRecHistoryPane').style.display = tab === 'history' ? 'block' : 'none';
-  };
-
-  window.toggleMigCollapse = function(id) {
-    var el = document.getElementById(id);
-    if (!el) return;
-    var isOpen = el.style.display === 'block';
-    el.style.display = isOpen ? 'none' : 'block';
-    if (el.previousElementSibling) el.previousElementSibling.classList.toggle('open', !isOpen);
-  };
-
-  window.saveMigRecordModal = async function() {
-    if (!currentMigRecord) return;
-    function val(id) { var el = document.getElementById(id); return el ? el.value : null; }
-
-    var p1 = val('mrPersonnel1');
-    var p2 = val('mrPersonnel2');
-    var personnelStr = p1 ? (p1 + (p2 ? ', '+p2 : '')) : null;
-
-    var updates = {
-      date_endorsed:      val('mrDateEndorsed') || null,
-      date_visited:      val('mrDispatchDate') || null,
-      decomm:             val('mrDecomm'),
-      team_number:        val('mrTeamNumber') || null,
-      personnel:          personnelStr,
-      remarks:            val('mrJORemarks'),
-      old_acct_no:        val('mrOldAcctNo'),
-      name:               val('mrName'),
-      play_type:          val('mrPlayType'),
-      bundle_type:        val('mrBundleType'),
-      municipality:       val('mrMunicipality'),
-      barangay:           val('mrBarangay'),
-      sdu_mdu:            val('mrSduMdu'),
-      old_node:           val('mrOldNode'),
-      address:            val('mrAddress'),
-      village:            val('mrVillage'),
-      contact_info:       val('mrContactInfo'),
-      network_type:       val('mrNetworkType'),
-      type_of_customer:   val('mrTypeOfCustomer'),
-      subscriber_status:  val('mrSubStatus'),
-      service_type:       val('mrServiceType'),
-      deployment_type:    val('mrDeployType'),
-      node_no_sky:        val('mrNodeNoSky'),
-      migration:          val('mrMigration'),
-      date_completed:     val('mrDateCompleted') || null,
-      month_completed:    val('mrMonthCompleted'),
-      week_completed:     val('mrWeekCompleted'),
-      old_hub:            val('mrOldHub'),
-      decomm_date:        val('mrDecommDate') || null,
-      decomm_sched:       val('mrDecommSched'),
-      decomm_week:        val('mrDecommWeek'),
-      quadrant:           val('mrQuadrant'),
-      new_quad:           val('mrNewQuad'),
-      msp:                val('mrMsp'),
-      msp_cluster:        val('mrMspCluster'),
-      sector:             val('mrSector'),
-      area:               val('mrArea'),
-      fma:                val('mrFma')
-    };
-
-    try {
-      var { error } = await db.from(MIG_TABLE).update(updates).eq('id', currentMigRecord.id);
-      if (error) throw error;
-      showToast('✓ Record updated!', 'success');
-      closeMigRecordModal();
-      loadMigData(currentMigPage);
-    } catch(err) { showToast('Error: '+err.message, 'error'); }
-  };
-
-  safeOn('migRecordOverlay', 'click', function(e){
-    if (e.target === this) closeMigRecordModal();
-  });
-
-  /* ── Download Template / Import buttons ── */
-  safeOn('migUpDownloadTemplate', 'click', function(){
-    var headers = ['OLDACCTNO','Name','Address','MunicipalityName','Brgy','ContactInfo','BundleType','PlayType','NetworkType','NodeNo_Sky','Decomm (Y/N)','Team Number','Personnel','JO Status','Remarks'];
-    var csv = headers.join(',') + '\n';
-    var blob = new Blob([csv], { type: 'text/csv' });
-    var url = URL.createObjectURL(blob);
-    var a = document.createElement('a');
-    a.href = url; a.download = 'migration_template.csv';
-    document.body.appendChild(a); a.click(); document.body.removeChild(a);
-    URL.revokeObjectURL(url);
-    showToast('Template downloaded', 'success');
-  });
-
-  safeOn('migUpImportBtn', 'click', function(){
-    document.getElementById('migUpImportFile').click();
-  });
-
-  safeOn('migUpImportFile', 'change', function(e){
-    var file = e.target.files[0];
-    if (!file) return;
-    showToast('Import received: '+file.name+' — processing not yet implemented', 'warning');
-    e.target.value = '';
-  });
-
-  var assignContext = 'mig';
-  var pendingAssignIds = null;   /* set when assigning a batch instead of one record */
-
-  window.openBulkAssign = function() {
-    if (!can('assign')) { showToast('You do not have permission to assign teams', 'warning'); return; }
-    if (!bulkSelected.size) return;
-    assignContext = 'ni-bulk';
-    pendingAssignIds = Array.from(bulkSelected);
-    fillAssignSelects();
-    var label = document.getElementById('assignCustomerName');
-    label.textContent = 'Assigning ' + pendingAssignIds.length + ' job order' + (pendingAssignIds.length>1?'s':'') + ' to one team';
-    label.style.display = 'block';
-    label.style.cssText += ';background:#eff6ff;color:#1d4ed8;border-radius:7px;padding:8px 10px;font-size:12px;font-weight:700;margin-bottom:10px;';
-    document.getElementById('assignTeamOverlay').style.display = 'flex';
-  };
-
-  function fillAssignSelects() {
-    var teamSelect = document.getElementById('assignTeamSelect');
-    /* Two groups, matching how dispatch actually thinks about it:
-       - a SUBCONTRACTOR gets work by name (their team row is named after the company)
-       - an IN-HOUSE crew is picked by team number.
-       Grouping comes from teams.company: anything matching a known subcon goes up top. */
-    var subconNames = companiesThatInstall().filter(function(c){ return !c.in_house; }).map(function(c){ return c.name; });
-    var subs = [], inhouse = [];
-    allTeams.forEach(function(t){
-      if (t.company && subconNames.indexOf(t.company) >= 0) subs.push(t); else inhouse.push(t);
-    });
-    function opt(t, label){ return '<option value="'+t.team_number+'">'+label+'</option>'; }
-    teamSelect.innerHTML = '<option value="">- Select Installation Team (SLI) -</option>'
-      + (subs.length ? '<optgroup label="Subcontractors">' + subs.map(function(t){
-          return opt(t, t.team_number === t.company ? t.company : t.team_number + '  —  ' + t.company);
-        }).join('') + '</optgroup>' : '')
-      + (inhouse.length ? '<optgroup label="In-house Teams">' + inhouse.map(function(t){
-          return opt(t, t.team_number);
-        }).join('') + '</optgroup>' : '');
-        
-    var msaSelect = document.getElementById('assignMsaSelect');
-    if (msaSelect) {
-      msaSelect.innerHTML = '<option value="">- Leave unchanged -</option>' + companiesThatSell().map(function(c){
-        return '<option value="'+c.name+'">'+c.name+(c.in_house?' (in-house)':'')+'</option>';
-      }).join('');
-    }
-
-    var p1 = document.getElementById('assignPersonnel1Select');
-    var p2 = document.getElementById('assignPersonnel2Select');
-    var personnelOptions = allPersonnel.map(function(p){
-      return '<option value="'+personnelLabel(p)+'">'+personnelLabel(p)+'</option>';
-    }).join('');
-    p1.innerHTML = '<option value="">— Select Personnel 1 —</option>' + personnelOptions;
-    p2.innerHTML = '<option value="">None</option>' + personnelOptions;
-  }
-
   window.openAssignTeamModal = function(recordId, ctx) {
     assignContext = ctx || 'mig';
     pendingAssignIds = null;
@@ -9247,97 +7846,12 @@
       } catch(err) { showToast('Error: '+err.message, 'error'); }
       return;
     }
-
-    /* Migration order */
-    if (!db) {
-      var mrec = migData.find(function(o){ return String(o.id)===String(recId); });
-      if (mrec) { mrec.team_number = teamVal; mrec.personnel = personnelStr; }
-      showToast('✓ Team '+teamVal+' assigned!', 'success');
-      closeAssignTeamModal();
-      renderMigPage(currentMigPage);
-      return;
-    }
-    try {
-      var { error } = await db.from(MIG_TABLE)
-        .update({ team_number: teamVal, personnel: personnelStr })
-        .eq('id', recId);
-      if (error) throw error;
-      showToast('✓ Team '+teamVal+' assigned!', 'success');
-      closeAssignTeamModal();
-      loadMigData('dispatch');
-    } catch(err) { showToast('Error: '+err.message, 'error'); }
   };
 
   safeOn('assignTeamOverlay', 'click', function(e){
     if (e.target === this) closeAssignTeamModal();
   });
 
-  /* ── For Calling/Scheduling page filter wiring ── */
-  safeOn('migCallSearch', 'input', function(){
-    migCallFilters.search = this.value;
-    renderMigCallRows();
-  });
-  safeOn('migCallBundle', 'change', function(){
-    migCallFilters.bundle = this.value;
-    renderMigCallRows();
-  });
-  safeOn('migCallUpdatedBy', 'change', function(){
-    migCallFilters.updatedBy = this.value;
-    renderMigCallRows();
-  });
-  function migCallDateHandler(key) {
-    return function(){
-      migCallFilters[key] = this.value;
-      renderMigCallRows();
-    };
-  }
-  safeOn('migCallDateFrom', 'change', migCallDateHandler('dateFrom'));
-  safeOn('migCallDateFrom', 'input', migCallDateHandler('dateFrom'));
-  safeOn('migCallDateTo', 'change', migCallDateHandler('dateTo'));
-  safeOn('migCallDateTo', 'input', migCallDateHandler('dateTo'));
-  safeOn('migCallPrev', 'click', function(){
-    var base = migCallFilters.dateFrom || today();
-    var d = shift(base, -1);
-    migCallFilters.dateFrom = d; migCallFilters.dateTo = d;
-    var f=document.getElementById('migCallDateFrom'), t=document.getElementById('migCallDateTo');
-    if(f) f.value=d; if(t) t.value=d;
-    renderMigCallRows();
-  });
-  safeOn('migCallNext', 'click', function(){
-    var base = migCallFilters.dateFrom || today();
-    var d = shift(base, 1);
-    migCallFilters.dateFrom = d; migCallFilters.dateTo = d;
-    var f=document.getElementById('migCallDateFrom'), t=document.getElementById('migCallDateTo');
-    if(f) f.value=d; if(t) t.value=d;
-    renderMigCallRows();
-  });
-  safeOn('migCallToday', 'click', function(){
-    var d = today();
-    migCallFilters.dateFrom = d; migCallFilters.dateTo = d;
-    var f=document.getElementById('migCallDateFrom'), t=document.getElementById('migCallDateTo');
-    if(f) f.value=d; if(t) t.value=d;
-    renderMigCallRows();
-  });
-  safeOn('migCallColsBtn', 'click', function(e){
-    e.stopPropagation();
-    var m = document.getElementById('migCallColsMenu');
-    if (m) m.classList.toggle('open');
-  });
-  safeOnSel('#migCallColsMenu', 'click', function(e){ e.stopPropagation(); });
-
-  /* ── Overall refresh button ── */
-  var migOverallRefreshBtn = document.getElementById('migOverallRefresh');
-  if (migOverallRefreshBtn) {
-    migOverallRefreshBtn.addEventListener('click', function(){ loadMigData('overall'); });
-  }
-
-  /* ── Close migMenu on outside click ── */
-  document.addEventListener('click', function(){
-    var mm = document.getElementById('migMenu');
-    if (mm) mm.classList.remove('open');
-    var cm = document.getElementById('migCallColsMenu');
-    if (cm) cm.classList.remove('open');
-  });
 
   load();
   setTimeout(refreshLayout, 200);
