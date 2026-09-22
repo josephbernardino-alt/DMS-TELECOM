@@ -1198,6 +1198,8 @@
       <span class="sum-count" id="cntPending">0</span>
     </div>
     <div class="sum-sub">
+      <span class="sub-pill" id="subNew"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg><span class="pill-text">0 New</span></span>
+      <span class="sub-pill" id="subAgeing" style="color:#ef4444;"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg><span class="pill-text">0 Ageing</span></span>
       <span class="sub-pill" id="subWT"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/></svg><span class="pill-text">0 Team Assigned</span></span>
       <span class="sub-pill" id="subWOT"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/></svg><span class="pill-text">0 No Team</span></span>
     </div>
@@ -1322,8 +1324,9 @@
     <button class="today-btn" id="mapToday">Today</button>
     <div class="filter-spacer"></div>
     <div class="teams-badge">TEAMS <span id="mapTeamCount">0</span></div>
-    <button class="view-btn active" id="btnMapTableView">⊞ Table</button>
-    <button class="view-btn active" style="background:#16a34a;border-color:#16a34a;color:white;">🗺 Map</button>
+    <button class="view-btn active" id="btnMapTableView">⇲ Table</button>
+    <button class="view-btn" id="btnLassoMode" title="Draw a box on the map to select jobs for bulk assignment" style="background:#7c3aed;border-color:#7c3aed;color:white;" data-cap="assign">⬚ Lasso Select</button>
+    <button class="view-btn active" style="background:#16a34a;border-color:#16a34a;color:white;">📍 Map</button>
   </div>
   <div class="summary-row sticky-top" id="mapSummaryRow">
     <button class="new-install-btn">⊕ NEW INSTALLATION</button>
@@ -3318,7 +3321,7 @@
         +'<td style="font-size:11px;white-space:nowrap">'+v(r.personnel)+'</td>'
         +'<td style="white-space:nowrap">'+v(r.tl_name)+'</td>'
         +'<td style="white-space:nowrap;font-size:11px">'+v(r.msa_name)
-          +(isInHouseSale(r.msa_name)?' <span title="Our application" style="background:#dcfce7;color:#15803d;border-radius:4px;padding:1px 5px;font-size:9px;font-weight:700;">A6 INHOUSE</span>':'')+'</td>'
+          +(isInHouseSale(r.msa_name)?' <span title="Our application" style="background:#dcfce7;color:#15803d;border-radius:4px;padding:1px 5px;font-size:9px;font-weight:700;">INHOUSE</span>':'')+'</td>'
         +'<td style="white-space:nowrap">'+v(r.barangay)+'</td>'
         +'<td style="white-space:nowrap">'+v(r.municipality)+'</td>'
         +'<td><span class="cust-link">'+v(r.customer_name)+'</span></td>'
@@ -3381,7 +3384,21 @@
 
   /* ── SUMMARY ── */
   function summary(data) {
-    var pending = data.filter(function(r){return r.status==='Pending';});
+    var pending = data.filter(function(r){return r.status==='Pending' || r.status==='New';});
+    
+    var countNew = 0, countAgeing = 0;
+    pending.forEach(function(r) {
+      if (r.status === 'New') {
+        var isAgeing = false;
+        var dStart = r.created_at || r.date_received;
+        if (dStart) {
+          var daysOld = (new Date() - new Date(dStart)) / (1000 * 60 * 60 * 24);
+          if (daysOld > 3) isAgeing = true;
+        }
+        if (isAgeing) countAgeing++; else countNew++;
+      }
+    });
+
     var active  = data.filter(function(r){return r.gofib_status==='Active';});
     var comp    = data.filter(function(r){return r.status==='Completed';});
     var resched = data.filter(function(r){return r.status==='Rescheduled';});
@@ -3402,8 +3419,11 @@
       var t = el.querySelector('.pill-text');
       if (t) t.textContent = text; else el.textContent = text;
     }
-    setPill('subWT',   wt+' Team Assigned');
-    setPill('subWOT',  wot+' No Team');
+
+    setPill('subNew',      countNew + ' New');
+    setPill('subAgeing',   countAgeing + ' Ageing');
+    setPill('subWT',       wt+' Team Assigned');
+    setPill('subWOT',      wot+' No Team');
     setPill('subGF',   active.length+' GF');
     setPill('subJO',   comp.length+' JO');
     setPill('subBoth', (active.length+comp.length)+' Total');
@@ -3646,7 +3666,7 @@
 
     var detailsHtml =
       sec('Job Information',
-        g3(afld('JO Number',r.jo_number,'editJoNumber'),fld('Date',r.dispatch_date),fld('Installation Team',tn))
+        g3(ofld('JO Number',r.jo_number,'editJoNumber'),fld('Date',r.dispatch_date),fld('Installation Team',tn))
       )+
       sec('',
         g3(afld('Account Number',r.account_number,'editAccountNumber'),afld('Reference ID',r.reference_id,'editReferenceId'),afld('Customer Name',r.customer_name,'editCustomerName'))+
@@ -3663,7 +3683,7 @@
         )+
         g3(ofld('Assigned TL',r.assigned_tl||r.tl_name,'editTL'),ofld('Call Status',r.call_status,'editCallStatus'),ofld('Call Remarks',r.call_remarks,'editCallRemarks'))+
         g3(ofld('Time In',r.time_in,'editTimeIn','time'),ofld('Time Out',r.time_out,'editTimeOut','time'),ofld('NAP ID',r.nap_id,'editNapId'))+
-        g3(msaField(r.msa_name),afld('Modem Serial Number',r.modem_serial,'editModemSerial'),afld('IPTV Serial Number',r.iptv_serial,'editIptvSerial'))
+        g3(msaField(r.msa_name),ofld('Modem Serial Number',r.modem_serial,'editModemSerial'),ofld('IPTV Serial Number',r.iptv_serial,'editIptvSerial'))
       );
 
     document.getElementById('panelDetails').innerHTML = detailsHtml;
@@ -3911,7 +3931,7 @@
   var ROLE_CAPABILITIES = {
     developer:   ['view_dashboard','view_reports','view_audit','edit_records','edit_account','edit_jo','assign','update_status','import','manage_users','all_regions','edit_sales_remarks'],
     manager:     ['view_dashboard','view_reports','view_audit','edit_records','edit_account','edit_jo','assign','update_status','import','edit_sales_remarks'],
-    dispatch:    ['view_dashboard','view_reports','view_audit','edit_account','edit_jo','assign','update_status'],
+    dispatch:    ['view_dashboard','view_reports','view_audit','edit_jo','assign','update_status'],
     /* Sales Admin: views everything (all regions) but cannot change operational data.
        Their only write power is leaving a Sales Admin Remark on a record. */
     sales_admin: ['view_dashboard','view_reports','edit_sales_remarks'],
@@ -4264,16 +4284,19 @@
         nap_id:         document.getElementById('editNapId') ? document.getElementById('editNapId').value : currentJO.nap_id,
         time_in:        document.getElementById('editTimeIn') ? document.getElementById('editTimeIn').value : currentJO.time_in,
         time_out:       document.getElementById('editTimeOut') ? document.getElementById('editTimeOut').value : currentJO.time_out,
+        jo_number:      document.getElementById('editJoNumber') ? document.getElementById('editJoNumber').value : currentJO.jo_number,
+        modem_serial:   document.getElementById('editModemSerial') ? document.getElementById('editModemSerial').value : currentJO.modem_serial,
+        iptv_serial:    document.getElementById('editIptvSerial') ? document.getElementById('editIptvSerial').value : currentJO.iptv_serial,
         updated_by:     user.name,
         updated_at:     new Date().toISOString()
       };
       /* Account fields — only included if the user has edit_account AND the input exists on the form. */
       if (can('edit_account')) {
         var acctMap = {
-          jo_number:'editJoNumber', customer_name:'editCustomerName', account_number:'editAccountNumber', reference_id:'editReferenceId',
+          customer_name:'editCustomerName', account_number:'editAccountNumber', reference_id:'editReferenceId',
           mobile_number:'editMobileNumber', alt_mobile_number:'editAltMobile', address:'editAddress',
           municipality:'editMunicipality', barangay:'editBarangay', plan:'editPlan',
-          modem_serial:'editModemSerial', iptv_serial:'editIptvSerial', msa_name:'editMsa'
+          msa_name:'editMsa'
         };
         Object.keys(acctMap).forEach(function(field){
           var el = document.getElementById(acctMap[field]);
@@ -7068,6 +7091,7 @@
       }
 
       mapInitialized = true;
+      wireLassoEvents(); /* attach lasso draw handlers to the map container */
     }
     setTimeout(function(){ leafletMap.invalidateSize(); }, 200);
     updateMapData();
@@ -7127,6 +7151,9 @@
       var lng = coords[1] + (Math.random()-0.5)*0.007;
       var color = statusColors[o.status] || '#64748b';
       var marker = L.marker([lat,lng], { icon: houseIcon(color) }).addTo(leafletMap);
+      marker._jobId  = o.id;
+      marker._lat    = lat;
+      marker._lng    = lng;
       marker.bindPopup(
         '<div style="font-size:12px;min-width:180px;">'
         +'<span style="color:#64748b">'+(o.jo_number||'')+'</span><br>'
@@ -7137,7 +7164,9 @@
         +(teamNum(o.team_id)?'':'<br><span style="color:#94a3b8;font-style:italic;">No team assigned</span>')
         +'</div>'
       );
-      (function(rec){ marker.on('click', function(){ showNiSubscriberDetail(rec); }); })(o);
+      (function(rec){ marker.on('click', function(){ 
+        if (!lassoMode) showNiSubscriberDetail(rec); 
+      }); })(o);
       mapMarkers.push(marker);
 
       var tn = teamNum(o.team_id);
@@ -7433,6 +7462,131 @@
   /* ── MAP FILTER ── */
   var mapActiveFilter = null;
   var mapAllMarkers = [];
+
+  /* ── LASSO / GEOFENCE SELECT ── */
+  var lassoMode    = false;
+  var lassoRect    = null;   /* Leaflet rectangle drawn on the map */
+  var lassoStart   = null;   /* LatLng of mousedown */
+  var lassoOverlay = null;   /* Floating "X jobs selected" toast on the map */
+
+  function enterLassoMode() {
+    lassoMode = true;
+    var btn = document.getElementById('btnLassoMode');
+    if (btn) { btn.textContent = '✕ Cancel Lasso'; btn.style.background = '#ef4444'; btn.style.borderColor = '#ef4444'; }
+    leafletMap.dragging.disable();
+    leafletMap.getContainer().style.cursor = 'crosshair';
+
+    /* Show a floating instruction banner */
+    showLassoHint('Click and drag on the map to draw a selection box');
+  }
+
+  function exitLassoMode() {
+    lassoMode = false;
+    var btn = document.getElementById('btnLassoMode');
+    if (btn) { btn.textContent = '⬚ Lasso Select'; btn.style.background = '#7c3aed'; btn.style.borderColor = '#7c3aed'; }
+    leafletMap.dragging.enable();
+    leafletMap.getContainer().style.cursor = '';
+    if (lassoRect) { leafletMap.removeLayer(lassoRect); lassoRect = null; }
+    hideLassoHint();
+    lassoStart = null;
+  }
+
+  function showLassoHint(msg) {
+    var el = document.getElementById('lassoHint');
+    if (!el) {
+      el = document.createElement('div');
+      el.id = 'lassoHint';
+      el.style.cssText = 'position:absolute;top:14px;left:50%;transform:translateX(-50%);z-index:800;background:#7c3aed;color:white;border-radius:8px;padding:8px 16px;font-size:13px;font-weight:700;box-shadow:0 4px 14px rgba(0,0,0,0.3);pointer-events:none;white-space:nowrap;';
+      document.getElementById('page-map').appendChild(el);
+    }
+    el.textContent = msg;
+    el.style.display = 'block';
+  }
+
+  function hideLassoHint() {
+    var el = document.getElementById('lassoHint');
+    if (el) el.style.display = 'none';
+  }
+
+  function commitLassoSelection(bounds) {
+    /* Find all markers whose position is inside the drawn rectangle */
+    var selected = [];
+    mapMarkers.forEach(function(m) {
+      if (m._jobId && m._lat !== undefined && bounds.contains([m._lat, m._lng])) {
+        selected.push(String(m._jobId));
+        /* Flash the marker so Dispatcher sees what got grabbed */
+        var el = m.getElement();
+        if (el) { el.style.outline = '3px solid #7c3aed'; el.style.borderRadius = '50%'; }
+      }
+    });
+
+    if (!selected.length) {
+      showLassoHint('No jobs in that area. Try drawing a larger box.');
+      setTimeout(function() { if (lassoMode) showLassoHint('Click and drag on the map to draw a selection box'); }, 2000);
+      return;
+    }
+
+    /* Hand off to the Bulk Assign popup — same flow as checkbox selection */
+    showLassoHint('✓ ' + selected.length + ' jobs selected — opening Assign panel…');
+    setTimeout(function() {
+      exitLassoMode();
+      /* Reset marker highlights */
+      mapMarkers.forEach(function(m){ var el=m.getElement(); if(el){el.style.outline='';el.style.borderRadius='';} });
+      /* Open the Bulk Assign modal with the lasso selection */
+      pendingAssignIds = selected;
+      assignContext = 'ni-bulk';
+      fillAssignSelects();
+      document.getElementById('assignCustomerName').textContent = selected.length + ' jobs selected via Lasso';
+      document.getElementById('assignCustomerName').style.display = 'block';
+      document.getElementById('assignTeamOverlay').style.display = 'flex';
+    }, 800);
+  }
+
+  /* Wire up mouse events on the Leaflet container for drag-to-draw */
+  safeOn('btnLassoMode', 'click', function() {
+    if (lassoMode) { exitLassoMode(); return; }
+    if (!mapInitialized) { showToast('Open the Map view first', 'warning'); return; }
+    enterLassoMode();
+  });
+
+  /* We attach the draw events directly to the map after it initialises */
+  function wireLassoEvents() {
+    var mapEl = leafletMap.getContainer();
+
+    mapEl.addEventListener('mousedown', function(e) {
+      if (!lassoMode) return;
+      e.preventDefault();
+      lassoStart = leafletMap.containerPointToLatLng(L.point(e.offsetX, e.offsetY));
+    });
+
+    mapEl.addEventListener('mousemove', function(e) {
+      if (!lassoMode || !lassoStart) return;
+      var current = leafletMap.containerPointToLatLng(L.point(e.offsetX, e.offsetY));
+      var bounds = L.latLngBounds(lassoStart, current);
+      if (lassoRect) { leafletMap.removeLayer(lassoRect); }
+      lassoRect = L.rectangle(bounds, {
+        color: '#7c3aed', weight: 2, dashArray: '6,4',
+        fillColor: '#7c3aed', fillOpacity: 0.12
+      }).addTo(leafletMap);
+    });
+
+    mapEl.addEventListener('mouseup', function(e) {
+      if (!lassoMode || !lassoStart) return;
+      var end = leafletMap.containerPointToLatLng(L.point(e.offsetX, e.offsetY));
+      var bounds = L.latLngBounds(lassoStart, end);
+      lassoStart = null;
+      /* Only commit if the box is at least a few pixels (not just a click) */
+      var sw = leafletMap.latLngToContainerPoint(bounds.getSouthWest());
+      var ne = leafletMap.latLngToContainerPoint(bounds.getNorthEast());
+      if (Math.abs(ne.x - sw.x) < 15 || Math.abs(ne.y - sw.y) < 15) {
+        if (lassoRect) { leafletMap.removeLayer(lassoRect); lassoRect = null; }
+        showLassoHint('Box too small — try dragging a larger area');
+        setTimeout(function() { if (lassoMode) showLassoHint('Click and drag on the map to draw a selection box'); }, 1800);
+        return;
+      }
+      commitLassoSelection(bounds);
+    });
+  }
 
   window.applyMapFilter = function(filterType) {
     if (mapActiveFilter === filterType) {
